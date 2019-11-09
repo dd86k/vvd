@@ -1,0 +1,83 @@
+#!/bin/sh
+#TODO: Function for every file being compiled
+
+CC=$1
+
+show_help()
+{
+	echo USAGE
+	echo "  ./build ACTION [OPTIONS]"
+	echo
+	echo ACTION
+	echo "  <COMPILER>  Choose a compiler (clang, gcc)"
+	echo "  clean       Delete binaries"
+	exit
+}
+
+b_clean()
+{
+	rm -r bin/* vvd vvd.exe
+	exit
+}
+
+b_clang()
+{
+	CTIME=`date "+%T"`
+	CDATE=`date "+%F"`
+	CFLAGS="$CC -D_FILE_OFFSET_BITS=64 -DTIMESTAMP=\"$CDATE $CTIME\" $1 $2 $3 $4 -ferror-limit=2 -std=c99 -fpack-struct=1 -c"
+	echo [$CC] main.obj
+	$CFLAGS src/main.c -o bin/main.obj
+	if [ $? -ne 0 ]; then exit; fi
+	echo [$CC] guid.obj
+	$CFLAGS src/guid.c -o bin/guid.obj
+	if [ $? -ne 0 ]; then exit; fi
+	echo [$CC] utils.obj
+	$CFLAGS src/utils.c -o bin/utils.obj
+	if [ $? -ne 0 ]; then exit; fi
+	echo [$CC] vdisk.obj
+	$CFLAGS src/vdisk.c -o bin/vdisk.obj
+	if [ $? -ne 0 ]; then exit; fi
+	echo [$CC] vvd.obj
+	$CFLAGS src/vvd.c -o bin/vvd.obj
+	if [ $? -ne 0 ]; then exit; fi
+	# fs
+	echo [$CC] mbr.obj
+	$CFLAGS src/fs/mbr.c -o bin/mbr.obj
+	if [ $? -ne 0 ]; then exit; fi
+	echo [$CC] gpt.obj
+	$CFLAGS src/fs/gpt.c -o bin/gpt.obj
+	if [ $? -ne 0 ]; then exit; fi
+	# os
+	echo [$CC] fs.obj
+	$CFLAGS src/os/fs.c -o bin/fs.obj
+	if [ $? -ne 0 ]; then exit; fi
+	echo [$CC] err.obj
+	$CFLAGS src/os/err.c -o bin/err.obj
+	if [ $? -ne 0 ]; then exit; fi
+	# vdisk
+	echo [$CC] vdi.obj
+	$CFLAGS src/vdisk/vdi.c -o bin/vdi.obj
+	if [ $? -ne 0 ]; then exit; fi
+	echo [$CC] vmdk.obj
+	$CFLAGS src/vdisk/vmdk.c -o bin/vmdk.obj
+	if [ $? -ne 0 ]; then exit; fi
+	echo [$CC] vhd.obj
+	$CFLAGS src/vdisk/vhd.c -o bin/vhd.obj
+	if [ $? -ne 0 ]; then exit; fi
+	echo [$CC] vhdx.obj
+	$CFLAGS src/vdisk/vhdx.c -o bin/vhdx.obj
+	if [ $? -ne 0 ]; then exit; fi
+	# LINK
+	echo [$CC] Linking vvd
+	$CC $1 $2 $3 $4 bin/*.obj -o vvd
+	exit
+}
+
+if [ "$CC" = "clang" ]; then b_clang $2 $3 $4 $5; fi
+if [ "$CC" = "clean" ]; then b_clean; fi
+if [ -z "$CC" ]; then
+	CC="clang"
+	b_clang $2 $3 $4 $5;
+fi
+
+echo "ERROR: Action not found ($CC)"

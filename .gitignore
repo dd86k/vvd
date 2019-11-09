@@ -1,0 +1,11 @@
+# Binaries and stuff vvd may generate
+vvd
+vvd.exe
+vdisk.tmp
+
+# vscode
+.vscode
+
+# Personal stuff
+t
+NOTES

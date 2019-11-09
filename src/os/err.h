@@ -1,0 +1,1 @@
+void os_perror(const char *func);

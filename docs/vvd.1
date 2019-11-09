@@ -1,0 +1,138 @@
+." Written by dd86k
+
+.TH vvd 1 "September 2019" dd86k "User Manual"
+.SH NAME
+.B vvd
+- Universal virtual disk management tool
+
+.SH SYNOPSIS
+.SY vvd
+{
+.IR -I
+|
+.IR -M
+|
+.IR -N
+|
+.IR -C
+}
+.OP rc
+.YS
+.SY vvd
+{
+.IR --help
+|
+.IR --version
+|
+.IR --license
+}
+.YS
+
+.SH DESCRIPTION
+
+vvd aims to be a simple to use universal virtual disk management tool.
+
+.SH OPERATIONS
+
+One of these must be used to operate with a virtual disk. all virtual disk
+file references are referenced by "VDISK".
+
+.IP -I
+Get information on VDISK
+
+Get VDISK information such as VDISK headers (type, virtual size, etc.), MBR,
+EFI, and FS, if available. Supports option
+.OP -r
+
+.IP -M
+Get allocation map for VDISK
+
+Get allocation map for VDISK. If the VDISK type is not dynamic, the operation
+is aborted.
+
+.IP -N
+Create new VDISK
+
+Create a new VDISK with SIZE and optional TYPE specifications. Dynamic disks
+are created by default. If
+.OP -c
+is specified (create as raw), the file is pre-allocated like a fixed VDISK.
+.B WARNING: THIS WILL OVERWRITE ANYTHING GIVEN IN PATH!
+Here is an example of the format:
+
+.EX
+vvd -N FILE SIZE [TYPE]
+.EE
+
+Where FILE is a path with an extension, which sets the format (.vdi, .vmdk,
+etc.), SIZE is a binary size such as "2.50G", and TYPE is an optional type
+setting for either "fixed" or "dynamic".
+
+.IP -C
+Compact VDISK
+
+This will attempt to compact the VDISK. If the VDISK is not of type dynamic,
+the operation is canceled.
+
+.SH OPTIONS
+
+Some options may be added alongside OPERATION. Here is an example with
+.OP -r
+
+.EX
+$ vvd -Ir /dev/sda
+.EE
+
+.IP -r
+Open as raw
+
+Open file, or device, as raw. This bypasses all format and header verifications.
+
+.IP -c
+Create as raw
+
+Create file as raw. Only used in
+.IR -N
+, pre-allocates to SIZE.
+
+.SH EXAMPLES
+
+.B Get VDISK information
+
+.EX
+$ vvd -I windows10.vhd
+.EE
+
+.B Get disk information
+
+Open as raw. Requires elevated privileges.
+
+.EX
+$ vvd -Ir /dev/sda
+> vvd -Ir \\\\.\\PhysicalDrive0
+.EE
+
+.B Create fixed VDISK
+
+.EX
+$ vvd -N arch.vdi 4G fixed
+.EE
+
+.SH WARNINGS
+
+.B This tool is way too young to be called stable. This thing may explode violently.
+
+This tool may likely change often during its growth.
+
+.SH AUTHOR
+Program and man-gage written by dd86k
+.MT dd@dax.moe
+.ME
+
+.UR https://git.dd86k.space/vvd
+Homepage:
+.UE
+
+A mirror is available at
+.UR https://github.com/dd86k/vvd
+.UE
