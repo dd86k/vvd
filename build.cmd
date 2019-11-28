@@ -46,6 +46,7 @@ GOTO :EOF
 ::
 
 :CLANGCL
+IF NOT EXIST "bin" mkdir bin
 SET CFLAGS=%CC% -c %2 %3 %4 %5 /Zp -DTIMESTAMP=%CTIME% -D_CRT_SECURE_NO_WARNINGS -ferror-limit=2
 ECHO [%CC%] main.o
 %CFLAGS% src\main.c -o bin\main.o
