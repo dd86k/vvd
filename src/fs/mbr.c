@@ -53,7 +53,7 @@ void mbr_info_auto(VDISK *vd) {
 	if (mbr_check(&mbr) == 0) return;
 	mbr_info(&mbr);
 	// EFI GPT Protective or EFI System Partition
-	if (mbr.pe1.partition < 0xEE || mbr.pe1.partition > 0xEF)
+	if (mbr.pe[0].partition < 0xEE || mbr.pe[0].partition > 0xEF)
 		return;
 	if (vdisk_read_lba(vd, &mbr, 1)) return;
 	if (gpt_check((GPT *)&mbr)) {
@@ -63,72 +63,33 @@ void mbr_info_auto(VDISK *vd) {
 }
 
 void mbr_info(MBR *mbr) {
-	char size[BIN_FLENGTH];
 	uint64_t dtsize = SECTOR_TO_BYTE(
-		(uint64_t)mbr->pe1.sectors + (uint64_t)mbr->pe2.sectors +
-		(uint64_t)mbr->pe3.sectors + (uint64_t)mbr->pe4.sectors
+		(uint64_t)mbr->pe[0].sectors + (uint64_t)mbr->pe[1].sectors +
+		(uint64_t)mbr->pe[2].sectors + (uint64_t)mbr->pe[3].sectors
 	);
+	char size[BIN_FLENGTH];
 	fbins(dtsize, size);
+	
 	printf(
 	"\n* MBR, SERIAL %08X, USED %s, TYPE %04u\n"
-	"PARTITIONS  STATUS  TYPE        LBA       SIZE  C:H:S->C:H:S\n"
-	"ENTRY 1       %3XH  %3XH  %9u  %9u  %u:%u:%u->%u:%u:%u\n"
-	"ENTRY 2       %3XH  %3XH  %9u  %9u  %u:%u:%u->%u:%u:%u\n"
-	"ENTRY 3       %3XH  %3XH  %9u  %9u  %u:%u:%u->%u:%u:%u\n"
-	"ENTRY 4       %3XH  %3XH  %9u  %9u  %u:%u:%u->%u:%u:%u\n"
-	,
-	mbr->serial, size, mbr->type,
-	// PE 1
-	mbr->pe1.status,
-	mbr->pe1.partition,
-	mbr->pe1.lba,
-	mbr->pe1.sectors,
-	mbr->pe1.chsfirst.cylinder |
-	((mbr->pe1.chsfirst.sector & 0xC0) << 2),
-	mbr->pe1.chsfirst.head,
-	mbr->pe1.chsfirst.sector & 0x3F,
-	mbr->pe1.chslast.cylinder |
-	((mbr->pe1.chslast.sector & 0xC0) << 2),
-	mbr->pe1.chslast.head,
-	mbr->pe1.chslast.sector & 0x3F,
-	// PE 2
-	mbr->pe2.status,
-	mbr->pe2.partition,
-	mbr->pe2.lba,
-	mbr->pe2.sectors,
-	mbr->pe2.chsfirst.cylinder |
-	((mbr->pe2.chsfirst.sector & 0xC0) << 2),
-	mbr->pe2.chsfirst.head,
-	mbr->pe2.chsfirst.sector & 0x3F,
-	mbr->pe2.chslast.cylinder |
-	((mbr->pe2.chslast.sector & 0xC0) << 2),
-	mbr->pe2.chslast.head,
-	mbr->pe2.chslast.sector & 0x3F,
-	// PE 3
-	mbr->pe3.status,
-	mbr->pe3.partition,
-	mbr->pe3.lba,
-	mbr->pe3.sectors,
-	mbr->pe3.chsfirst.cylinder |
-	((mbr->pe3.chsfirst.sector & 0xC0) << 2),
-	mbr->pe3.chsfirst.head,
-	mbr->pe3.chsfirst.sector & 0x3F,
-	mbr->pe3.chslast.cylinder |
-	((mbr->pe3.chslast.sector & 0xC0) << 2),
-	mbr->pe3.chslast.head,
-	mbr->pe3.chslast.sector & 0x3F,
-	// PE 4
-	mbr->pe4.status,
-	mbr->pe4.partition,
-	mbr->pe4.lba,
-	mbr->pe4.sectors,
-	mbr->pe4.chsfirst.cylinder |
-	((mbr->pe4.chsfirst.sector & 0xC0) << 2),
-	mbr->pe4.chsfirst.head,
-	mbr->pe4.chsfirst.sector & 0x3F,
-	mbr->pe4.chslast.cylinder |
-	((mbr->pe4.chslast.sector & 0xC0) << 2),
-	mbr->pe4.chslast.head,
-	mbr->pe4.chslast.sector & 0x3F
+	"PARTITIONS  STATUS  TYPE        LBA        SIZE  C:H:S->C:H:S\n",
+	mbr->serial, size, mbr->type
 	);
+	for (unsigned int i = 0; i < 4; ++i)
+		printf(
+		"ENTRY %u       %3XH  %3XH  %9u  %10u  %u:%u:%u->%u:%u:%u\n",
+		i,
+		mbr->pe[i].status,
+		mbr->pe[i].partition,
+		mbr->pe[i].lba,
+		mbr->pe[i].sectors,
+		mbr->pe[i].chsfirst.cylinder |
+		((mbr->pe[i].chsfirst.sector & 0xC0) << 2),
+		mbr->pe[i].chsfirst.head,
+		mbr->pe[i].chsfirst.sector & 0x3F,
+		mbr->pe[i].chslast.cylinder |
+		((mbr->pe[i].chslast.sector & 0xC0) << 2),
+		mbr->pe[i].chslast.head,
+		mbr->pe[i].chslast.sector & 0x3F
+		);
 }

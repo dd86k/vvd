@@ -33,10 +33,7 @@ typedef struct MBR {
 			// (Windows) 5A5AH if protected
 			// (UEFI) AA55H if protective MBR
 			uint16_t type;
-			MBR_PARTITION_ENTRY pe1;
-			MBR_PARTITION_ENTRY pe2;
-			MBR_PARTITION_ENTRY pe3;
-			MBR_PARTITION_ENTRY pe4;
+			MBR_PARTITION_ENTRY pe[4];
 			uint16_t sig;
 		};
 	};
