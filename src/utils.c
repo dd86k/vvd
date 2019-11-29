@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <stdlib.h>	// atof
 #include <string.h>
 #include "utils.h"
 

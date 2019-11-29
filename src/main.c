@@ -104,10 +104,10 @@ void help() {
 	"  Usage: vvd OPERATION FILE [...]\n"
 	"         vvd PAGE\n"
 	"\nOPERATIONS\n"
-	"  -I    Info    - Get information\n"
+	"  -I    Info    - Get vdisk image information\n"
 	"  -N    New     - Create new empty vdisk\n"
-	"  -M    Map     - Get allocation map if available\n"
-	"  -C    Compact - Save disk space\n"
+	"  -M    Map     - Show allocation map\n"
+	"  -C    Compact - Compact vdisk image\n"
 	"\nOPTIONS\n"
 	"   r    Open as RAW\n"
 	"\nPAGE\n"
@@ -146,7 +146,7 @@ void version(void) {
 
 void license() {
 	puts(
-	"Copyright 2019 dd86k\n"
+	"Copyright (c) 2019 dd86k\n"
 	"\n"
 	"Permission is hereby granted, free of charge, to any person obtaining a copy of\n"
 	"this software and associated documentation files (the \"Software\"), to deal in\n"

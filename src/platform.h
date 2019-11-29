@@ -11,9 +11,9 @@
 	#define PLATFORM "arm64"
 #elif __arm__ || __TARGET_ARCH_ARM || _ARM || _M_ARM || __arm
 	#if __thumb__ || __TARGET_ARCH_THUMB || _M_ARMT
-	#define PLATFORM "armthumb"
+		#define PLATFORM "armthumb"
 	#else
-	#define PLATFORM "arm"
+		#define PLATFORM "arm"
 	#endif
 #elif _ARCH_PPC64 || __powerpc64__
 	#define PLATFORM "powerpc64"
