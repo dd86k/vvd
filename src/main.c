@@ -1,4 +1,4 @@
-#ifdef _WIN32
+#ifdef _WIN32 // Windows
 #include <Windows.h>
 #include <WinBase.h>
 #include <tchar.h>
@@ -146,7 +146,7 @@ void version(void) {
 
 void license() {
 	puts(
-	"Copyright (c) 2019 dd86k\n"
+	"Copyright (c) 2019-2020 dd86k <dd@dax.moe>\n"
 	"\n"
 	"Permission is hereby granted, free of charge, to any person obtaining a copy of\n"
 	"this software and associated documentation files (the \"Software\"), to deal in\n"
@@ -182,84 +182,111 @@ int vdextauto(_vchar *path) {
 
 #ifdef _WIN32
 #define MAIN int wmain(int argc, wchar_t **argv)
+#define s(quote) L##quote
+#define PSTR "%ls"
+int scmp(const wchar_t *s, const wchar_t *t) {
+	return wcscmp(s, t) == 0;
+}
 #else
 #define MAIN int main(int argc, char **argv)
+#define s(quote) ##quote
+#define PSTR "%s"
+int scmp(const char *s, const char *t) {
+	return strcmp(s, t) == 0;
+}
 #endif
 
-//
-// main
-//
-
+// Main entry point. This only performs intepreting the command-line options
+// for the core functions.
 MAIN {
 	if (argc <= 1)
 		help();
 
-	char op_mode;
-	int oflags = 0;	// open file flags
-	int cflags = 0;	// create file flags
-
-	if (argv[1][1] == '-') { // long arguments
-		_vchar *h = argv[1] + 2;
-#ifdef _WIN32
-		if (wcscmp(h, L"help") == 0)
-			help();
-		if (wcscmp(h, L"version") == 0)
-			version();
-		if (wcscmp(h, L"license") == 0)
-			license();
-#ifdef INCLUDE_TESTS
-		if (wcscmp(h, L"test") == 0)
-			test();
-#endif // INCLUDE_TESTS
-		fprintf(stderr, "main: \"%ls\" option unknown, aborting\n", h);
-#else
-		if (strcmp(h, "help") == 0)
-			help();
-		if (strcmp(h, "version") == 0)
-			version();
-		if (strcmp(h, "license") == 0)
-			license();
-#ifdef INCLUDE_TESTS
-		if (strcmp(h, "test") == 0)
-			test();
-#endif // INCLUDE_TESTS
-		fprintf(stderr, "main: \"%s\" option unknown, aborting\n", h);
-#endif
-		return ECLIARG;
-	} else if (argv[1][0] == '-') { // short arguments
-		_vchar *h = argv[1];
-		while (*++h) switch (*h) {
-		case MODE_INFO:	// -I
-		case MODE_MAP:	// -M
-		case MODE_NEW:	// -N
-		case MODE_COMPACT:	// -C
-			op_mode = *h;
-			break;
-		case 'r':
-			oflags |= VDISK_OPEN_RAW;
-			break;
-		case 'c':
-			cflags |= VDISK_OPEN_RAW;
-			break;
-		default:
-			fprintf(stderr, "main: unknown parameter '%c', aborting\n", *h);
-			return ECLIARG;
-		}
-	}
-
+	int mflags = 0;	// main: Command-line flags
+	int oflags = 0;	// vdisk_open: file flags
+	int cflags = 0;	// vdisk_create: file flags
 	VDISK vdin;	// vdisk IN
 	VDISK vdout;	// vdisk OUT
-	uint64_t vsize;	// virtual disk size, used in -N and -R
+	uint64_t vsize;	// virtual disk size, used in 'new' and 'resize'
+	const _vchar *file_input = NULL;
+	const _vchar *file_output = NULL;
 
-	size_t fargi;	// File IN argument index
-	switch (op_mode) {
-	/*case MODE_RESIZE:
-		if (argc < 4)
-			goto L_MISSING_ARGS;
-		fargi = 3;
-		break;*/
-	case MODE_NEW:
-		if (argc < 4) // Needs vvd -N TYPE SIZE
+	// Additional arguments are processed first, since they're simpler
+	for (size_t argi = 2; argi < argc; ++argi) {
+		const _vchar *arg = argv[argi];
+		//
+		// Open flags
+		//
+		if (scmp(arg, s("--raw"))) {
+			oflags |= VDISK_RAW;
+			continue;
+		}
+		//
+		// Create flags
+		//
+		if (scmp(arg, s("--create-raw"))) {
+			cflags |= VDISK_RAW;
+			continue;
+		}
+		if (scmp(arg, s("--create-dynamic"))) {
+			cflags |= VDISK_CREATE_DYN;
+			continue;
+		}
+		if (scmp(arg, s("--create-fixed"))) {
+			cflags |= VDISK_CREATE_FIXED;
+			continue;
+		}
+		//
+		// Default arguments
+		//
+		if (file_input == NULL) {
+			file_input = arg;
+			continue;
+		}
+		if (file_output == NULL) {
+			file_output = arg;
+			continue;
+		}
+		//
+		// Unknown argument
+		//
+		fprintf(stderr, "main: '" PSTR "' unknown option\n", arg);
+		return EXIT_FAILURE;
+	}
+
+	const _vchar *action = argv[1];
+
+	// Action time
+	if (scmp(action, s("info"))) {
+		if (file_input == NULL) {
+			fputs("main: missing vdisk", stderr);
+			return EXIT_FAILURE;
+		}
+		if (vdisk_open(file_input, &vdin, oflags)) {
+			vdisk_perror(__func__);
+			return vdisk_errno;
+		}
+		return vvd_info(&vdin);
+	}
+	if (scmp(action, s("map"))) {
+		fputs("main: missing vdisk", stderr);
+		return EXIT_FAILURE;
+	}
+	if (scmp(action, s("compact"))) {
+		fputs("main: missing vdisk", stderr);
+		return EXIT_FAILURE;
+	}
+	if (scmp(action, s("resize"))) {
+		fputs("main: not implemented", stderr);
+		return EXIT_FAILURE;
+	}
+	if (scmp(action, s("defrag"))) {
+		fputs("main: not implemented", stderr);
+		return EXIT_FAILURE;
+	}
+	if (scmp(action, s("new"))) {
+		fputs("main: not implemented", stderr);
+		/*if (argc < 4) // Needs vvd -N TYPE SIZE
 			goto L_MISSING_ARGS;
 
 		fargi = 2;
@@ -275,48 +302,20 @@ MAIN {
 			fputs("main: Invalid binary size, must be higher than 0\n", stderr);
 			return ECLIARG;
 		}
-
-		if (argc > 4) {
-#ifdef _WIN32
-			if (wcscmp(argv[4], L"fixed") == 0)
-				oflags |= VDISK_CREATE_FIXED;
-			else if (wcscmp(argv[4], L"dynamic") == 0)
-				oflags |= VDISK_CREATE_DYN;
-#else
-			if (strcmp(argv[4], "fixed") == 0)
-				oflags |= VDISK_CREATE_FIXED;
-			else if (strcmp(argv[4], "dynamic") == 0)
-				oflags |= VDISK_CREATE_DYN;
+		*/
+		return EXIT_FAILURE;
+	}
+	if (scmp(action, s("version")) || scmp(action, s("--version")))
+		version();
+	if (scmp(action, s("help")) || scmp(action, s("--help")))
+		help();
+	if (scmp(action, s("--license")))
+		license();
+#ifdef INCLUDE_TESTS
+	if (scmp(action, s("test")))
+		test();
 #endif
-		} // ELSE DEFAULT: dynamic (vdisk_open)
-		break;
-	case MODE_COMPACT:
-	case MODE_INFO:
-	case MODE_MAP:
-		if (argc < 3) {
-L_MISSING_ARGS:
-			fputs("main: Missing parameters, aborting\n", stderr);
-			return ECLIARG;
-		}
-		fargi = 2;
-		break;
-	default:
-		fputs("main: Invalid operation mode, aborting\n", stderr);
-		return ECLIARG;
-	}
 
-	if (vdisk_open(argv[fargi], &vdin, oflags)) {
-		vdisk_perror(__func__);
-		return vdisk_errno;
-	}
-
-	switch (op_mode) {
-	case MODE_INFO:	return vvd_info(&vdin);
-	case MODE_MAP:	return vvd_map(&vdin);
-	case MODE_NEW:	return vvd_new(&vdin, vsize);
-	case MODE_COMPACT:	return vvd_compact(&vdin);
-	default: assert(0);
-	}
-
-	return EXIT_SUCCESS;
+	fprintf(stderr, "main: '" PSTR "' unknown action, see 'vvd help'\n", action);
+	return EXIT_FAILURE;
 }

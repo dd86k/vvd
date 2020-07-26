@@ -10,18 +10,15 @@
 // vdisk_open
 //
 
-int vdisk_open(_vchar *path, VDISK *vd, uint16_t flags) {
+int vdisk_open(const _vchar *path, VDISK *vd, uint16_t flags) {
 	vdisk_func = __func__;
-
-	if (flags & VDISK_CREATE || flags & VDISK_CREATE_TEMP)
-		goto L_CREATE;
 
 	if ((vd->fd = os_open(path)) == 0) {
 		vdisk_errln = __LINE_BEFORE__;
 		return (vdisk_errno = EVDOPEN);
 	}
 
-	if (flags & VDISK_OPEN_RAW) {
+	if (flags & VDISK_RAW) {
 		vd->format = VDISK_FORMAT_RAW;
 		vd->offset = 0;
 		//TODO: Consider getting disk size from OS
@@ -45,9 +42,7 @@ int vdisk_open(_vchar *path, VDISK *vd, uint16_t flags) {
 	}
 
 	//
-	// ****************
-	// * Disk opening *
-	// ****************
+	// Disk detection and loading
 	//
 
 	switch (vd->format) {
@@ -261,15 +256,22 @@ L_VHD_MAGICOK:
 	}
 
 	return (vdisk_errno = EVDOK);
+}
 
-	//
-	// *****************
-	// * Disk creation *
-	// *****************
-	//
+//
+// vdisk_create
+//
 
-L_CREATE:
+int vdisk_create(const _vchar *path, VDISK *vd, uint16_t flags) {
+	vdisk_func = __func__;
+
+	if ((vd->fd = os_open(path)) == 0) {
+		vdisk_errln = __LINE_BEFORE__;
+		return (vdisk_errno = EVDOPEN);
+	}
+
 	if (flags & VDISK_CREATE_TEMP) {
+		//TODO: Attach random number
 #ifdef _WIN32
 		path = L"vdisk.tmp";
 #else
@@ -278,7 +280,7 @@ L_CREATE:
 	}
 	if (path == NULL)
 		return (vdisk_errno = EVDMISC);
-	if (flags & VDISK_OPEN_RAW)
+	if (flags & VDISK_RAW)
 		vd->format = VDISK_FORMAT_RAW;
 	else
 		switch (vd->format) {

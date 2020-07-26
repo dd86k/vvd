@@ -2,7 +2,7 @@
 #include "os.h"
 #include "err.h"
 
-__OSFILE os_open(_vchar *path) {
+__OSFILE os_open(const _vchar *path) {
 #ifdef _WIN32
 	__OSFILE fd = CreateFileW(
 		path,
@@ -27,7 +27,7 @@ __OSFILE os_open(_vchar *path) {
 	return fd;
 }
 
-__OSFILE os_create(_vchar *path) {
+__OSFILE os_create(const _vchar *path) {
 #ifdef _WIN32
 	__OSFILE fd = CreateFileW(
 		path,

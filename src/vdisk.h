@@ -46,7 +46,7 @@ enum {	// DISKFORMAT magical hints (LSB), used for VDISK.format
 };
 
 enum {	// VDISK flags for vdisk_open
-	VDISK_OPEN_RAW	= 0x1,	// Open or create vdisk as raw
+	VDISK_RAW	= 0x1,	// Open or create vdisk as raw
 	VDISK_CREATE	= 0x2,	// Create a vdisk if it doesn't exist
 	VDISK_CREATE_TEMP	= 0x4,	// Create a temporary (random) vdisk file
 	VDISK_CREATE_INIT	= 0x8,	// Init disk when creating vdisk
@@ -132,7 +132,7 @@ typedef struct VDISK {
 //
 
 /**
- * Open, or create, a VDISK.
+ * Open a VDISK.
  * 
  * When opening a file, this function verifies the file path, VDISK format,
  * header structure, version, and other fields.
@@ -142,16 +142,14 @@ typedef struct VDISK {
  * path parameter can be NULL, since the function will create a random
  * filename (OS). The fields are NOT populated, to 
  * 
- * OPEN VERSIONS
- * VDI: 0.0, 1.0, 1.1
- * VMDK: 
- * 
- * CREATE VERSIONS
- * VDI: 1.1
- * 
- * Returns error code. Non-zero being an error.
+ * \returns Error code if non-zero.
  */
-int vdisk_open(_vchar *path, VDISK *vd, uint16_t flags);
+int vdisk_open(const _vchar *path, VDISK *vd, uint16_t flags);
+
+/**
+ * Create a VDISK.
+ */
+int vdisk_create(const _vchar *path, VDISK *vd, uint16_t flags);
 
 /**
  * Initiate VDISK with default/empty structure values.
