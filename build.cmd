@@ -51,8 +51,8 @@ SET CFLAGS=%CC% -c %2 %3 %4 %5 /Zp -DTIMESTAMP=%CTIME% -D_CRT_SECURE_NO_WARNINGS
 ECHO [%CC%] main.o
 %CFLAGS% src\main.c -o bin\main.o
 IF ERRORLEVEL 1 GOTO :EOF
-ECHO [%CC%] guid.o
-%CFLAGS% src\guid.c -o bin\guid.o
+ECHO [%CC%] uid.o
+%CFLAGS% src\uid.c -o bin\uid.o
 IF ERRORLEVEL 1 GOTO :EOF
 ECHO [%CC%] utils.o
 %CFLAGS% src\utils.c -o bin\utils.o

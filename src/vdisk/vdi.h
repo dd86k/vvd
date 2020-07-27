@@ -5,7 +5,7 @@
  */
 
 #include <stdint.h>
-#include "../guid.h"
+#include "../uid.h"
 
 #define VDI_SIGNATURE	"<<< Oracle VM VirtualBox Disk Image >>>\n"
 #define VDI_SIGNATURE_OLDER	"<<< InnoTek VirtualBox Disk Image >>>\n"
@@ -48,9 +48,9 @@ typedef struct VDIHEADER0 { // v0.0
 	uint32_t blocksize;
 	uint32_t totalblocks;
 	uint32_t blocksalloc;
-	__GUID   uuidCreate;
-	__GUID   uuidModify;
-	__GUID   uuidLinkage;
+	UID      uuidCreate;
+	UID      uuidModify;
+	UID      uuidLinkage;
 } VDIHEADER0;
 
 typedef struct VDIHEADER1 { // v1.1
@@ -63,14 +63,14 @@ typedef struct VDIHEADER1 { // v1.1
 	VDIDISKGEOMETRY LegacyGeometry;
 	uint32_t u32Dummy;	// Used to be translation value for geometry
 	uint64_t disksize;
-	uint32_t blocksize;
+	uint32_t blocksize;	// Block size in bytes
 	uint32_t blocksextra;
 	uint32_t totalblocks;
 	uint32_t blocksalloc;
-	__GUID   uuidCreate;
-	__GUID   uuidModify;
-	__GUID   uuidLinkage;
-	__GUID   uuidParentModify;
+	UID      uuidCreate;
+	UID      uuidModify;
+	UID      uuidLinkage;
+	UID      uuidParentModify;
 	uint32_t cCylinders;	// v1.1
 	uint32_t cHeads;	// v1.1
 	uint32_t cSectors;	// v1.1

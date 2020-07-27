@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <string.h>	// strcpy
 #include <inttypes.h>
-#include "gpt.h"	// includes guid.h
+#include "gpt.h"	// includes uid.h
 #include "../utils.h"
 #include "../vdisk.h"
 
@@ -11,8 +11,8 @@
 //
 
 void gpt_info(GPT *gpt) {
-	GUID_TEXT diskguid;
-	guid_tostr(diskguid, &gpt->guid);
+	UID_TEXT diskguid;
+	uid_str_guid(&gpt->guid, diskguid);
 	printf(
 	"\n* GPT v%u.%u (%u B), HDR CRC32 %08X, PT CRC32 %08X\n"
 	"MAIN LBA %u, BACKUP LBA %u, FIRST LBA %u, LAST LBA %u\n"
@@ -32,7 +32,7 @@ void gpt_info(GPT *gpt) {
 void gpt_list_pe_vd(VDISK *vd, GPT *gpt) {
 	int max = gpt->pt_entries;	// maximum limiter
 	char partname[EFI_PART_NAME_LENGTH];
-	GUID_TEXT partguid, typeguid;
+	UID_TEXT partguid, typeguid;
 	GPT_ENTRY entry;
 	uint32_t lba = 2;
 	//TODO: Consider reading a few entries per loop to avoid reading too often
@@ -44,11 +44,11 @@ START:
 		return;
 	}
 
-	if (guid_nil(&entry.type))
+	if (uid_nil(&entry.type))
 		return;
 
-	guid_tostr(typeguid, &entry.type);
-	guid_tostr(partguid, &entry.part);
+	uid_str_guid(&entry.type, typeguid);
+	uid_str_guid(&entry.part, partguid);
 	wstra(entry.partname, partname, EFI_PART_NAME_LENGTH);
 
 	printf(

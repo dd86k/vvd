@@ -8,6 +8,13 @@ enum {
 	MBR_SIG = 0xAA55, // MBR signature, LSB
 };
 
+#define MBR_LBA_A_504_MB	0x1F800000
+#define MBR_LBA_A_1008_MB	0x3F000000
+#define MBR_LBA_A_2016_MB	0x7E000000
+#define MBR_LBA_A_4032_MB	0xFC000000
+// 8032.5 MiB
+#define MBR_LBA_A_8032_MB	0x1F6080000ULL
+
 typedef struct CHS_ENTRY { // Cylinder-Head-Sector
 	uint8_t head;	// HEAD[7:0]
 	uint8_t sector;	// SECTOR[5:0], bits[7:6] for CYLINDER[9:8]

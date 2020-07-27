@@ -26,20 +26,20 @@ typedef struct VHD_HDR { // v1
 	uint16_t minor;
 	uint64_t offset;
 	uint32_t timestamp;
-	char creator_app[4];
+	char     creator_app[4];
 	uint16_t creator_major;
 	uint16_t creator_minor;
 	uint32_t creator_os;
 	uint64_t size_original;
 	uint64_t size_current;
 	uint16_t cylinders;
-	uint8_t heads;
-	uint8_t sectors;
+	uint8_t  heads;
+	uint8_t  sectors;
 	uint32_t type;
 	uint32_t checksum;
-	__GUID  uuid;
-	uint8_t savedState;
-	uint8_t reserved[427];
+	UID      uuid;
+	uint8_t  savedState;
+	uint8_t  reserved[427];
 } VHD_HDR;
 
 typedef struct VHD_PARENT_LOCATOR {
@@ -59,7 +59,7 @@ typedef struct VHD_DYN_HDR { // v1
 	uint32_t max_entries;	// For table
 	uint32_t blocksize;
 	uint32_t checksum;
-	__GUID   parent_uuid;	// UUID
+	UID      parent_uuid;	// UUID
 	uint32_t parent_timestamp;
 	uint32_t res;
 	uint8_t  parent_name[512];	// UTF-16

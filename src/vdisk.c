@@ -129,8 +129,7 @@ int vdisk_open(const _vchar *path, VDISK *vd, uint16_t flags) {
 			return (vdisk_errno = VVD_EVDREAD);
 		if (vd->vmdk.version != 1)
 			return (vdisk_errno = VVD_EVDVERSION);
-		if (vd->vmdk.grainSize < 1 || vd->vmdk.grainSize > 128 ||
-			pow2(vd->vmdk.grainSize) == 0)
+		if (vd->vmdk.grainSize < 1 || vd->vmdk.grainSize > 128 || pow2(vd->vmdk.grainSize) == 0)
 			return (vdisk_errno = VVD_EVDMISC);
 		vd->offset = SECTOR_TO_BYTE(vd->vmdk.overHead);
 		break; // VDISK_FORMAT_VMDK
@@ -165,7 +164,7 @@ L_VHD_MAGICOK:
 		vd->vhd.size_current = bswap64(vd->vhd.size_current);
 		vd->vhd.cylinders = bswap16(vd->vhd.cylinders);
 		vd->vhd.checksum = bswap32(vd->vhd.checksum);
-		guid_swap(&vd->vhd.uuid);
+		uid_swap(&vd->vhd.uuid);
 		if (vd->vhd.type != VHD_DISK_FIXED) {
 			if (os_seek(vd->fd, vd->vhd.offset, SEEK_SET))
 				return (vdisk_errno = VVD_EVDSEEK);
@@ -180,7 +179,7 @@ L_VHD_MAGICOK:
 			vd->vhddyn.max_entries = bswap32(vd->vhddyn.max_entries);
 			vd->vhddyn.blocksize = bswap32(vd->vhddyn.blocksize);
 			vd->vhddyn.checksum = bswap32(vd->vhddyn.checksum);
-			guid_swap(&vd->vhddyn.parent_uuid);
+			uid_swap(&vd->vhddyn.parent_uuid);
 			vd->vhddyn.parent_timestamp = bswap32(vd->vhddyn.parent_timestamp);
 			for (size_t i = 0; i < 8; ++i) {
 				vd->vhddyn.parent_locator[i].code = bswap32(
@@ -407,29 +406,30 @@ int vdisk_update(VDISK *vd) {
 int vdisk_read_lba(VDISK *vd, void *buffer, uint64_t lba) {
 	vdisk_func = __func__;
 
-	uint64_t pos; // New file position
+	uint64_t fpos; // New file position
 	uint64_t boff = SECTOR_TO_BYTE(lba); // Byte offset
 	size_t bi; // Block index
 
 	switch (vd->format) {
 	case VDISK_FORMAT_VDI:
 		bi = boff / vd->vdi.blocksize;
-		if (bi >= vd->vdi.totalblocks) // Over
+		if (bi >= vd->vdi.totalblocks) // out of bounds
 			return (vdisk_errno = VVD_EVDMISC);
 		if (vd->u32blocks[bi] == VDI_BLOCK_UNALLOCATED ||
 			vd->u32blocks[bi] == VDI_BLOCK_FREE)
 			return (vdisk_errno = VVD_EVDMISC);
-		pos = (vd->u32blocks[bi] * vd->vdi.blocksize) + boff +
-			vd->offset;
+		fpos = vd->offset + (vd->u32blocks[bi] * vd->vdi.blocksize) + boff;
 		break;
 	case VDISK_FORMAT_VMDK:
-		// work vd->vmdk.grainSize directly
-		assert(0);
+		if (lba >= vd->vmdk.capacity)
+			return (vdisk_errno = VVD_EVDMISC);
+		//bi = boff / SECTOR_TO_BYTE(vd->vmdk.grainSize);
+		fpos = vd->offset + boff;
 		break;
 	case VDISK_FORMAT_VHD:
 		switch (vd->vhd.type) {
 		case VHD_DISK_FIXED:
-			pos = boff;
+			fpos = boff;
 			break;
 		case VHD_DISK_DYN:
 			// selected index
@@ -438,20 +438,20 @@ int vdisk_read_lba(VDISK *vd, void *buffer, uint64_t lba) {
 				return VVD_EVDMISC;
 			if (vd->u32blocks[bi] == 0xFFFFFFFF) // Unallocated
 				return VVD_EVDMISC;
-			pos = SECTOR_TO_BYTE(vd->u32blocks[bi]) + boff + 512;
+			fpos = SECTOR_TO_BYTE(vd->u32blocks[bi]) + boff + 512;
 			break;
 		default:
 			return (vdisk_errno = VVD_EVDTYPE);
 		}
 		break;
 	case VDISK_FORMAT_RAW:
-		pos = boff;
+		fpos = boff;
 		break;
 	default:
 		return (vdisk_errno = VVD_EVDFORMAT);
 	}
 
-	if (os_seek(vd->fd, pos, SEEK_SET))
+	if (os_seek(vd->fd, fpos, SEEK_SET))
 		return (vdisk_errno = VVD_EVDSEEK);
 	if (os_read(vd->fd, buffer, 512))
 		return (vdisk_errno = VVD_EVDREAD);
@@ -478,6 +478,8 @@ int vdisk_read_block(VDISK *vd, void *buffer, uint64_t index) {
 			return (vdisk_errno = VVD_EVDUNALLOC);
 		pos = (vd->u32blocks[index] * vd->vdi.blocksize) + vd->vdi.offData;
 		break;
+	case VDISK_FORMAT_VMDK:
+		return (vdisk_errno = VVD_EVDTODO);
 	case VDISK_FORMAT_VHD:
 		if (vd->vhd.type != VHD_DISK_DYN)
 			return (vdisk_errno = VVD_EVDTYPE);
@@ -576,7 +578,7 @@ int vdisk_write_block_at(VDISK *vd, void *buffer, uint64_t bindex, uint64_t dind
 // vdisk_error
 //
 
-char* vdisk_error() {
+const char* vdisk_error() {
 	switch (vdisk_errno) {
 	case VVD_EVDOK:
 		return "last operation was successful";
@@ -602,6 +604,8 @@ char* vdisk_error() {
 		return "block is unallocated";
 	case VVD_EVDBOUND:
 		return "block index is out of bounds";
+	case VVD_EVDTODO:
+		return "currently unimplemented";
 	case VVD_EVDMISC:
 		return "unknown error happened";
 	default:

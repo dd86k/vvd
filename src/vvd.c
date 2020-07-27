@@ -31,15 +31,15 @@ int vvd_info(VDISK *vd) {
 
 		char disksize[BIN_FLENGTH];
 		char bsize[BIN_FLENGTH];	// block size
-		char create_uuid[GUID_TEXT_SIZE], modify_uuid[GUID_TEXT_SIZE],
-			link_uuid[GUID_TEXT_SIZE], parent_uuid[GUID_TEXT_SIZE];
+		char create_uuid[UID_LENGTH], modify_uuid[UID_LENGTH],
+			link_uuid[UID_LENGTH], parent_uuid[UID_LENGTH];
 
 		fbins(vd->vdi.disksize, disksize);
 		fbins(vd->vdi.blocksize, bsize);
-		uuid_tostr(create_uuid, &vd->vdi.uuidCreate);
-		uuid_tostr(modify_uuid, &vd->vdi.uuidModify);
-		uuid_tostr(link_uuid, &vd->vdi.uuidLinkage);
-		uuid_tostr(parent_uuid, &vd->vdi.uuidParentModify);
+		uid_str_uuid(&vd->vdi.uuidCreate, create_uuid);
+		uid_str_uuid(&vd->vdi.uuidModify, modify_uuid);
+		uid_str_uuid(&vd->vdi.uuidLinkage, link_uuid);
+		uid_str_uuid(&vd->vdi.uuidParentModify, parent_uuid);
 
 		printf(
 		"VDI, VirtualBox %s vdisk v%u.%u, %s\n"
@@ -97,7 +97,7 @@ int vvd_info(VDISK *vd) {
 	// VHD
 	//
 	case VDISK_FORMAT_VHD: {
-		char sizec[BIN_FLENGTH], sizeo[BIN_FLENGTH], uuid[GUID_TEXT_SIZE];
+		char sizec[BIN_FLENGTH], sizeo[BIN_FLENGTH], uuid[UID_LENGTH];
 		char *type, *os;
 
 		switch (vd->vhd.type) {
@@ -114,7 +114,7 @@ int vvd_info(VDISK *vd) {
 		default:	os = "unknown"; break;
 		}
 
-		uuid_tostr(uuid, &vd->vhd.uuid);
+		uid_str_uuid(&vd->vhd.uuid, uuid);
 		fbins(vd->vhd.size_current, sizec);
 		fbins(vd->vhd.size_original, sizeo);
 		printf(
@@ -129,8 +129,8 @@ int vvd_info(VDISK *vd) {
 			uuid
 		);
 		if (vd->vhd.type != VHD_DISK_FIXED) {
-			char paruuid[GUID_TEXT_SIZE];
-			uuid_tostr(paruuid, &vd->vhddyn.parent_uuid);
+			char paruuid[UID_LENGTH];
+			uid_str_uuid(&vd->vhddyn.parent_uuid, paruuid);
 			printf(
 				"Dynamic header v%u.%u, data: %" PRIu64 ", table: %" PRIu64 "\n"
 				"Blocksize: %u, checksum: %08X\n"

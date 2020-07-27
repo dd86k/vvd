@@ -1,57 +1,68 @@
 #include <stdio.h>
 #include <assert.h>
-#include "guid.h"
+#include "uid.h"
 #include "utils.h"
 
-// __GUID to 36-character buffer string
-int guid_tostr(char *buffer, __GUID *guid) {
-	return snprintf(buffer, GUID_TEXT_SIZE,
+//
+// uid_str_guid
+//
+
+int uid_str_guid(UID *uid, char *buf) {
+	return snprintf(buf, UID_LENGTH,
 	"%08X-%04X-%04X-%04X-%02X%02X%02X%02X%02X%02X",
-	guid->time_low, guid->time_mid, guid->time_ver, guid->clock,
-	guid->data[10], guid->data[11], guid->data[12],
-	guid->data[13], guid->data[14], guid->data[15]
+	uid->time_low, uid->time_mid, uid->time_ver, uid->clock,
+	uid->data[10], uid->data[11], uid->data[12],
+	uid->data[13], uid->data[14], uid->data[15]
 	);
 }
 
-// __GUID to 36-character buffer string
-int uuid_tostr(char *buffer, __GUID *guid) {
-	return snprintf(buffer, GUID_TEXT_SIZE,
+//
+// uid_str_uuid
+//
+
+int uid_str_uuid(UID *uid, char *buf) {
+	return snprintf(buf, UID_LENGTH,
 	"%08X-%04X-%04X-%04X-%02X%02X%02X%02X%02X%02X",
-	bswap32(guid->time_low), bswap16(guid->time_mid),
-	bswap16(guid->time_ver), bswap16(guid->clock),
-	guid->data[10], guid->data[11], guid->data[12],
-	guid->data[13], guid->data[14], guid->data[15]
+	bswap32(uid->time_low), bswap16(uid->time_mid),
+	bswap16(uid->time_ver), bswap16(uid->clock),
+	uid->data[10], uid->data[11], uid->data[12],
+	uid->data[13], uid->data[14], uid->data[15]
 	);
 }
 
-// 36-character string to __GUID, version 4a
-int guid_frstr(__GUID *guid, char *buffer) {
-	assert(0);
-	return 0;
+//
+// uid_swap
+//
+
+void uid_swap(UID *uid) {
+	uid->time_low = bswap32(uid->time_low);
+	uid->time_mid = bswap32(uid->time_mid);
+	uid->time_ver = bswap32(uid->time_ver);
+	uid->clock = bswap32(uid->clock);
 }
 
-void guid_swap(__GUID *guid) {
-	guid->time_low = bswap32(guid->time_low);
-	guid->time_mid = bswap32(guid->time_mid);
-	guid->time_ver = bswap32(guid->time_ver);
-	guid->clock = bswap32(guid->clock);
-}
+//
+// uid_nil
+//
 
-// "guid_is_not_empty" is an ugly name
-int guid_nil(__GUID *guid) {
+int uid_nil(UID *uid) {
 #if __SIZE_WIDTH__ == 64
-	if (guid->u64[0]) return 0;
-	if (guid->u64[1]) return 0;
+	if (uid->u64[0]) return 0;
+	if (uid->u64[1]) return 0;
 #else
-	if (guid->u32[0]) return 0;
-	if (guid->u32[1]) return 0;
-	if (guid->u32[2]) return 0;
-	if (guid->u32[3]) return 0;
+	if (uid->u32[0]) return 0;
+	if (uid->u32[1]) return 0;
+	if (uid->u32[2]) return 0;
+	if (uid->u32[3]) return 0;
 #endif
 	return 1;
 }
 
-int guid_cmp(__GUID *guid1, __GUID *guid2) {
+//
+// uid_cmp
+//
+
+int uid_cmp(UID *uid1, UID *uid2) {
 	assert(0);
 	return 0;
 }

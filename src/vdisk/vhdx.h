@@ -4,7 +4,7 @@
  * BAT entry 8-Byte
  */
 #include <stdint.h>
-#include "../guid.h"
+#include "../uid.h"
 
 #define VHDX_MAGIC 0x656C696678646876	// "vhdxfile"
 #define VHDX_HDR1_MAGIC 0x64616568	// "head"
@@ -32,9 +32,9 @@ typedef struct VHDX_HEADER1 {
 	uint32_t magic;
 	uint32_t crc32;
 	uint32_t seqnumber;
-	__GUID   filewrite;
-	__GUID   datawrite;
-	__GUID   log;
+	UID      filewrite;
+	UID      datawrite;
+	UID      log;
 	uint16_t logversion;
 	uint16_t version;
 	uint32_t logsize;
@@ -52,7 +52,7 @@ typedef struct VHDX_REGION_HDR {
 typedef struct VHDX_REGION_ENTRY {
 	// BAT	2DC27766-F623-4200-9D64-115E9BFD4A08	required
 	// METADATA	8B7CA206-4790-4B9A-B8FE-575F050F886E	required
-	__GUID   guid;
+	UID      guid;
 	uint64_t offset;
 	uint32_t length;
 	uint32_t required;
@@ -66,7 +66,7 @@ typedef struct VHDX_LOG_HDR {
 	uint64_t sequence;
 	uint32_t desccount;
 	uint32_t res;
-	__GUID   guid;
+	UID      guid;
 	uint64_t flushedoffset;
 	uint64_t lastoffset;
 } VHDX_LOG_HDR;
@@ -120,7 +120,7 @@ typedef struct VHDX_METADATA_ENTRY {
 	// Logical Sector Size	8141BF1D-A96F-4709-BA47-F233A8FAAB5F
 	// Logical Sector Size	CDA348C7-445D-4471-9CC9-E9885251C556
 	// Parent Locator	A8D35F2D-B30B-454D-ABF7-D3D84834AB0C
-	__GUID type; // itemID
+	UID      type; // itemID GUID
 	uint32_t offset;
 	uint32_t length;
 	uint32_t flags; // ...plus 2 bits? what the hell?

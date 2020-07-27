@@ -2,9 +2,12 @@
 
 #include <stdint.h>
 
-#define GUID_TEXT_SIZE	38	// usually 36 but.. {} and \0
-typedef char GUID_TEXT[GUID_TEXT_SIZE];
-typedef struct __GUID {	// GUID/UUID structure
+#define UID_LENGTH	38	// usually 36 but.. {} and \0
+typedef char UID_TEXT[UID_LENGTH];
+/**
+ * UUID/GUID structure
+ */
+typedef struct UID {
 	union {
 		uint8_t  data[16];
 		uint16_t u16[8];
@@ -18,31 +21,29 @@ typedef struct __GUID {	// GUID/UUID structure
 			uint8_t  node[6];
 		};
 	};
-} __GUID;
+} UID;
 
 /**
  * Format a GUID to a string buffer.
  */
-int guid_tostr(char *, __GUID *);
+int uid_str_guid(UID *uid, char *str);
 /**
  * Format a UUID to a string buffer.
  */
-int uuid_tostr(char *, __GUID *);
-/**
- * Convert a GUID string from string.
- */
-int guid_frstr(__GUID *, char *);
+int uid_str_uuid(UID *uid, char *str);
 /**
  * Byte swap GUID/UUID fields to convert a GUID into an UUID or vice-versa.
  * Useful when the endianess differs from a machine. GUIDs is usually
  * little-endian and UUIDs are usually big-endian.
+ * 
+ * \param id UID structure
  */
-void guid_swap(__GUID *guid);
+void uid_swap(UID *uid);
 /**
  * Verifies if a GUID/UUID is nil (null, empty).
  */
-int guid_nil(__GUID *);
+int uid_nil(UID *uid);
 /**
- * Compares two GUIDs or two UUIDs.
+ * Compares two GUIDs/UUIDs.
  */
-int guid_cmp(__GUID *, __GUID *);
+int uid_cmp(UID *uid1, UID *uid2);

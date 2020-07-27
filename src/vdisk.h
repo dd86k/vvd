@@ -45,19 +45,25 @@ enum {	// DISKFORMAT magical hints (LSB), used for VDISK.format
 //	VDISK_FORMAT_CUE	= 0x,	// "" Cue/Bin, Disk metadata
 };
 
-enum {	// VDISK flags for vdisk_open
+enum {	// VDISK flags, the open/create flags may intertwine in values
 	VDISK_RAW	= 0x1,	// Open or create vdisk as raw
-	VDISK_CREATE	= 0x2,	// Create a vdisk if it doesn't exist
-	VDISK_CREATE_TEMP	= 0x4,	// Create a temporary (random) vdisk file
-	VDISK_CREATE_INIT	= 0x8,	// Init disk when creating vdisk
 
-	VDISK_OPEN_VDI_ONLY	= 0x100,	// Open/create if VDISK is VDI
-	VDISK_OPEN_VMDK_ONLY	= 0x200,	// Open/create if VDISK is VMDK
-	VDISK_OPEN_VHD_ONLY	= 0x300,	// Open/create if VDISK is VHD
-	VDISK_OPEN_VHDX_ONLY	= 0x400,	// Open/create if VDISK is VHDX
-	VDISK_OPEN_QED_ONLY	= 0x500,	// Open/create if VDISK is QED
-	VDISK_OPEN_QCOW_ONLY	= 0x600,	// Open/create if VDISK is QCOW
+	//
+	// vdisk_open flags
+	//
 
+	VDISK_OPEN_VDI_ONLY	= 0x1000,	// Only open successfully if VDISK is VDI
+	VDISK_OPEN_VMDK_ONLY	= 0x2000,	// Only open successfully if VDISK is VMDK
+	VDISK_OPEN_VHD_ONLY	= 0x3000,	// Only open successfully if VDISK is VHD
+	VDISK_OPEN_VHDX_ONLY	= 0x4000,	// Only open successfully if VDISK is VHDX
+	VDISK_OPEN_QED_ONLY	= 0x5000,	// Only open successfully if VDISK is QED
+	VDISK_OPEN_QCOW_ONLY	= 0x6000,	// Only open successfully if VDISK is QCOW
+
+	//
+	// vdisk_create flags
+	//
+
+	VDISK_CREATE_TEMP	= 0x0100,	// Create a temporary (random) vdisk file
 	VDISK_CREATE_DYN	= 0x1000,	// Create a dynamic type VDISK
 	VDISK_CREATE_FIXED	= 0x2000,	// Create a fixed type VDISK
 };
@@ -76,6 +82,7 @@ enum {	// VDISK error codes
 	VVD_EVDUNALLOC	= -18,	// Block is unallocated
 	VVD_EVDBOUND	= -19,	// Index was out of block index bounds
 	VVD_EVDALLOC	= -20,	// Could not allocate memory
+	VVD_EVDTODO	= -254,	// Currently unimplemented
 	VVD_EVDMISC	= -255,	// Unknown
 };
 
@@ -203,16 +210,17 @@ int vdisk_write_block_at(VDISK *vd, void *buffer, uint64_t bindex, uint64_t dind
 //
 
 /**
- * 
+ * Returns an error message depending on the last value of vdisk_errno.
  */
-char* vdisk_error();
+const char* vdisk_error();
 
 /**
- * 
+ * Print to stdout, with the name of the function, a message with the last
+ * value set to vdisk_errno.
  */
 void vdisk_perror(const char *func);
 
 /**
- * 
+ * Returns the last set value for vdisk_errno.
  */
 int vdisk_last_errno();

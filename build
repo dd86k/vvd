@@ -28,8 +28,8 @@ b_clang()
 	echo [$CC] main.obj
 	$CFLAGS src/main.c -o bin/main.obj
 	if [ $? -ne 0 ]; then exit; fi
-	echo [$CC] guid.obj
-	$CFLAGS src/guid.c -o bin/guid.obj
+	echo [$CC] uid.obj
+	$CFLAGS src/uid.c -o bin/uid.obj
 	if [ $? -ne 0 ]; then exit; fi
 	echo [$CC] utils.obj
 	$CFLAGS src/utils.c -o bin/utils.obj

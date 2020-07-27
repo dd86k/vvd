@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#include "../guid.h"
+#include "../uid.h"
 #include "../vdisk.h"
 
 // GNU GRUB "Hah!IdontNeedEFI"
@@ -64,7 +64,7 @@ typedef struct GPT { // v1.0
 	LBA64    backup;
 	LBA64    firstlba;
 	LBA64    lastlba;
-	__GUID   guid;	// Disk __GUID
+	UID      guid;	// Disk GUID
 	LBA64    pt_location;	// (partition table) location
 	uint32_t pt_entries;	// (partition table) number of entries
 	uint32_t pt_esize;	// (parition entry) structure size
@@ -77,8 +77,8 @@ typedef struct GPT_ENTRY {
 	// Unused entry        : 00000000-0000-0000-0000-000000000000
 	// EFI System Partition: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
 	// Contains legacy MBR : 024DEE41-33E7-11D3-9D69-0008C781F39F
-	__GUID   type;	// Parition type __GUID
-	__GUID   part;	// Unique partition __GUID
+	UID   type;	// Parition type GUID
+	UID   part;	// Unique partition GUID
 	LBA64    firstlba;
 	LBA64    lastlba;
 	union {
