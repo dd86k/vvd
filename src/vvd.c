@@ -20,7 +20,7 @@ int vvd_info(VDISK *vd) {
 	//
 	// VDI
 	//
-	case VDISK_FORMAT_VDI:
+	case VDISK_FORMAT_VDI: {
 		switch (vd->vdi.type) {
 		case VDI_DISK_DYN:	type = "dynamic"; break;
 		case VDI_DISK_FIXED:	type = "fixed"; break;
@@ -64,11 +64,12 @@ int vvd_info(VDISK *vd) {
 		vd->vdi.cbSector, vd->vdi.LegacyGeometry.cbSector,
 		create_uuid, modify_uuid, link_uuid, parent_uuid
 		);
+	}
 		break;
 	//
 	// VMDK
 	//
-	case VDISK_FORMAT_VMDK:
+	case VDISK_FORMAT_VMDK: {
 		char *comp; // compression
 		//if (h.flags & COMPRESSED)
 		switch (vd->vmdk.compressAlgorithm) {
@@ -90,11 +91,12 @@ int vvd_info(VDISK *vd) {
 
 		if (vd->vmdk.uncleanShutdown)
 			printf("+ Unclean shutdown");
+	}
 		break;
 	//
 	// VHD
 	//
-	case VDISK_FORMAT_VHD:
+	case VDISK_FORMAT_VHD: {
 		char sizec[BIN_FLENGTH], sizeo[BIN_FLENGTH], uuid[GUID_TEXT_SIZE];
 		char *type, *os;
 
@@ -144,6 +146,7 @@ int vvd_info(VDISK *vd) {
 		}
 		if (vd->vhd.savedState)
 			puts("+ Saved state");
+	}
 		break;
 	case VDISK_FORMAT_RAW: break; // No header info
 	default:

@@ -65,15 +65,15 @@ int sbinf(_vchar *input, uint64_t *size) {
 // bswap16
 //
 
-uint16_t bswap16(uint16_t s) {
-	return s >> 8 | s << 8;
+uint16_t bswap16(uint16_t v) {
+	return v >> 8 | v << 8;
 }
 
 //
 // bswap32
 //
 
-uint32_t bswap32(uint32_t s) {
+uint32_t bswap32(uint32_t v) {
 	v = (v >> 16) | (v << 16);
 	return ((v & 0xFF00FF00) >> 8) | ((v & 0x00FF00FF) << 8);
 }
@@ -82,7 +82,7 @@ uint32_t bswap32(uint32_t s) {
 // bswap64
 //
 
-uint64_t bswap64(uint64_t s) {
+uint64_t bswap64(uint64_t v) {
 	v = (v >> 32) | (v << 32);
 	v = ((v & 0xFFFF0000FFFF0000) >> 16) | ((v & 0x0000FFFF0000FFFF) << 16);
 	return ((v & 0xFF00FF00FF00FF00) >> 8) | ((v & 0x00FF00FF00FF00FF) << 8);

@@ -7,7 +7,7 @@
 
 #endif
 
-#define VERSION "0.0.0"
+#define PROJECT_VERSION "0.0.0"
 #define INCLUDE_TESTS 1
 
 #include <stdio.h>
@@ -121,7 +121,7 @@ void help() {
 
 void version(void) {
 	printf(
-	"vvd-" PLATFORM " " VERSION 
+	"vvd-" __PLATFORM__ " " PROJECT_VERSION 
 #ifdef TIMESTAMP
 	" (" TIMESTAMP ")"
 #endif
@@ -129,18 +129,18 @@ void version(void) {
 #ifdef __VERSION__
 	"Compiler: " __VERSION__ "\n"
 #endif
-	"MIT License: Copyright (c) 2019-2020 dd86k\n"
-	"Project page: <https://github.com/dd86k/vvd>\n"
+	"MIT License: Copyright (c) 2019-2020 dd86k <dd@dax.moe>\n"
+	"Project page: <https://github.com/dd86k/vvd>\n\n"
 	"VDISK   OPERATIONS\n"
-	"VDI     I M N C\n"
-	"VMDK    I\n"
-	"VHD     I M\n"
+	"VDI     info, map, new, compact\n"
+	"VMDK    info\n"
+	"VHD     info, map\n"
 	"VHDX    \n"
 	"QED     \n"
 	"QCOW    \n"
 	"VHD     \n"
 	"PHDD    \n"
-	"RAW     I\n"
+	"RAW     info\n"
 	);
 	exit(EXIT_SUCCESS);
 }
@@ -190,7 +190,7 @@ int scmp(const wchar_t *s, const wchar_t *t) {
 }
 #else
 #define MAIN int main(int argc, char **argv)
-#define vstr(quote) ##quote
+#define vstr(quote) quote
 #define PSTR "%s"
 int scmp(const char *s, const char *t) {
 	return strcmp(s, t) == 0;

@@ -28,7 +28,9 @@ typedef uint16_t char16;
  */
 void putout(const char *s);
 
+/// Binary character buffer length
 #define BIN_FLENGTH	16
+
 /**
  * Get formatted binary (ISO) size with suffix, buffer fixed at 16 characters
  */
