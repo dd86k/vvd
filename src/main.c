@@ -102,7 +102,6 @@ void help() {
 	puts(
 	"Manage virtual disks\n"
 	"  Usage: vvd OPERATION [FILE [OPTIONS]]\n"
-	"         vvd PAGE\n"
 	"\nOPERATION\n"
 	"  info       Get vdisk image information\n"
 	"  new        Create new empty vdisk\n"
@@ -114,8 +113,8 @@ void help() {
 	"\nOPTIONS\n"
 	"  --raw           Open as RAW\n"
 	"  --create-raw    Create as RAW\n"
-	"  --create-dyn    Create dynamic vdisk\n"
-	"  --create-fixed  Create fixed vdisk\n"
+	"  --create-dyn    Create vdisk as dynamic\n"
+	"  --create-fixed  Create vdisk as fixed\n"
 	);
 	exit(EXIT_SUCCESS);
 }
@@ -184,14 +183,14 @@ int vdextauto(_vchar *path) {
 
 #ifdef _WIN32
 #define MAIN int wmain(int argc, wchar_t **argv)
-#define s(quote) L##quote
+#define vstr(quote) L##quote
 #define PSTR "%ls"
 int scmp(const wchar_t *s, const wchar_t *t) {
 	return wcscmp(s, t) == 0;
 }
 #else
 #define MAIN int main(int argc, char **argv)
-#define s(quote) ##quote
+#define vstr(quote) ##quote
 #define PSTR "%s"
 int scmp(const char *s, const char *t) {
 	return strcmp(s, t) == 0;
@@ -219,22 +218,22 @@ MAIN {
 		//
 		// Open flags
 		//
-		if (scmp(arg, s("--raw"))) {
+		if (scmp(arg, vstr("--raw"))) {
 			oflags |= VDISK_RAW;
 			continue;
 		}
 		//
 		// Create flags
 		//
-		if (scmp(arg, s("--create-raw"))) {
+		if (scmp(arg, vstr("--create-raw"))) {
 			cflags |= VDISK_RAW;
 			continue;
 		}
-		if (scmp(arg, s("--create-dynamic"))) {
+		if (scmp(arg, vstr("--create-dynamic"))) {
 			cflags |= VDISK_CREATE_DYN;
 			continue;
 		}
-		if (scmp(arg, s("--create-fixed"))) {
+		if (scmp(arg, vstr("--create-fixed"))) {
 			cflags |= VDISK_CREATE_FIXED;
 			continue;
 		}
@@ -259,7 +258,7 @@ MAIN {
 	const _vchar *action = argv[1];
 
 	// Action time
-	if (scmp(action, s("info"))) {
+	if (scmp(action, vstr("info"))) {
 		if (file_input == NULL) {
 			fputs("main: missing vdisk", stderr);
 			return EXIT_FAILURE;
@@ -270,7 +269,7 @@ MAIN {
 		}
 		return vvd_info(&vdin);
 	}
-	if (scmp(action, s("map"))) {
+	if (scmp(action, vstr("map"))) {
 		if (file_input == NULL) {
 			fputs("main: missing vdisk", stderr);
 			return EXIT_FAILURE;
@@ -281,19 +280,19 @@ MAIN {
 		}
 		return vvd_map(&vdin);
 	}
-	if (scmp(action, s("compact"))) {
+	if (scmp(action, vstr("compact"))) {
 		fputs("main: not implemented", stderr);
 		return EXIT_FAILURE;
 	}
-	if (scmp(action, s("resize"))) {
+	if (scmp(action, vstr("resize"))) {
 		fputs("main: not implemented", stderr);
 		return EXIT_FAILURE;
 	}
-	if (scmp(action, s("defrag"))) {
+	if (scmp(action, vstr("defrag"))) {
 		fputs("main: not implemented", stderr);
 		return EXIT_FAILURE;
 	}
-	if (scmp(action, s("new"))) {
+	if (scmp(action, vstr("new"))) {
 		fputs("main: not implemented", stderr);
 		/*if (argc < 4) // Needs vvd -N TYPE SIZE
 			goto L_MISSING_ARGS;
@@ -314,14 +313,14 @@ MAIN {
 		*/
 		return EXIT_FAILURE;
 	}
-	if (scmp(action, s("version")) || scmp(action, s("--version")))
+	if (scmp(action, vstr("version")) || scmp(action, vstr("--version")))
 		version();
-	if (scmp(action, s("help")) || scmp(action, s("--help")))
+	if (scmp(action, vstr("help")) || scmp(action, vstr("--help")))
 		help();
-	if (scmp(action, s("license")) || scmp(action, s("--license")))
+	if (scmp(action, vstr("license")) || scmp(action, vstr("--license")))
 		license();
 #ifdef INCLUDE_TESTS
-	if (scmp(action, s("test")))
+	if (scmp(action, vstr("test")))
 		test();
 #endif
 

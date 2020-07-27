@@ -26,7 +26,7 @@ typedef uint16_t char16;
 /**
  * Function alias of fputs(*, stdout) to avoid argument bloat.
  */
-void printl(const char *s);
+void putout(const char *s);
 
 #define BIN_FLENGTH	16
 /**
@@ -41,7 +41,7 @@ int sbinf(_vchar *input, uint64_t *size);
 /**
  * Print array with prefix string
  */
-void print_a(char *p, uint8_t *a, size_t s);
+void print_array(char *p, uint8_t *a, size_t s);
 
 /**
  * Byte swap a 16-bit (2-Byte) value.
@@ -65,6 +65,7 @@ uint64_t bswap64(uint64_t);
 	#define EXT_VMDK "vmdk"
 	#define EXT_VHD "vhd"
 #endif
+
 /**
  * Compare file path with constant extension string.
  * 
@@ -82,6 +83,7 @@ int pow2(int);
 /**
  * Convert an UTF-16 string to an ASCII string and returns number of charaters
  * copied with the destination's maximum buffer size. This function fills up
- * upto dsize-1 characters and inserts a null terminator.
+ * upto dsize-1 characters and inserts a null terminator and is useful when
+ * processing GPT entries.
  */
 void wstra(char16 *src, char *dest, int dsize);

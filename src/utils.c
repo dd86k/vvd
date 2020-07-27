@@ -2,6 +2,10 @@
 #include <string.h>
 #include "utils.h"
 
+//
+// fbins
+//
+
 void fbins(uint64_t n, char *buf) { // Lazy code 2.0, sorry
 	float f = n;
 	char *fs;
@@ -21,6 +25,10 @@ void fbins(uint64_t n, char *buf) { // Lazy code 2.0, sorry
 		fs = "%g B";
 	snprintf(buf, 16, fs, f);
 }
+
+//
+// sbinf
+//
 
 int sbinf(_vchar *input, uint64_t *size) {
 	float f;
@@ -53,27 +61,48 @@ int sbinf(_vchar *input, uint64_t *size) {
 	return 0;
 }
 
+//
+// bswap16
+//
+
 uint16_t bswap16(uint16_t s) {
 	return s >> 8 | s << 8;
 }
 
+//
+// bswap32
+//
+
 uint32_t bswap32(uint32_t s) {
-	return	(s & 0x000000ff) << 24 | (s & 0x0000ff00) <<  8 |
-		(s & 0x00ff0000) >>  8 | (s & 0xff000000) >> 24;
+	v = (v >> 16) | (v << 16);
+	return ((v & 0xFF00FF00) >> 8) | ((v & 0x00FF00FF) << 8);
 }
+
+//
+// bswap64
+//
 
 uint64_t bswap64(uint64_t s) {
-	uint32_t *p = (uint32_t*)&s;
-	return (uint64_t)bswap32(p[0]) << 32 | (uint64_t)bswap32(p[1]);
+	v = (v >> 32) | (v << 32);
+	v = ((v & 0xFFFF0000FFFF0000) >> 16) | ((v & 0x0000FFFF0000FFFF) << 16);
+	return ((v & 0xFF00FF00FF00FF00) >> 8) | ((v & 0x00FF00FF00FF00FF) << 8);
 }
 
-void print_a(char *p, uint8_t *a, size_t s) {
+//
+// print_array
+//
+
+void print_array(char *p, uint8_t *a, size_t s) {
 	size_t i = 0;
-	printl(p);
+	putout(p);
 	while (--s)
 		printf(" %02X", a[i++]);
 	putchar('\n');
 }
+
+//
+// extcmp
+//
 
 int extcmp(_vchar *s1, const _vchar *s2) {
 #ifdef _WIN32
@@ -95,13 +124,25 @@ int extcmp(_vchar *s1, const _vchar *s2) {
 #endif
 }
 
-void printl(const char *s) {
+//
+// putout
+//
+
+void putout(const char *s) {
 	fputs(s, stdout);
 }
+
+//
+// pow2
+//
 
 int pow2(int n) {
 	return (n & (n - 1)) == 0;
 }
+
+//
+// wstra
+//
 
 void wstra(char16 *src, char *dest, int dsize) {
 	size_t bi = 0; // buffer index
