@@ -11,7 +11,7 @@ int vvd_info(VDISK *vd);
 /**
  * MODE_MAP: Print VDISK allocation map to stdout.
  */
-int vvd_map(VDISK *vd);
+int vvd_map(VDISK *vd, uint32_t flags);
 
 /**
  * MODE_NEW: 

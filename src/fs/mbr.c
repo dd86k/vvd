@@ -43,29 +43,29 @@ uint32_t mbr_lba_a(CHS_ENTRY *chs, uint64_t dsize) {
 }
 
 //
-// mbr_info
+// mbr_info_stdout
 //
 
-void mbr_info(MBR *mbr) {
+void mbr_info_stdout(MBR *mbr) {
 	uint64_t dtsize = SECTOR_TO_BYTE(
 		(uint64_t)mbr->pe[0].sectors + (uint64_t)mbr->pe[1].sectors +
 		(uint64_t)mbr->pe[2].sectors + (uint64_t)mbr->pe[3].sectors
 	);
 	char size[BIN_FLENGTH];
 	fbins(dtsize, size);
-	
+
 	printf(
 	"\n* MBR, SERIAL %08X, USED %s, TYPE %04u\n"
-	"PARTITIONS  STATUS  TYPE        LBA        SIZE  C:H:S->C:H:S\n",
+	"ENTRIES  STATUS  TYPE        LBA        SIZE  C:H:S start ->   C:H:S end\n",
 	mbr->serial, size, mbr->type
 	);
 
 	for (unsigned int i = 0; i < 4; ++i) {
 		MBR_PARTITION_ENTRY pe = mbr->pe[i];
 		printf(
-		"ENTRY %u       %3XH  %3XH  %9u  %10u  %u:%u:%u->%u:%u:%u\n",
+		"ENTRY %u    %3XH  %3XH  %9u  %10u  %4u:%3u:%2u -> %4u:%3u:%2u\n",
 		i,
-		pe.status, pe.partition, pe.lba, pe.sectors,
+		pe.status, pe.parttype, pe.lba, pe.sectors,
 		// CHS start
 		pe.chsfirst.cylinder | ((pe.chsfirst.sector & 0xC0) << 2),
 		pe.chsfirst.head, pe.chsfirst.sector & 0x3F,

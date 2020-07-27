@@ -7,10 +7,10 @@
 #include "../vdisk.h"
 
 //
-// gpt_info
+// gpt_info_stdout
 //
 
-void gpt_info(GPT *gpt) {
+void gpt_info_stdout(GPT *gpt) {
 	UID_TEXT diskguid;
 	uid_str(&gpt->guid, diskguid, UID_GUID);
 	printf(
@@ -18,7 +18,7 @@ void gpt_info(GPT *gpt) {
 	"MAIN LBA %u, BACKUP LBA %u, FIRST LBA %u, LAST LBA %u\n"
 	"PT LBA %u, %u MAX ENTRIES, ENTRY SIZE %u\n"
 	"DISK GUID: %s\n",
-	gpt->majorv, gpt->minorv, gpt->headersize, gpt->crc32, gpt->pt_crc32,
+	gpt->majorver, gpt->minorver, gpt->headersize, gpt->crc32, gpt->pt_crc32,
 	gpt->current.low, gpt->backup.low, gpt->firstlba.low, gpt->lastlba.low,
 	gpt->pt_location.low, gpt->pt_entries, gpt->pt_esize,
 	diskguid
@@ -26,21 +26,18 @@ void gpt_info(GPT *gpt) {
 }
 
 //
-// gpt_list_pe_vd
+// gpt_info_entries_stdout
 //
 
-void gpt_list_pe_vd(VDISK *vd, GPT *gpt) {
+void gpt_info_entries_stdout(VDISK *vd, GPT *gpt, uint32_t lba) {
 	int max = gpt->pt_entries;	// maximum limiter
 	char partname[EFI_PART_NAME_LENGTH];
 	UID_TEXT partguid, typeguid;
 	GPT_ENTRY entry;
-	uint32_t lba = 2;
-	//TODO: Consider reading a few entries per loop to avoid reading too often
 
 START:
-	//if (os_read(vd->fd, &entry, sizeof(GPT_ENTRY))) {
 	if (vdisk_read_lba(vd, &entry, lba)) {
-		fputs("gpt_list_pe_vd: Could not read GPT_ENTRY", stderr);
+		fputs("gpt_info_entries_stdout: Could not read GPT_ENTRY", stderr);
 		return;
 	}
 
@@ -53,15 +50,16 @@ START:
 
 	printf(
 		"%u. %-36s\n"
-		"	LBA %" PRIu64 " TO %" PRIu64 "\n"
-		"	PART: %s\n"
-		"	TYPE: %s\n"
-		"	FLAGS: %XH, PART FLAGS: %XH\n",
+		"  LBA %" PRIu64 " TO %" PRIu64 "\n"
+		"  PART: %s\n"
+		"  TYPE: %s\n"
+		"  FLAGS: %XH, PART FLAGS: %XH\n",
 		lba - 1, partname,
 		entry.firstlba.lba, entry.lastlba.lba,
 		partguid, typeguid,
-		entry.flags, entry.flags_part
+		entry.flags, entry.partflags
 	);
+
 	// GPT flags
 	if (entry.flags & EFI_PE_PLATFORM_REQUIRED)
 		puts("+ Platform required");
@@ -69,14 +67,15 @@ START:
 		puts("+ Firmware ignore");
 	if (entry.flags & EFI_PE_PLATFORM_REQUIRED)
 		puts("+ Legacy BIOS bootable");
+
 	// Partition flags
-	if (entry.flags_part & EFI_PE_SUCCESSFUL_BOOT)
+	if (entry.partflags & EFI_PE_SUCCESSFUL_BOOT)
 		puts("+ (Google) Successful boot");
-	if (entry.flags_part & EFI_PE_READ_ONLY)
+	if (entry.partflags & EFI_PE_READ_ONLY)
 		puts("+ (Microsoft) Read-only");
-	if (entry.flags_part & EFI_PE_SHADOW_COPY)
+	if (entry.partflags & EFI_PE_SHADOW_COPY)
 		puts("+ (Microsoft) Shadow copy");
-	if (entry.flags_part & EFI_PE_HIDDEN)
+	if (entry.partflags & EFI_PE_HIDDEN)
 		puts("+ (Microsoft) Hidden");
 
 	if (max <= 0)

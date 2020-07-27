@@ -32,13 +32,19 @@ __OSFILE os_create(const _vchar *path);
  */
 int os_seek(__OSFILE handle, int64_t position, int flags);
 /**
- * Read data from stream.
+ * Read data from stream from current position.
  */
 int os_read(__OSFILE handle, void *buffer, size_t size);
 /**
- * Write data to stream. Overwritting.
+ * Write data to stream at current position, overwrites.
  */
 int os_write(__OSFILE handle, void *buffer, size_t size);
+/**
+ * Get the file size, or the disk size, in bytes. If the handle is a file,
+ * the file size is set, otherwise if the handle is a block device, the
+ * disk size is set. Uses GetFileSizeEx (Windows) or stat/ioctl (Linux).
+ */
+int os_size(__OSFILE handle, uint64_t *size);
 
 /**
  * Print last OS error. Usually used within osutils.c and has no purpose outside

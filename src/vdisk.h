@@ -95,8 +95,9 @@ typedef struct VDISK {
 	uint32_t flags;	// See VDISK_FLAG
 	uint32_t offset;	// Calculated absolute data offset on disk
 	uint64_t nextblock;	// (Internal) Location of new allocation block
-	// VHDX:
-	//uint64_t vsize;	// Calculated capacity, virtual size
+	// Virtual disk capacity in bytes. For RAW files, it's the file size. For
+	// RAW devices, it's the disk size.
+	uint64_t capacity;
 	__OSFILE fd;	// File descriptor or handle
 	union {
 		uint64_t *u64blocks;	// 64-bit allocation blocks
@@ -106,31 +107,24 @@ typedef struct VDISK {
 		uint64_t u64nblocks;	// Total amount of allocated blocks
 		uint32_t u32nblocks;	// Total amount of allocated blocks
 	};
-	//void (*read_lba)(VDISK *, void *, uint64_t);
-	//void (*write_lba)(VDISK *, void *, uint64_t);
-	//void (*read_seq)(VDISK *, void *);
-	//void (*write_seq)(VDISK *, void *);
 	// To avoid wasting memory space, and since a VDISK can only hold one
 	// format at a time, all structures are unionized. Version translation
 	// and header/format validity are done in vdisk_open.
 	union {
-		struct { // VDI
+		struct {
 			VDI_HDR vdihdr;
 			VDIHEADER1 vdi;
 		};
-			// VMDK
 		struct VMDK_HDR vmdk;
-		struct { // VHD
+		struct {
 			VHD_HDR vhd;
 			VHD_DYN_HDR vhddyn;
 		};
-		struct { // VHDX
+		struct {
 			VHDX_HDR vhdx;
 			VHDX_HEADER1 vhdxhdr;
 			VHDX_REGION_HDR vhdxreg;
 		};
-			// QED
-			// QCOW
 	};
 } VDISK;
 

@@ -3,10 +3,17 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "../vdisk.h"
+#include "../platform.h"
 
+#ifdef ENDIAN_LITTLE
 enum {
-	MBR_SIG = 0xAA55, // MBR signature, LSB
+	MBR_SIG = 0xAA55,	// MBR signature
 };
+#else
+enum {
+	MBR_SIG = 0x55AA,	// MBR signature
+};
+#endif
 
 #define MBR_LBA_A_504_MB	0x1F800000
 #define MBR_LBA_A_1008_MB	0x3F000000
@@ -24,7 +31,7 @@ typedef struct CHS_ENTRY { // Cylinder-Head-Sector
 typedef struct MBR_PARTITION_ENTRY {
 	uint8_t status;
 	struct CHS_ENTRY chsfirst;	// CHS first absolute address
-	uint8_t partition;	// partition type
+	uint8_t parttype;	// partition type
 	struct CHS_ENTRY chslast;	// CHS last absolute address
 	uint32_t lba;	// LBA of first absolute sector in partition
 	uint32_t sectors;	// number of sectors for parition
@@ -79,4 +86,4 @@ uint32_t mbr_lba_a(CHS_ENTRY *chs, uint64_t dsize);
 /**
  * Print MBR information to stdout.
  */
-void mbr_info(MBR *s);
+void mbr_info_stdout(MBR *s);

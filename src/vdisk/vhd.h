@@ -30,7 +30,7 @@ typedef struct VHD_HDR { // v1
 	uint16_t creator_major;
 	uint16_t creator_minor;
 	uint32_t creator_os;
-	uint64_t size_original;
+	uint64_t size_original;	// Capacity in bytes
 	uint64_t size_current;
 	uint16_t cylinders;
 	uint8_t  heads;

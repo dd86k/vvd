@@ -1,6 +1,11 @@
 #include <stdio.h>
 #include "os.h"
 #include "err.h"
+#ifndef _WIN32
+#include <unistd.h>
+#include <sys/ioctl.h>
+#include <linux/fs.h>
+#endif
 
 __OSFILE os_open(const _vchar *path) {
 #ifdef _WIN32
@@ -119,4 +124,34 @@ int os_write(__OSFILE handle, void *buffer, size_t size) {
 	}
 #endif
 	return 0;
+}
+
+//
+// os_size
+//
+
+int os_size(__OSFILE handle, uint64_t *size) {
+#if _WIN32
+	LARGE_INTEGER li;
+	if (GetFileSizeEx(handle, &li) == 0)
+		return 1;
+	*size = li.QuadPart;
+	return 0;
+#else
+	// fstat(2) sets st_size to 0 on block devices
+	struct stat s;
+	if (fstat(handle, &s) == -1)
+		return 1;
+	switch (s.st_mode & __S_IFMT) {
+	case __S_IFREG:
+	case __S_IFLNK:
+		*size = s.st_size;
+		return 0;
+	case __S_IFBLK:
+		//TODO: Non-linux variant
+		ioctl(handle, BLKGETSIZE64, size);
+		return 0;
+	default: return 1;
+	}
+#endif
 }

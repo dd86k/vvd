@@ -203,9 +203,9 @@ MAIN {
 	if (argc <= 1)
 		help();
 
-	int mflags = 0;	// main: Command-line flags
-	int oflags = 0;	// vdisk_open: file flags
-	int cflags = 0;	// vdisk_create: file flags
+	uint32_t mflags = 0;	// main: Command-line flags
+	uint32_t oflags = 0;	// vdisk_open: file flags
+	uint32_t cflags = 0;	// vdisk_create: file flags
 	VDISK vdin;	// vdisk IN
 	VDISK vdout;	// vdisk OUT
 	uint64_t vsize;	// virtual disk size, used in 'new' and 'resize'
@@ -278,7 +278,7 @@ MAIN {
 			vdisk_perror(__func__);
 			return vdisk_errno;
 		}
-		return vvd_map(&vdin);
+		return vvd_map(&vdin, 0);
 	}
 	if (scmp(action, vstr("compact"))) {
 		fputs("main: not implemented", stderr);

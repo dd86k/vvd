@@ -20,11 +20,11 @@
 #define EFI_PE_LEGACY_BIOS_BOOTABLE	4	// bit 2
 
 //
-// EFI Parition Entry flags (GPT_ENTRY::flags_res)
+// EFI Parition Entry flags (GPT_ENTRY::resflags)
 //
 
 //
-// EFI Parition Entry flags (GPT_ENTRY::flags_part)
+// EFI Parition Entry flags (GPT_ENTRY::partflags)
 //
 
 // Google Chrome OS
@@ -55,8 +55,8 @@ typedef struct GPT { // v1.0
 			uint32_t siglow, sighigh;
 		};
 	};
-	uint16_t minorv;
-	uint16_t majorv;
+	uint16_t minorver;
+	uint16_t majorver;
 	uint32_t headersize;	// usually 92 bytes (v1.0)
 	uint32_t crc32;
 	uint32_t reserved;	// reserved
@@ -77,8 +77,8 @@ typedef struct GPT_ENTRY {
 	// Unused entry        : 00000000-0000-0000-0000-000000000000
 	// EFI System Partition: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
 	// Contains legacy MBR : 024DEE41-33E7-11D3-9D69-0008C781F39F
-	UID   type;	// Parition type GUID
-	UID   part;	// Unique partition GUID
+	UID      type;	// Parition type GUID
+	UID      part;	// Unique partition GUID
 	LBA64    firstlba;
 	LBA64    lastlba;
 	union {
@@ -88,7 +88,7 @@ typedef struct GPT_ENTRY {
 			// Bit 1 - If on, do not produce EFI_BLOCK_IO_PROTOCOL
 			// Bit 2 - Legacy PC-AT BIOS bootable 
 			uint32_t flags;	// GPT entry flags
-			uint16_t flags_res;	// Reserved
+			uint16_t resflags;	// Reserved
 			// (Chrome OS) Bit 0:3 - Priority (0: non-boot, 1:lowest, 15:highest)
 			// (Chrome OS) Bit 4:7 - Tries remaining
 			// (Chrome OS) Bit 8 - Successful boot
@@ -96,7 +96,7 @@ typedef struct GPT_ENTRY {
 			// (Windows) Bit 13 - Shadow partition copy
 			// (Windows) Bit 14 - Hidden
 			// (Windows) Bit 15 - No drive letter (no automount)
-			uint16_t flags_part;	// Partition-defined flags
+			uint16_t partflags;	// Partition-defined flags
 		};
 	};
 	uint16_t partname[36];	// 72 bytes, 32 UTF-16LE characters
@@ -108,8 +108,8 @@ struct VDISK;
 /**
  * Prints GPT information to stdout.
  */
-void gpt_info(GPT *);
+void gpt_info_stdout(GPT *);
 /**
  * Run through the list of GPT_ENTRY from a VDISK.
  */
-void gpt_list_pe_vd(VDISK *vd, GPT *gpt);
+void gpt_info_entries_stdout(VDISK *vd, GPT *gpt, uint32_t lba);

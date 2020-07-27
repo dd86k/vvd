@@ -21,7 +21,8 @@ int vdisk_open(const _vchar *path, VDISK *vd, uint16_t flags) {
 	if (flags & VDISK_RAW) {
 		vd->format = VDISK_FORMAT_RAW;
 		vd->offset = 0;
-		//TODO: Consider getting disk size from OS
+		if (os_size(vd->fd, &vd->capacity))
+			return (vdisk_errno = VVD_EVDMISC);
 		return (vdisk_errno = VVD_EVDOK);
 	}
 
@@ -120,6 +121,7 @@ int vdisk_open(const _vchar *path, VDISK *vd, uint16_t flags) {
 		}
 		vd->offset = vd->vdi.offData;
 		vd->u32nblocks = vd->vdi.totalblocks;
+		vd->capacity = vd->vdi.disksize;
 		break; // VDISK_FORMAT_VDI
 	//
 	// VMDK
@@ -132,6 +134,7 @@ int vdisk_open(const _vchar *path, VDISK *vd, uint16_t flags) {
 		if (vd->vmdk.grainSize < 1 || vd->vmdk.grainSize > 128 || pow2(vd->vmdk.grainSize) == 0)
 			return (vdisk_errno = VVD_EVDMISC);
 		vd->offset = SECTOR_TO_BYTE(vd->vmdk.overHead);
+		vd->capacity = SECTOR_TO_BYTE(vd->vmdk.capacity);
 		break; // VDISK_FORMAT_VMDK
 	//
 	// VHD
@@ -207,6 +210,7 @@ L_VHD_MAGICOK:
 		} else {
 			vd->offset = 0;
 		}
+		vd->capacity = vd->vhd.size_original;
 		break; // VDISK_FORMAT_VHD
 	/*case VDISK_FORMAT_VHDX:
 		// HDR
@@ -236,12 +240,9 @@ L_VHD_MAGICOK:
 		//(8388608 * ) / // 8 KiB * 512
 		break; // VDISK_FORMAT_VHDX*/
 	default:
-		// Unfortunately CAN NOT simply seek and jump (goto to VDISK
-		// format case) to the first possibility (e.g. VHD and others
-		// where header is not at the start of the vdisk) so we have
-		// to keep the flow here.
+		// Attempt at different offsets
 
-		// Try VHD (end of file) for fixed VHDs
+		// Fixed VHD: 512 bytes before EOF
 		if (os_seek(vd->fd, -512, SEEK_END))
 			return (vdisk_errno = VVD_EVDSEEK);
 		if (os_read(vd->fd, &vd->vhd, sizeof(VHD_HDR)))
@@ -414,9 +415,10 @@ int vdisk_read_lba(VDISK *vd, void *buffer, uint64_t lba) {
 	case VDISK_FORMAT_VDI:
 		bi = boff / vd->vdi.blocksize;
 		if (bi >= vd->vdi.totalblocks) // out of bounds
-			return (vdisk_errno = VVD_EVDMISC);
+			return (vdisk_errno = VVD_EVDBOUND);
 		if (vd->u32blocks[bi] == VDI_BLOCK_UNALLOCATED ||
 			vd->u32blocks[bi] == VDI_BLOCK_FREE)
+			//TODO: Consider memset'ing buffer instead
 			return (vdisk_errno = VVD_EVDMISC);
 		fpos = vd->offset + (vd->u32blocks[bi] * vd->vdi.blocksize) + boff;
 		break;
