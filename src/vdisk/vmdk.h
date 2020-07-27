@@ -14,11 +14,12 @@ enum {
 	VMDK_DISK_FIXED	= 2,	// (SELF DEFINED) 
 };
 
+// 512 bytes then 10 KiB of text buffer
 typedef struct VMDK_HDR {
 	uint32_t magicNumber;
 	uint32_t version;
 	uint32_t flags;
-	uint64_t capacity; // in sectors
+	uint64_t capacity;	// in sectors
 	uint64_t grainSize;
 	uint64_t descriptorOffset;
 	uint64_t descriptorSize;
@@ -33,7 +34,7 @@ typedef struct VMDK_HDR {
 	uint8_t  doubleEndLineChar2;	// usually '\n'
 	uint16_t compressAlgorithm;
 	uint8_t  pad[433];
-} VMDK_HDR; // 512 bytes then 10 KiB of text buffer
+} VMDK_HDR;
 
 typedef struct VMDK_MARKER {
 	uint64_t uSector;
@@ -43,8 +44,3 @@ typedef struct VMDK_MARKER {
 } VMDK_MARKER;
 
 struct VDISK;
-
-/**
- * Print VMDK information to stdout.
- */
-void vmdk_info(struct VDISK *vd);

@@ -125,3 +125,5 @@ typedef struct VHDX_METADATA_ENTRY {
 	uint32_t length;
 	uint32_t flags; // ...plus 2 bits? what the hell?
 } VHDX_METADATA_ENTRY;
+
+struct VDISK;

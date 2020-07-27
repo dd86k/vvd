@@ -68,8 +68,3 @@ typedef struct VHD_DYN_HDR { // v1
 } VHD_DYN_HDR;
 
 struct VDISK;
-
-/**
- * Print VHD information to stdout.
- */
-void vhd_info(struct VDISK *vd);

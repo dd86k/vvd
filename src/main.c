@@ -101,19 +101,21 @@ void test() {
 void help() {
 	puts(
 	"Manage virtual disks\n"
-	"  Usage: vvd OPERATION FILE [...]\n"
+	"  Usage: vvd OPERATION [FILE [OPTIONS]]\n"
 	"         vvd PAGE\n"
-	"\nOPERATIONS\n"
-	"  -I    Info    - Get vdisk image information\n"
-	"  -N    New     - Create new empty vdisk\n"
-	"  -M    Map     - Show allocation map\n"
-	"  -C    Compact - Compact vdisk image\n"
+	"\nOPERATION\n"
+	"  info       Get vdisk image information\n"
+	"  new        Create new empty vdisk\n"
+	"  map        Show allocation map\n"
+	"  compact    Compact vdisk image\n"
+	"  help       Show help page and exit\n"
+	"  version    Show version page and exit\n"
+	"  license    Show license page and exit\n"
 	"\nOPTIONS\n"
-	"   r    Open as RAW\n"
-	"\nPAGE\n"
-	"  --help       Print this help screen and quit\n"
-	"  --version    Print version screen and quit\n"
-	"  --license    Print license screen and quit\n"
+	"  --raw           Open as RAW\n"
+	"  --create-raw    Create as RAW\n"
+	"  --create-dyn    Create dynamic vdisk\n"
+	"  --create-fixed  Create fixed vdisk\n"
 	);
 	exit(EXIT_SUCCESS);
 }
@@ -128,7 +130,7 @@ void version(void) {
 #ifdef __VERSION__
 	"Compiler: " __VERSION__ "\n"
 #endif
-	"MIT License: Copyright (c) 2019 dd86k\n"
+	"MIT License: Copyright (c) 2019-2020 dd86k\n"
 	"Project page: <https://github.com/dd86k/vvd>\n"
 	"VDISK   OPERATIONS\n"
 	"VDI     I M N C\n"
@@ -269,11 +271,18 @@ MAIN {
 		return vvd_info(&vdin);
 	}
 	if (scmp(action, s("map"))) {
-		fputs("main: missing vdisk", stderr);
-		return EXIT_FAILURE;
+		if (file_input == NULL) {
+			fputs("main: missing vdisk", stderr);
+			return EXIT_FAILURE;
+		}
+		if (vdisk_open(file_input, &vdin, oflags)) {
+			vdisk_perror(__func__);
+			return vdisk_errno;
+		}
+		return vvd_map(&vdin);
 	}
 	if (scmp(action, s("compact"))) {
-		fputs("main: missing vdisk", stderr);
+		fputs("main: not implemented", stderr);
 		return EXIT_FAILURE;
 	}
 	if (scmp(action, s("resize"))) {
@@ -300,7 +309,7 @@ MAIN {
 
 		if (sbinf(argv[3], &vsize)) {
 			fputs("main: Invalid binary size, must be higher than 0\n", stderr);
-			return ECLIARG;
+			return VVD_ECLIARG;
 		}
 		*/
 		return EXIT_FAILURE;
@@ -309,13 +318,13 @@ MAIN {
 		version();
 	if (scmp(action, s("help")) || scmp(action, s("--help")))
 		help();
-	if (scmp(action, s("--license")))
+	if (scmp(action, s("license")) || scmp(action, s("--license")))
 		license();
 #ifdef INCLUDE_TESTS
 	if (scmp(action, s("test")))
 		test();
 #endif
 
-	fprintf(stderr, "main: '" PSTR "' unknown action, see 'vvd help'\n", action);
+	fprintf(stderr, "main: '" PSTR "' unknown operation, see 'vvd help'\n", action);
 	return EXIT_FAILURE;
 }

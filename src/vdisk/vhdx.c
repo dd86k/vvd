@@ -3,7 +3,3 @@
 #include "../vdisk.h"
 #include "../fs/mbr.h"
 #include "../utils.h"
-
-void vhdx_info(VDISK *vd) {
-	
-}

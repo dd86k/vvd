@@ -63,20 +63,20 @@ enum {	// VDISK flags for vdisk_open
 };
 
 enum {	// VDISK error codes
-	EVDOK	= 0,	// VDISK OK
-	EVDOPEN	= -1,	// VDISK could not be opened nor created
-	EVDREAD	= -2,	// Error reading VDISK
-	EVDSEEK	= -3,	// Error seeking VDISK
-	EVDWRITE	= -4,	// Error seeking VDISK
-	EVDFORMAT	= -5,	// Invalid VDISK format
-	EVDMAGIC	= -6,	// Invalid VDISK magic signature
-	EVDVERSION	= -7,	// Unsupported VDISK version (major)
-	EVDTYPE	= -8,	// Unsupported VDISK type
-	EVDFULL	= -9,	// VDISK is full and no more data can be allocated
-	EVDUNALLOC	= -10,	// Block is unallocated
-	EVDBOUND	= -11,	// Index was out of block index bounds
-	EVDALLOC	= -15,	// Could not allocate memory
-	EVDMISC	= -16,	// Unknown
+	VVD_EVDOK	= 0,	// VDISK OK
+	VVD_EVDOPEN	= -1,	// VDISK could not be opened nor created
+	VVD_EVDREAD	= -10,	// Error reading VDISK
+	VVD_EVDSEEK	= -11,	// Error seeking VDISK
+	VVD_EVDWRITE	= -12,	// Error seeking VDISK
+	VVD_EVDFORMAT	= -13,	// Invalid VDISK format
+	VVD_EVDMAGIC	= -14,	// Invalid VDISK magic signature
+	VVD_EVDVERSION	= -15,	// Unsupported VDISK version (major)
+	VVD_EVDTYPE	= -16,	// Unsupported VDISK type
+	VVD_EVDFULL	= -17,	// VDISK is full and no more data can be allocated
+	VVD_EVDUNALLOC	= -18,	// Block is unallocated
+	VVD_EVDBOUND	= -19,	// Index was out of block index bounds
+	VVD_EVDALLOC	= -20,	// Could not allocate memory
+	VVD_EVDMISC	= -255,	// Unknown
 };
 
 //
@@ -162,9 +162,9 @@ int vdisk_default(VDISK *vd);
 char *vdisk_str(VDISK *vd);
 
 /**
- * Update all headers and allocation tables into file or device.
+ * Update header information and allocation tables into file or device.
  */
-int vdisk_update_headers(VDISK *vd);
+int vdisk_update(VDISK *vd);
 
 /**
  * Seek and read a sector-size (512 bytes) of data from a sector index (LBA).

@@ -6,10 +6,9 @@
 #include "../utils.h"
 #include "../vdisk.h"
 
-// Check GPT 
-int gpt_check(GPT *gpt) {
-	return gpt->sig == EFI_SIG;
-}
+//
+// gpt_info
+//
 
 void gpt_info(GPT *gpt) {
 	GUID_TEXT diskguid;
@@ -26,13 +25,17 @@ void gpt_info(GPT *gpt) {
 	);
 }
 
+//
+// gpt_list_pe_vd
+//
+
 void gpt_list_pe_vd(VDISK *vd, GPT *gpt) {
 	int max = gpt->pt_entries;	// maximum limiter
 	char partname[EFI_PART_NAME_LENGTH];
 	GUID_TEXT partguid, typeguid;
 	GPT_ENTRY entry;
 	uint32_t lba = 2;
-	//TODO: Read a few entries per loop to avoid reading too often
+	//TODO: Consider reading a few entries per loop to avoid reading too often
 
 START:
 	//if (os_read(vd->fd, &entry, sizeof(GPT_ENTRY))) {

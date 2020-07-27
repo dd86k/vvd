@@ -106,10 +106,6 @@ typedef struct GPT_ENTRY {
 struct VDISK;
 
 /**
- * Verifies GPT partition signature.
- */
-int gpt_check(GPT *);
-/**
  * Prints GPT information to stdout.
  */
 void gpt_info(GPT *);

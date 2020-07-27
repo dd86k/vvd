@@ -79,13 +79,3 @@ typedef struct VDIHEADER1 { // v1.1
 } VDIHEADER1;
 
 struct VDISK;
-
-/**
- * Print VDI information to stdout.
- */
-void vdi_info(struct VDISK *vd);
-
-/**
- * 
- */
-int vdi_compact(struct VDISK *vd);

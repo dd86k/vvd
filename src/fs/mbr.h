@@ -40,22 +40,36 @@ typedef struct MBR {
 } MBR;
 
 /**
- * Translate CHS geometry into an LBA.
+ * Obtain a LBA (sector index) from a CHS geometry. This is based on
+ * `LBA = (C × HPC + H) × SPT + (S − 1)`.
+ * 
+ * \param chs CHS geometry structure
+ * 
+ * \returns LBA index
  */
-uint32_t mbr_lba(CHS_ENTRY *);
+uint32_t mbr_lba(CHS_ENTRY *chs);
+
 /**
- * Translate CHS geometry into an LBA with BIOS assistance up to 8.5 GiB disks.
+ * BIOS-assisted LBA translation from a CHS geometry with a disk size. Useful
+ * for disks up to 8032.5 MiB.
+ * 
+ * ---
+ * SIZE (MiB)	S/T	H	C
+ * < 504	63	16	63 * H * 512
+ * 504-1008	63	32	63 * H * 512
+ * 1008-2016	63	64	63 * H * 512
+ * 2016-4032	63	128	63 * H * 512
+ * 4032-8032.5	63	255	63 * H * 512
+ * ---
+ * 
+ * \param chs CHS geometry structure
+ * \param dsize Disk size
+ * 
+ * \returns LBA index
  */
-uint32_t mbr_lba_a(CHS_ENTRY *, uint64_t);
-/**
- * Verifies if MBR contains a valid signature.
- */
-int mbr_check(MBR *s);
+uint32_t mbr_lba_a(CHS_ENTRY *chs, uint64_t dsize);
+
 /**
  * Print MBR information to stdout.
  */
 void mbr_info(MBR *s);
-/**
- * Print MBR and GPT information if a VDISK contains any.
- */
-void mbr_info_auto(VDISK *vd);
