@@ -12,7 +12,7 @@
 
 void gpt_info(GPT *gpt) {
 	UID_TEXT diskguid;
-	uid_str_guid(&gpt->guid, diskguid);
+	uid_str(&gpt->guid, diskguid, UID_GUID);
 	printf(
 	"\n* GPT v%u.%u (%u B), HDR CRC32 %08X, PT CRC32 %08X\n"
 	"MAIN LBA %u, BACKUP LBA %u, FIRST LBA %u, LAST LBA %u\n"
@@ -47,8 +47,8 @@ START:
 	if (uid_nil(&entry.type))
 		return;
 
-	uid_str_guid(&entry.type, typeguid);
-	uid_str_guid(&entry.part, partguid);
+	uid_str(&entry.type, typeguid, UID_GUID);
+	uid_str(&entry.part, partguid, UID_GUID);
 	wstra(entry.partname, partname, EFI_PART_NAME_LENGTH);
 
 	printf(

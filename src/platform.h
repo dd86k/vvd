@@ -1,5 +1,5 @@
 /**
- * Platform architecture string for printing purposes only
+ * Defines __PLATFORM__, ENDIAN_BIG, and ENDIAN_LITTLE
  * 
  * Source: https://sourceforge.net/p/predef/wiki/Architectures/
  */
@@ -45,4 +45,11 @@
 	#define __PLATFORM__ "hp/pa"
 #else
 	#define __PLATFORM__ "unknown"
+#endif
+
+// Works on GCC and Clang
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+	#define ENDIAN_LITTLE 1
+#else
+	#define ENDIAN_BIG 1
 #endif

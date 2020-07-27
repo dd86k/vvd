@@ -2,7 +2,11 @@
 
 #include <stdint.h>
 
-#define UID_LENGTH	38	// usually 36 but.. {} and \0
+enum {
+	UID_GUID	= 0,
+	UID_UUID	= 1,
+	UID_LENGTH	= 38	// usually 36 but.. {} and \0
+};
 typedef char UID_TEXT[UID_LENGTH];
 /**
  * UUID/GUID structure
@@ -24,13 +28,9 @@ typedef struct UID {
 } UID;
 
 /**
- * Format a GUID to a string buffer.
+ * Format a UID (GUID/UUID) to a string buffer.
  */
-int uid_str_guid(UID *uid, char *str);
-/**
- * Format a UUID to a string buffer.
- */
-int uid_str_uuid(UID *uid, char *str);
+int uid_str(UID *uid, char *str, int target);
 /**
  * Byte swap GUID/UUID fields to convert a GUID into an UUID or vice-versa.
  * Useful when the endianess differs from a machine. GUIDs is usually

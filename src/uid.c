@@ -2,29 +2,23 @@
 #include <assert.h>
 #include "uid.h"
 #include "utils.h"
+#include "platform.h"
 
 //
-// uid_str_guid
+// uid_str
 //
 
-int uid_str_guid(UID *uid, char *buf) {
+int uid_str(UID *uid, char *buf, int target) {
+	#ifdef ENDIAN_LITTLE
+		if (target == UID_UUID)
+			uid_swap(uid);
+	#else
+		if (target == UID_GUID)
+			uid_swap(uid);
+	#endif
 	return snprintf(buf, UID_LENGTH,
 	"%08X-%04X-%04X-%04X-%02X%02X%02X%02X%02X%02X",
 	uid->time_low, uid->time_mid, uid->time_ver, uid->clock,
-	uid->data[10], uid->data[11], uid->data[12],
-	uid->data[13], uid->data[14], uid->data[15]
-	);
-}
-
-//
-// uid_str_uuid
-//
-
-int uid_str_uuid(UID *uid, char *buf) {
-	return snprintf(buf, UID_LENGTH,
-	"%08X-%04X-%04X-%04X-%02X%02X%02X%02X%02X%02X",
-	bswap32(uid->time_low), bswap16(uid->time_mid),
-	bswap16(uid->time_ver), bswap16(uid->clock),
 	uid->data[10], uid->data[11], uid->data[12],
 	uid->data[13], uid->data[14], uid->data[15]
 	);

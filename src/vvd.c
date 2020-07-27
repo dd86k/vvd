@@ -36,10 +36,10 @@ int vvd_info(VDISK *vd) {
 
 		fbins(vd->vdi.disksize, disksize);
 		fbins(vd->vdi.blocksize, bsize);
-		uid_str_uuid(&vd->vdi.uuidCreate, create_uuid);
-		uid_str_uuid(&vd->vdi.uuidModify, modify_uuid);
-		uid_str_uuid(&vd->vdi.uuidLinkage, link_uuid);
-		uid_str_uuid(&vd->vdi.uuidParentModify, parent_uuid);
+		uid_str(&vd->vdi.uuidCreate, create_uuid, UID_UUID);
+		uid_str(&vd->vdi.uuidModify, modify_uuid, UID_UUID);
+		uid_str(&vd->vdi.uuidLinkage, link_uuid, UID_UUID);
+		uid_str(&vd->vdi.uuidParentModify, parent_uuid, UID_UUID);
 
 		printf(
 		"VDI, VirtualBox %s vdisk v%u.%u, %s\n"
@@ -114,7 +114,7 @@ int vvd_info(VDISK *vd) {
 		default:	os = "unknown"; break;
 		}
 
-		uid_str_uuid(&vd->vhd.uuid, uuid);
+		uid_str(&vd->vhd.uuid, uuid, UID_UUID);
 		fbins(vd->vhd.size_current, sizec);
 		fbins(vd->vhd.size_original, sizeo);
 		printf(
@@ -130,7 +130,7 @@ int vvd_info(VDISK *vd) {
 		);
 		if (vd->vhd.type != VHD_DISK_FIXED) {
 			char paruuid[UID_LENGTH];
-			uid_str_uuid(&vd->vhddyn.parent_uuid, paruuid);
+			uid_str(&vd->vhddyn.parent_uuid, paruuid, UID_UUID);
 			printf(
 				"Dynamic header v%u.%u, data: %" PRIu64 ", table: %" PRIu64 "\n"
 				"Blocksize: %u, checksum: %08X\n"
