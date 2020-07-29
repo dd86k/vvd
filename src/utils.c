@@ -30,7 +30,7 @@ void fbins(uint64_t n, char *buf) { // Lazy code 2.0, sorry
 // sbinf
 //
 
-int sbinf(const _vchar *input, uint64_t *size) {
+int sbinf(const _oschar *input, uint64_t *size) {
 	float f;
 	char c;
 #ifdef _WIN32
@@ -104,22 +104,22 @@ void print_array(char *p, uint8_t *a, size_t s) {
 // extcmp
 //
 
-int extcmp(const _vchar *s1, const _vchar *s2) {
+int extcmp(const _oschar *s1, const _oschar *s2) {
 #ifdef _WIN32
 	wchar_t *ext = wcsrchr(s1, '.');
 	if (ext == NULL) // Not found
 		return 0;
-	++ext;
-	if (*ext == 0) // Return if no characters after '.'
+	if (*++ext == 0) // Return if NULL after '.'
 		return 0;
+	//TODO: Lowercase s1
 	return wcscmp(ext, s2) == 0;
 #else
 	const char *ext = strrchr(s1, '.');
 	if (ext == NULL) // Not found
 		return 0;
-	++ext;
-	if (*ext == 0) // Return if no characters after '.'
+	if (*++ext == 0) // Return if NULL after '.'
 		return 0;
+	//TODO: Lowercase s1
 	return strcmp(ext, s2) == 0;
 #endif
 }

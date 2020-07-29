@@ -22,11 +22,11 @@ typedef int __OSFILE;
  * Open a file stream. File or device must exist. Consult documentation on
  * which devices are supported.
  */
-__OSFILE os_open(const _vchar *path);
+__OSFILE os_open(const _oschar *path);
 /**
  * Always create and overwrite a file path. This cannot create devices.
  */
-__OSFILE os_create(const _vchar *path);
+__OSFILE os_create(const _oschar *path);
 /**
  * Seek into a position within the stream.
  */

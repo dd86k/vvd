@@ -16,7 +16,7 @@ int vvd_map(VDISK *vd, uint32_t flags);
 /**
  * 
  */
-int vvd_new(const _vchar *vd, int format, uint64_t vsize, int flags);
+int vvd_new(const _oschar *vd, int format, uint64_t vsize, int flags);
 
 /**
  * Compact a VDISK.

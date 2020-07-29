@@ -10,7 +10,7 @@
 // vdisk_open
 //
 
-int vdisk_open(VDISK *vd, const _vchar *path, uint16_t flags) {
+int vdisk_open(VDISK *vd, const _oschar *path, uint16_t flags) {
 	vdisk_func = __func__;
 
 	if ((vd->fd = os_open(path)) == 0) {
@@ -262,7 +262,7 @@ L_VHD_MAGICOK:
 // vdisk_create
 //
 
-int vdisk_create(VDISK *vd, const _vchar *path, int format, uint64_t capacity, uint16_t flags) {
+int vdisk_create(VDISK *vd, const _oschar *path, int format, uint64_t capacity, uint16_t flags) {
 	vdisk_func = __func__;
 
 	if (flags & VDISK_CREATE_TEMP) {

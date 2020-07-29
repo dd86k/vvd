@@ -269,7 +269,7 @@ int vvd_map(VDISK *vd, uint32_t flags) {
 // vvd_new
 //
 
-int vvd_new(const _vchar *path, int format, uint64_t vsize, int flags) {
+int vvd_new(const _oschar *path, int format, uint64_t vsize, int flags) {
 	VDISK vd;
 	if (vdisk_create(&vd, path, format, vsize, flags)) {
 		vdisk_perror(__func__);

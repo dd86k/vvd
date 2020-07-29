@@ -145,12 +145,12 @@ typedef struct VDISK {
  * 
  * \returns Error code if non-zero.
  */
-int vdisk_open(VDISK *vd, const _vchar *path, uint16_t flags);
+int vdisk_open(VDISK *vd, const _oschar *path, uint16_t flags);
 
 /**
  * Create a VDISK.
  */
-int vdisk_create(VDISK *vd, const _vchar *path, int format, uint64_t capacity, uint16_t flags);
+int vdisk_create(VDISK *vd, const _oschar *path, int format, uint64_t capacity, uint16_t flags);
 
 /**
  * 

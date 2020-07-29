@@ -7,7 +7,7 @@
 #include <linux/fs.h>
 #endif
 
-__OSFILE os_open(const _vchar *path) {
+__OSFILE os_open(const _oschar *path) {
 #ifdef _WIN32
 	__OSFILE fd = CreateFileW(
 		path,
@@ -32,7 +32,7 @@ __OSFILE os_open(const _vchar *path) {
 	return fd;
 }
 
-__OSFILE os_create(const _vchar *path) {
+__OSFILE os_create(const _oschar *path) {
 #ifdef _WIN32
 	__OSFILE fd = CreateFileW(
 		path,

@@ -2,9 +2,11 @@
 #include <stdlib.h>
 
 #ifdef _WIN32
-#define _vchar wchar_t
+// Represent a 'native' OS character
+#define _oschar wchar_t
 #else // POSIX
-#define _vchar char
+// Represent a 'native' OS character
+#define _oschar char
 #endif
 
 #ifndef _CHAR16
@@ -38,7 +40,7 @@ void fbins(uint64_t, char *);
 /**
  * 
  */
-int sbinf(const _vchar *input, uint64_t *size);
+int sbinf(const _oschar *input, uint64_t *size);
 
 /**
  * Print array with prefix string
@@ -58,22 +60,13 @@ uint32_t bswap32(uint32_t);
  */
 uint64_t bswap64(uint64_t);
 
-#ifdef _WIN32
-	#define EXT_VDI L"vdi"
-	#define EXT_VMDK L"vmdk"
-	#define EXT_VHD L"vhd"
-#else
-	#define EXT_VDI "vdi"
-	#define EXT_VMDK "vmdk"
-	#define EXT_VHD "vhd"
-#endif
-
 /**
- * Compare file path with constant extension string.
+ * Compare file path with constant extension string. This is currently only
+ * used in the 'new' operation to obtain what disk type to create.
  * 
  * E.g. `extcmp("test.bin", "bin")` evaluates to non-zero
  */
-int extcmp(const _vchar *s1, const _vchar *s2);
+int extcmp(const _oschar *s1, const _oschar *s2);
 
 /**
  * Checks if number is a power of 2.

@@ -163,17 +163,6 @@ void license() {
 	exit(EXIT_SUCCESS);
 }
 
-/**
- * Extension vdisk matcher, returns VDISK_FORMAT if matches an extension.
- * Otherwise 0.
- */
-int vdextauto(const _vchar *path) {
-	if (extcmp(path, EXT_VDI))	return VDISK_FORMAT_VDI;
-	if (extcmp(path, EXT_VMDK))	return VDISK_FORMAT_VMDK;
-	if (extcmp(path, EXT_VHD))	return VDISK_FORMAT_VHD;
-	return 0;
-}
-
 #ifdef _WIN32
 #define MAIN int wmain(int argc, wchar_t **argv)
 #define vstr(quote) L##quote
@@ -190,6 +179,17 @@ int scmp(const char *s, const char *t) {
 }
 #endif
 
+/**
+ * Extension vdisk matcher, returns VDISK_FORMAT if matches an extension.
+ * Otherwise 0.
+ */
+int vdextauto(const _oschar *path) {
+	if (extcmp(path, vstr("vdi")))	return VDISK_FORMAT_VDI;
+	if (extcmp(path, vstr("vmdk")))	return VDISK_FORMAT_VMDK;
+	if (extcmp(path, vstr("vhd")))	return VDISK_FORMAT_VHD;
+	return 0;
+}
+
 // Main entry point. This only performs intepreting the command-line options
 // for the core functions.
 MAIN {
@@ -202,12 +202,12 @@ MAIN {
 	VDISK vdin;	// vdisk IN
 	VDISK vdout;	// vdisk OUT
 	uint64_t vsize;	// virtual disk size, used in 'new' and 'resize'
-	const _vchar *defopt1 = NULL; // Default option 1 (typically file input)
-	const _vchar *defopt2 = NULL; // Default option 2 (typically file output/size)
+	const _oschar *defopt1 = NULL; // Default option 1 (typically file input)
+	const _oschar *defopt2 = NULL; // Default option 2 (typically file output/size)
 
 	// Additional arguments are processed first, since they're simpler
 	for (size_t argi = 2; argi < argc; ++argi) {
-		const _vchar *arg = argv[argi];
+		const _oschar *arg = argv[argi];
 		//
 		// Open flags
 		//
@@ -248,7 +248,7 @@ MAIN {
 		return EXIT_FAILURE;
 	}
 
-	const _vchar *action = argv[1];
+	const _oschar *action = argv[1];
 
 	//
 	// Operations
