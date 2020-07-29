@@ -1,25 +1,17 @@
 # vvd, universal vdisk manager
 
-**NOTE**: This is currently a toy project so don't expect anything from this.
-It's also pretty disorganized at the moment, and __dangerous__.
+⚠ EARLY DEVELOPMENT, MAY EXPLODE VIOLENTLY ⚠
 
-**CURRENTLY NOT PRODUCTION READY**
+⚠ DANGEROUS: MISSING UNIT TESTS ⚠
 
-vvd aims to be a simple tool to manage virtual disks as one stand-alone solution.
+⚠ NOT PRODUCTION READY ⚠
 
-**WARNING**: This tool is still in really early development. Keep a backup of
-your virtual disks because this thing might explode violently.
+vvd aims to be a simple, universal, robust, and stable tool to administrate
+virtual disks.
 
-## Goals
+User manual: `docs/vvd.1`
 
-- Usability
-- Stability
-- Simplicity
-
-## Useful links
-
-- [User Manual](#) (Coming soon)
-- [Technical Reference Manual](#) (Coming soon)
+Technical Manual: Coming soon
 
 # DISCLAIMER
 

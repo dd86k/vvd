@@ -14,8 +14,10 @@
 //
 
 int vvd_info(VDISK *vd) {
-	const char *type; // vdisk type
-	char disksize[BIN_FLENGTH];
+	const char *type;	// vdisk type
+	char dsize[BIN_FLENGTH];	// vdisk size
+	char bsize[BIN_FLENGTH];	// block size
+	char uid1[UID_LENGTH], uid2[UID_LENGTH], uid3[UID_LENGTH], uid4[UID_LENGTH];
 
 	switch (vd->format) {
 	//
@@ -30,16 +32,15 @@ int vvd_info(VDISK *vd) {
 		default:	type = "type?";
 		}
 
-		char bsize[BIN_FLENGTH];	// block size
 		char create_uuid[UID_LENGTH], modify_uuid[UID_LENGTH],
 			link_uuid[UID_LENGTH], parent_uuid[UID_LENGTH];
 
-		fbins(vd->vdi.disksize, disksize);
+		fbins(vd->vdi.disksize, dsize);
 		fbins(vd->vdi.blocksize, bsize);
-		uid_str(&vd->vdi.uuidCreate, create_uuid, UID_UUID);
-		uid_str(&vd->vdi.uuidModify, modify_uuid, UID_UUID);
-		uid_str(&vd->vdi.uuidLinkage, link_uuid, UID_UUID);
-		uid_str(&vd->vdi.uuidParentModify, parent_uuid, UID_UUID);
+		uid_str(&vd->vdi.uuidCreate, uid1, UID_UUID);
+		uid_str(&vd->vdi.uuidModify, uid2, UID_UUID);
+		uid_str(&vd->vdi.uuidLinkage, uid3, UID_UUID);
+		uid_str(&vd->vdi.uuidParentModify, uid4, UID_UUID);
 
 		printf(
 		"VirtualBox VDI %s disk v%u.%u, %s\n"
@@ -50,11 +51,11 @@ int vvd_info(VDISK *vd) {
 		"Heads: %u (legacy: %u)\n"
 		"Sectors: %u (legacy: %u)\n"
 		"Sector size: %u (legacy: %u)\n"
-		"Create  UUID: %s\n"
-		"Modifiy UUID: %s\n"
-		"Linkage UUID: %s\n"
-		"Parent  UUID: %s\n",
-		type, vd->vdihdr.majorv, vd->vdihdr.minorv, disksize,
+		"Create UUID: %s\n"
+		"Modify UUID: %s\n"
+		"Link   UUID: %s\n"
+		"Parent UUID: %s\n",
+		type, vd->vdihdr.majorv, vd->vdihdr.minorv, dsize,
 		vd->vdi.hdrsize, vd->vdi.fFlags, vd->vdi.u32Dummy,
 		vd->vdi.totalblocks, vd->vdi.blocksalloc, vd->vdi.blocksextra, bsize,
 		vd->vdi.offData, vd->vdi.offBlocks,
@@ -62,7 +63,7 @@ int vvd_info(VDISK *vd) {
 		vd->vdi.cHeads, vd->vdi.LegacyGeometry.cHeads,
 		vd->vdi.cSectors, vd->vdi.LegacyGeometry.cSectors,
 		vd->vdi.cbSector, vd->vdi.LegacyGeometry.cbSector,
-		create_uuid, modify_uuid, link_uuid, parent_uuid
+		uid1, uid2, uid3, uid4
 		);
 	}
 		break;
@@ -70,7 +71,7 @@ int vvd_info(VDISK *vd) {
 	// VMDK
 	//
 	case VDISK_FORMAT_VMDK: {
-		char *comp; // compression
+		const char *comp; // compression
 		//if (h.flags & COMPRESSED)
 		switch (vd->vmdk.compressAlgorithm) {
 		case 0:  comp = "no"; break;
@@ -78,27 +79,26 @@ int vvd_info(VDISK *vd) {
 		default: comp = "?";
 		}
 
-		char size[BIN_FLENGTH];
-		fbins(vd->capacity, size);
+		fbins(vd->capacity, dsize);
 		printf(
 		"VMware VMDK disk v%u, %s compression, %s\n"
-		"\nCapacity: %"PRIu64" Sectors\n"
+		"Capacity: %"PRIu64" Sectors\n"
 		"Overhead: %"PRIu64" Sectors\n"
 		"Grain size (Raw): %"PRIu64" Sectors\n",
-		vd->vmdk.version, comp, size,
+		vd->vmdk.version, comp, dsize,
 		vd->vmdk.capacity, vd->vmdk.overHead, vd->vmdk.grainSize
 		);
 
 		if (vd->vmdk.uncleanShutdown)
-			printf("+ Unclean shutdown");
+			puts("+ Unclean shutdown");
 	}
 		break;
 	//
 	// VHD
 	//
 	case VDISK_FORMAT_VHD: {
-		char sizecur[BIN_FLENGTH], uuid[UID_LENGTH];
-		char *type, *os;
+		char sizecur[BIN_FLENGTH];
+		const char *os;
 
 		switch (vd->vhd.type) {
 		case VHD_DISK_FIXED:	type = "fixed"; break;
@@ -114,20 +114,22 @@ int vvd_info(VDISK *vd) {
 		default:	os = "unknown"; break;
 		}
 
-		uid_str(&vd->vhd.uuid, uuid, UID_UUID);
+		uid_str(&vd->vhd.uuid, uid1, UID_UUID);
 		fbins(vd->vhd.size_current, sizecur);
-		fbins(vd->vhd.size_original, disksize);
+		fbins(vd->vhd.size_original, dsize);
+
 		printf(
 		"Conectix/Microsoft VHD %s disk v%u.%u, %s/%s\n"
 		"Created via %.4s v%u.%u on %s\n"
 		"Cylinders: %u, Heads: %u, Sectors: %u\n"
 		"CRC32: %08X, UUID: %s\n",
-		type, vd->vhd.major, vd->vhd.minor, sizecur, disksize,
+		type, vd->vhd.major, vd->vhd.minor, sizecur, dsize,
 		vd->vhd.creator_app, vd->vhd.creator_major, vd->vhd.creator_minor, os,
 		vd->vhd.cylinders, vd->vhd.heads, vd->vhd.sectors,
 		vd->vhd.checksum,
-		uuid
+		uid1
 		);
+
 		if (vd->vhd.type != VHD_DISK_FIXED) {
 			char paruuid[UID_LENGTH];
 			uid_str(&vd->vhddyn.parent_uuid, paruuid, UID_UUID);

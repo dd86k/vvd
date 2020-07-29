@@ -24,7 +24,7 @@ typedef uint16_t char16;
 #define KB 1024
 
 /**
- * Function alias of fputs(*, stdout) to avoid argument bloat.
+ * Imitates `fputs(*, stdout)` for ease of typing.
  */
 void putout(const char *s);
 

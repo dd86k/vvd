@@ -256,7 +256,10 @@ MAIN {
 
 	const _vchar *action = argv[1];
 
-	// Action time
+	//
+	// Operations
+	//
+
 	if (scmp(action, vstr("info"))) {
 		if (defopt1 == NULL) {
 			fputs("main: missing vdisk\n", stderr);
@@ -268,6 +271,7 @@ MAIN {
 		}
 		return vvd_info(&vdin);
 	}
+
 	if (scmp(action, vstr("map"))) {
 		if (defopt1 == NULL) {
 			fputs("main: missing vdisk\n", stderr);
@@ -279,18 +283,17 @@ MAIN {
 		}
 		return vvd_map(&vdin, 0);
 	}
+
 	if (scmp(action, vstr("compact"))) {
 		fputs("main: not implemented\n", stderr);
 		return EXIT_FAILURE;
 	}
-	if (scmp(action, vstr("resize"))) {
-		fputs("main: not implemented\n", stderr);
-		return EXIT_FAILURE;
-	}
+
 	if (scmp(action, vstr("defrag"))) {
 		fputs("main: not implemented\n", stderr);
 		return EXIT_FAILURE;
 	}
+
 	if (scmp(action, vstr("new"))) {
 		if (defopt1 == NULL) {
 			fputs("main: missing path specifier\n", stderr);
@@ -316,6 +319,22 @@ MAIN {
 
 		return vvd_new(defopt1, format, vsize, cflags);
 	}
+
+	if (scmp(action, vstr("resize"))) {
+		fputs("main: not implemented\n", stderr);
+		return EXIT_FAILURE;
+	}
+
+	if (scmp(action, vstr("repair"))) {
+		fputs("main: not implemented\n", stderr);
+		return EXIT_FAILURE;
+	}
+
+	if (scmp(action, vstr("convert"))) {
+		fputs("main: not implemented\n", stderr);
+		return EXIT_FAILURE;
+	}
+
 	if (scmp(action, vstr("version")) || scmp(action, vstr("--version")))
 		version();
 	if (scmp(action, vstr("help")) || scmp(action, vstr("--help")))

@@ -4,6 +4,8 @@
 #include "utils.h"
 #include "platform.h"
 
+//TODO: uid_create(UID*,int): Create UID with target in mind
+
 //
 // uid_str
 //
