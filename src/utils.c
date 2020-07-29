@@ -30,7 +30,7 @@ void fbins(uint64_t n, char *buf) { // Lazy code 2.0, sorry
 // sbinf
 //
 
-int sbinf(_vchar *input, uint64_t *size) {
+int sbinf(const _vchar *input, uint64_t *size) {
 	float f;
 	char c;
 #ifdef _WIN32
@@ -104,7 +104,7 @@ void print_array(char *p, uint8_t *a, size_t s) {
 // extcmp
 //
 
-int extcmp(_vchar *s1, const _vchar *s2) {
+int extcmp(const _vchar *s1, const _vchar *s2) {
 #ifdef _WIN32
 	wchar_t *ext = wcsrchr(s1, '.');
 	if (ext == NULL) // Not found

@@ -8,7 +8,6 @@
 #endif
 
 #define PROJECT_VERSION "0.0.0"
-#define INCLUDE_TESTS 1
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,11 +29,11 @@
 void test() {
 	fputs(
 	"* Defines\n"
-#ifdef __LITTLE_ENDIAN__
-	"__LITTLE_ENDIAN__\n"
+#ifdef ENDIAN_LITTLE
+	"ENDIAN_LITTLE\n"
 #endif
-#ifdef __BIG_ENDIAN__
-	"__BIG_ENDIAN__\n"
+#ifdef ENDIAN_BIG
+	"ENDIAN_BIG\n"
 #endif
 #ifdef __NO_INLINE__
 	"__NO_INLINE__\n"
@@ -47,12 +46,12 @@ void test() {
 	printf("__SIZE_WIDTH__		%u\n", __SIZE_WIDTH__);
 #endif
 	printf(
-		"sizeof	VDISK		%u\n"
-		"sizeof	wchar_t		%u\n",
-		(int)sizeof(VDISK),
-		(int)sizeof(wchar_t)
+	"sizeof	VDISK		%u\n"
+	"sizeof	wchar_t		%u\n"
+	"Running tests...\n",
+	(int)sizeof(VDISK),
+	(int)sizeof(wchar_t)
 	);
-	puts("Running tests...");
 	assert(sizeof(MBR) == 512);
 	assert(sizeof(MBR_PARTITION_ENTRY) == 16);
 	assert(sizeof(CHS_ENTRY) == 3);
@@ -174,7 +173,7 @@ void license() {
  * Extension vdisk matcher, returns VDISK_FORMAT if matches an extension.
  * Otherwise 0.
  */
-int vdextauto(_vchar *path) {
+int vdextauto(const _vchar *path) {
 	if (extcmp(path, EXT_VDI))	return VDISK_FORMAT_VDI;
 	if (extcmp(path, EXT_VMDK))	return VDISK_FORMAT_VMDK;
 	if (extcmp(path, EXT_VHD))	return VDISK_FORMAT_VHD;
@@ -209,8 +208,8 @@ MAIN {
 	VDISK vdin;	// vdisk IN
 	VDISK vdout;	// vdisk OUT
 	uint64_t vsize;	// virtual disk size, used in 'new' and 'resize'
-	const _vchar *file_input = NULL;
-	const _vchar *file_output = NULL;
+	const _vchar *defopt1 = NULL; // Default option 1 (typically file input)
+	const _vchar *defopt2 = NULL; // Default option 2 (typically file output/size)
 
 	// Additional arguments are processed first, since they're simpler
 	for (size_t argi = 2; argi < argc; ++argi) {
@@ -240,12 +239,12 @@ MAIN {
 		//
 		// Default arguments
 		//
-		if (file_input == NULL) {
-			file_input = arg;
+		if (defopt1 == NULL) {
+			defopt1 = arg;
 			continue;
 		}
-		if (file_output == NULL) {
-			file_output = arg;
+		if (defopt2 == NULL) {
+			defopt2 = arg;
 			continue;
 		}
 		//
@@ -259,59 +258,63 @@ MAIN {
 
 	// Action time
 	if (scmp(action, vstr("info"))) {
-		if (file_input == NULL) {
-			fputs("main: missing vdisk", stderr);
+		if (defopt1 == NULL) {
+			fputs("main: missing vdisk\n", stderr);
 			return EXIT_FAILURE;
 		}
-		if (vdisk_open(file_input, &vdin, oflags)) {
+		if (vdisk_open(&vdin, defopt1, oflags)) {
 			vdisk_perror(__func__);
 			return vdisk_errno;
 		}
 		return vvd_info(&vdin);
 	}
 	if (scmp(action, vstr("map"))) {
-		if (file_input == NULL) {
-			fputs("main: missing vdisk", stderr);
+		if (defopt1 == NULL) {
+			fputs("main: missing vdisk\n", stderr);
 			return EXIT_FAILURE;
 		}
-		if (vdisk_open(file_input, &vdin, oflags)) {
+		if (vdisk_open(&vdin, defopt1, oflags)) {
 			vdisk_perror(__func__);
 			return vdisk_errno;
 		}
 		return vvd_map(&vdin, 0);
 	}
 	if (scmp(action, vstr("compact"))) {
-		fputs("main: not implemented", stderr);
+		fputs("main: not implemented\n", stderr);
 		return EXIT_FAILURE;
 	}
 	if (scmp(action, vstr("resize"))) {
-		fputs("main: not implemented", stderr);
+		fputs("main: not implemented\n", stderr);
 		return EXIT_FAILURE;
 	}
 	if (scmp(action, vstr("defrag"))) {
-		fputs("main: not implemented", stderr);
+		fputs("main: not implemented\n", stderr);
 		return EXIT_FAILURE;
 	}
 	if (scmp(action, vstr("new"))) {
-		fputs("main: not implemented", stderr);
-		/*if (argc < 4) // Needs vvd -N TYPE SIZE
-			goto L_MISSING_ARGS;
-
-		fargi = 2;
-		oflags |= VDISK_CREATE;
-
-		vdin.format = vdextauto(argv[2]);
-		if (vdisk_default(&vdin)) {
-			vdisk_perror(__func__);
-			return vdisk_errno;
+		if (defopt1 == NULL) {
+			fputs("main: missing path specifier\n", stderr);
+			return EXIT_FAILURE;
+		}
+		if (defopt2 == NULL) {
+			fputs("main: missing size specifier\n", stderr);
+			return EXIT_FAILURE;
 		}
 
-		if (sbinf(argv[3], &vsize)) {
-			fputs("main: Invalid binary size, must be higher than 0\n", stderr);
-			return VVD_ECLIARG;
+		// Get vdisk type out of extension name
+		int format = vdextauto(defopt1);
+		if (format == 0) {
+			fputs("main: could not determine vdisk type\n", stderr);
+			return EXIT_FAILURE;
 		}
-		*/
-		return EXIT_FAILURE;
+
+		// Convert binary text (e.g. "10G") to a 64-bit number
+		if (sbinf(defopt2, &vsize)) {
+			fputs("main: invalid binary size\n", stderr);
+			return EXIT_FAILURE;
+		}
+
+		return vvd_new(defopt1, format, vsize, cflags);
 	}
 	if (scmp(action, vstr("version")) || scmp(action, vstr("--version")))
 		version();
@@ -320,7 +323,7 @@ MAIN {
 	if (scmp(action, vstr("license")) || scmp(action, vstr("--license")))
 		license();
 #ifdef INCLUDE_TESTS
-	if (scmp(action, vstr("test")))
+	if (scmp(action, vstr("--test")))
 		test();
 #endif
 

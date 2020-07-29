@@ -267,48 +267,13 @@ int vvd_map(VDISK *vd, uint32_t flags) {
 // vvd_new
 //
 
-int vvd_new(VDISK *vd, uint64_t vsize) {
-	uint8_t *buffer;
-
-	switch (vd->format) {
-	case VDISK_FORMAT_VDI:
-		vd->u32nblocks = vsize / vd->vdi.blocksize;
-		if (vd->u32nblocks == 0)
-			vd->u32nblocks = 1;
-		uint32_t bsize = vd->u32nblocks << 2;
-		if ((vd->u32blocks = malloc(bsize)) == NULL)
-			return VVD_EVDALLOC;
-		vd->vdi.totalblocks = vd->u32nblocks;
-		vd->vdi.disksize = vsize;
-		switch (vd->vdi.type) {
-		case VDI_DISK_DYN:
-			for (size_t i = 0; i < vd->vdi.totalblocks; ++i)
-				vd->u32blocks[i] = VDI_BLOCK_UNALLOCATED;
-			break;
-		case VDI_DISK_FIXED:
-			if ((buffer = malloc(vd->vdi.blocksize)) == NULL)
-				return VVD_EVDALLOC;
-			os_seek(vd->fd, vd->vdi.offData, SEEK_SET);
-			for (size_t i = 0; i < vd->vdi.totalblocks; ++i) {
-				vd->u32blocks[i] = VDI_BLOCK_FREE;
-				os_write(vd->fd, buffer, vd->vdi.blocksize);
-			}
-			break;
-		default:
-			fputs("vvd_new: Type currently unsupported", stderr);
-			return VVD_EVDTYPE;
-		}
-		break;
-	default:
-		fputs("vvd_new: Format currently unsupported", stderr);
-		return VVD_EVDFORMAT;
+int vvd_new(const _vchar *path, int format, uint64_t vsize, int flags) {
+	VDISK vd;
+	if (vdisk_create(&vd, path, format, vsize, flags)) {
+		vdisk_perror(__func__);
+		return vdisk_errno;
 	}
-
-L_DISKEMPTY:
-	if (vdisk_update(vd)) {
-		fputs("vvd_new: Could not write headers\n", stderr);
-		return 1;
-	}
+	printf("%s disk created successfully\n", vdisk_str(&vd));
 	return 0;
 }
 
@@ -357,7 +322,7 @@ int vvd_compact(VDISK *vd) {
 			vdtmp.u32blocks[i] = VDI_BLOCK_UNALLOCATED;
 		memcpy(&vdtmp.vdihdr, &vd->vdihdr, sizeof(VDI_HDR));
 		memcpy(&vdtmp.vdi, &vd->vdi, sizeof(VDIHEADER1));
-		if (vdisk_open(NULL, &vdtmp, VDISK_CREATE_TEMP)) {
+		if (vdisk_open(&vdtmp, NULL, VDISK_CREATE_TEMP)) {
 			vdisk_perror(__func__);
 			return vdisk_errno;
 		}

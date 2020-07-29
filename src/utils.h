@@ -38,7 +38,7 @@ void fbins(uint64_t, char *);
 /**
  * 
  */
-int sbinf(_vchar *input, uint64_t *size);
+int sbinf(const _vchar *input, uint64_t *size);
 
 /**
  * Print array with prefix string
@@ -73,7 +73,7 @@ uint64_t bswap64(uint64_t);
  * 
  * E.g. `extcmp("test.bin", "bin")` evaluates to non-zero
  */
-int extcmp(_vchar *s1, const _vchar *s2);
+int extcmp(const _vchar *s1, const _vchar *s2);
 
 /**
  * Checks if number is a power of 2.

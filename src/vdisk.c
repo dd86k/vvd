@@ -10,7 +10,7 @@
 // vdisk_open
 //
 
-int vdisk_open(const _vchar *path, VDISK *vd, uint16_t flags) {
+int vdisk_open(VDISK *vd, const _vchar *path, uint16_t flags) {
 	vdisk_func = __func__;
 
 	if ((vd->fd = os_open(path)) == 0) {
@@ -262,13 +262,8 @@ L_VHD_MAGICOK:
 // vdisk_create
 //
 
-int vdisk_create(const _vchar *path, VDISK *vd, uint16_t flags) {
+int vdisk_create(VDISK *vd, const _vchar *path, int format, uint64_t capacity, uint16_t flags) {
 	vdisk_func = __func__;
-
-	if ((vd->fd = os_open(path)) == 0) {
-		vdisk_errln = __LINE_BEFORE__;
-		return (vdisk_errno = VVD_EVDOPEN);
-	}
 
 	if (flags & VDISK_CREATE_TEMP) {
 		//TODO: Attach random number
@@ -278,43 +273,33 @@ int vdisk_create(const _vchar *path, VDISK *vd, uint16_t flags) {
 		path = "vdisk.tmp";
 #endif
 	}
+
 	if (path == NULL)
 		return (vdisk_errno = VVD_EVDMISC);
-	if (flags & VDISK_RAW)
-		vd->format = VDISK_FORMAT_RAW;
-	else
-		switch (vd->format) {
-		case VDISK_FORMAT_VDI:
-			if (flags & VDISK_CREATE_FIXED)
-				vd->vdi.type = VDI_DISK_FIXED;
-			else
-				vd->vdi.type = VDI_DISK_DYN;
-			break;
-		case VDISK_FORMAT_VMDK:
-//			vd->type = VMDK_DISK_DYN;
-			break;
-		case VDISK_FORMAT_VHD:
-			if (flags & VDISK_CREATE_FIXED)
-				vd->vhd.type = VHD_DISK_FIXED;
-			else
-				vd->vhd.type = VHD_DISK_DYN;
-			break;
-		}
+	if (capacity == 0)
+		return (vdisk_errno = VVD_EVDBOUND);
+
 	if ((vd->fd = os_create(path)) == 0)
 		return (vdisk_errno = VVD_EVDOPEN);
 
-	return (vdisk_errno = VVD_EVDOK);
-}
+	if (flags & VDISK_RAW) {
+		vd->format = VDISK_FORMAT_RAW;
+		if (os_seek(vd->fd, capacity - 1, SEEK_SET))
+			return (vdisk_errno = VVD_EVDSEEK);
+		uint8_t __n = 0;
+		if (os_write(vd->fd, &__n, 1))
+			return (vdisk_errno = VVD_EVDWRITE);
+		return (vdisk_errno = VVD_EVDOK);
+	}
 
-//
-// vdisk_default
-//
+	uint8_t *buffer;
+	int vdisk_fixed = flags & VDISK_CREATE_FIXED;
 
-int vdisk_default(VDISK *vd) {
-	vdisk_func = __func__;
-
-	switch (vd->format) {
+	switch (format) {
 	case VDISK_FORMAT_VDI:
+		vd->format = VDISK_FORMAT_VDI;
+		vd->vdi.type = vdisk_fixed ? VDI_DISK_FIXED : VDI_DISK_DYN;
+		// Default values
 		// hdr
 		vd->vdihdr.magic = VDI_HEADER_MAGIC;
 		vd->vdihdr.majorv = 1;
@@ -341,12 +326,38 @@ int vdisk_default(VDISK *vd) {
 		memset(&vd->vdi.uuidLinkage, 0, 16);
 		memset(&vd->vdi.uuidModify, 0, 16);
 		memset(&vd->vdi.uuidParentModify, 0, 16);
+		// Work
+		vd->u32nblocks = capacity / vd->vdi.blocksize;
+		if (vd->u32nblocks == 0)
+			vd->u32nblocks = 1;
+		uint32_t bsize = vd->u32nblocks << 2;
+		if ((vd->u32blocks = malloc(bsize)) == NULL)
+			return VVD_EVDALLOC;
+		vd->vdi.totalblocks = vd->u32nblocks;
+		vd->vdi.disksize = capacity;
+		switch (vd->vdi.type) {
+		case VDI_DISK_DYN:
+			for (size_t i = 0; i < vd->vdi.totalblocks; ++i)
+				vd->u32blocks[i] = VDI_BLOCK_UNALLOCATED;
+			break;
+		case VDI_DISK_FIXED:
+			if ((buffer = malloc(vd->vdi.blocksize)) == NULL)
+				return VVD_EVDALLOC;
+			os_seek(vd->fd, vd->vdi.offData, SEEK_SET);
+			for (size_t i = 0; i < vd->vdi.totalblocks; ++i) {
+				vd->u32blocks[i] = VDI_BLOCK_FREE;
+				os_write(vd->fd, buffer, vd->vdi.blocksize);
+			}
+			break;
+		default:
+			return (vdisk_errno = VVD_EVDTYPE);
+		}
 		break;
 	default:
 		return (vdisk_errno = VVD_EVDFORMAT);
 	}
 
-	return (vdisk_errno = VVD_EVDOK);
+	return vdisk_update(vd);
 }
 
 //
