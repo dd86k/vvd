@@ -54,6 +54,7 @@ enum {	// VDISK error codes
 	VVD_EOK	= 0,	// VDISK OK
 	VVD_EOS	= -2,	// OS/CRT related error
 	VVD_ENULL	= -3,	// Input pointer is NULL
+	VVD_EALLOC	= -4,	// Could not allocate memory
 	VVD_EVDFORMAT	= -10,	// Invalid VDISK format
 	VVD_EVDMAGIC	= -11,	// Invalid VDISK magic signature
 	VVD_EVDVERSION	= -12,	// Unsupported VDISK version (major)
@@ -61,7 +62,6 @@ enum {	// VDISK error codes
 	VVD_EVDFULL	= -14,	// VDISK is full and no more data can be allocated
 	VVD_EVDUNALLOC	= -15,	// Block is unallocated
 	VVD_EVDBOUND	= -16,	// Index was out of block index bounds
-	VVD_EVDALLOC	= -17,	// Could not allocate memory
 	VVD_EVDTODO	= -254,	// Currently unimplemented
 	VVD_EVDMISC	= -255,	// Unknown
 };

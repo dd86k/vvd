@@ -308,7 +308,7 @@ int vvd_compact(VDISK *vd) {
 		//
 
 		if ((buffer = malloc(vd->vdi.blocksize)) == NULL)
-			return VVD_EVDALLOC;
+			return VVD_EALLOC;
 
 		//
 		// Temporary VDISK
@@ -318,7 +318,7 @@ int vvd_compact(VDISK *vd) {
 
 		VDISK vdtmp;
 		if ((vdtmp.u32blocks = malloc(vd->u32nblocks << 2)) == NULL)
-			return VVD_EVDALLOC;
+			return VVD_EALLOC;
 		vdtmp.offset = vd->offset;
 		vdtmp.format = vd->format;
 		vdtmp.u32nblocks = vd->u32nblocks;
