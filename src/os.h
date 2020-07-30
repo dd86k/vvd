@@ -1,5 +1,5 @@
-#include "../utils.h"
-#include "../vdisk.h"
+#include "utils.h"
+#include "vdisk.h"
 
 #ifdef _WIN32	// Windows
 #include <windows.h>

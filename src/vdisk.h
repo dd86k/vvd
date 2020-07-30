@@ -1,6 +1,6 @@
 #pragma once
 
-#include "os/os.h"
+#include "os.h"
 #include "utils.h"
 #include "vdisk/vdi.h"
 #include "vdisk/vmdk.h"

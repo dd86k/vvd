@@ -1,6 +1,7 @@
 /**
  * Main vvd operations
  */
+
 #include <assert.h>
 #include <string.h> // memcpy
 #include <inttypes.h>
@@ -15,8 +16,7 @@
 
 int vvd_info(VDISK *vd) {
 	const char *type;	// vdisk type
-	char dsize[BIN_FLENGTH];	// vdisk size
-	char bsize[BIN_FLENGTH];	// block size
+	char dsize[BIN_FLENGTH], bsize[BIN_FLENGTH];	// disk and block size
 	char uid1[UID_LENGTH], uid2[UID_LENGTH], uid3[UID_LENGTH], uid4[UID_LENGTH];
 
 	switch (vd->format) {
@@ -289,6 +289,8 @@ int vvd_compact(VDISK *vd) {
 		return VVD_EVDMISC;
 	}
 
+	puts("warning: This function is still being developed");
+
 	switch (vd->format) {
 	//
 	// VDI
@@ -366,10 +368,10 @@ int vvd_compact(VDISK *vd) {
 			++stat_zero;
 			continue;
 L_HASDATA:
-			//if (vdisk_write_block_at(&vdtmp, buffer, i, d)) {
-			//	fputs("vdi_compact: Couldn't write to disk\n", stderr);
-			//	return VVD_EVDWRITE;
-			//}
+			if (vdisk_write_block_at(&vdtmp, buffer, i, d)) {
+				vdisk_perror(&vdtmp);
+				return vdtmp.errcode;
+			}
 			vdtmp.u32blocks[i] = i;
 			os_write(vdtmp.fd, buffer, vd->vdi.blocksize);
 			++stat_occupied;

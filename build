@@ -49,7 +49,7 @@ b_clang()
 	if [ $? -ne 0 ]; then exit; fi
 	# os
 	echo [$CC] os.obj
-	$CFLAGS src/os/os.c -o bin/os.obj
+	$CFLAGS src/os.c -o bin/os.obj
 	if [ $? -ne 0 ]; then exit; fi
 	# vdisk
 	echo [$CC] vdi.obj

@@ -65,7 +65,7 @@ ECHO [%CC%] vvd.o
 IF ERRORLEVEL 1 GOTO :EOF
 :: os
 ECHO [%CC%] os.o
-%CFLAGS% src\os\os.c -o bin\os.o
+%CFLAGS% src\os.c -o bin\os.o
 IF ERRORLEVEL 1 GOTO :EOF
 :: fs
 ECHO [%CC%] mbr.o
