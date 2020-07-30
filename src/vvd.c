@@ -160,8 +160,8 @@ int vvd_info(VDISK *vd) {
 	//
 
 	MBR mbr;
-	if (vdisk_read_lba(vd, &mbr, 0)) return VVD_EVDOK;
-	if (mbr.sig != MBR_SIG) return VVD_EVDOK;
+	if (vdisk_read_lba(vd, &mbr, 0)) return VVD_EOK;
+	if (mbr.sig != MBR_SIG) return VVD_EOK;
 	mbr_info_stdout(&mbr);
 
 	//
@@ -184,14 +184,14 @@ int vvd_info(VDISK *vd) {
 	case 1: {
 		uint64_t gpt_lba;
 		// Start of disk
-		if (vdisk_read_lba(vd, &mbr, 1)) return VVD_EVDOK;
+		if (vdisk_read_lba(vd, &mbr, 1)) return VVD_EOK;
 		if (((GPT*)&mbr)->sig == EFI_SIG) {
 			gpt_lba = 2;
 			goto L_GPT_RDY;
 		}
 		// End of disk
 		gpt_lba = BYTE_TO_SECTOR(vd->capacity) - 1;
-		if (vdisk_read_lba(vd, &mbr, gpt_lba)) return VVD_EVDOK;
+		if (vdisk_read_lba(vd, &mbr, gpt_lba)) return VVD_EOK;
 		if (((GPT*)&mbr)->sig == EFI_SIG) {
 			gpt_lba -= 128;
 			goto L_GPT_RDY;
@@ -204,7 +204,7 @@ L_GPT_RDY:
 		break;
 	}
 
-	return VVD_EVDOK;
+	return VVD_EOK;
 }
 
 //
@@ -262,7 +262,7 @@ int vvd_map(VDISK *vd, uint32_t flags) {
 			printf(" %8X |", b[i]);
 		putchar('\n');
 	}
-	return VVD_EVDOK;
+	return VVD_EOK;
 }
 
 //
@@ -272,8 +272,8 @@ int vvd_map(VDISK *vd, uint32_t flags) {
 int vvd_new(const _oschar *path, int format, uint64_t vsize, int flags) {
 	VDISK vd;
 	if (vdisk_create(&vd, path, format, vsize, flags)) {
-		vdisk_perror(__func__);
-		return vdisk_errno;
+		vdisk_perror(&vd);
+		return vd.errcode;
 	}
 	printf("%s disk created successfully\n", vdisk_str(&vd));
 	return 0;
@@ -325,8 +325,8 @@ int vvd_compact(VDISK *vd) {
 		memcpy(&vdtmp.vdihdr, &vd->vdihdr, sizeof(VDI_HDR));
 		memcpy(&vdtmp.vdi, &vd->vdi, sizeof(VDIHEADER1));
 		if (vdisk_open(&vdtmp, NULL, VDISK_CREATE_TEMP)) {
-			vdisk_perror(__func__);
-			return vdisk_errno;
+			vdisk_perror(&vdtmp);
+			return vd->errcode;
 		}
 		printf("vdi_compact: %s disk created\n", vdisk_str(&vdtmp));
 
@@ -353,11 +353,9 @@ int vvd_compact(VDISK *vd) {
 				++stat_unalloc;
 				continue;
 			}
-			int re = vdisk_read_block(vd, buffer, i);
-			if (re == VVD_EVDREAD || re == VVD_EVDSEEK) {
-				fprintf(stderr, "vdi_compact: Couldn't %s disk\n",
-					re == VVD_EVDSEEK ? "seek" : "read");
-				return re;
+			if (vdisk_read_block(vd, buffer, i)) {
+				vdisk_perror(vd);
+				return vd->errcode;
 			}
 			// Check if block has data, if so, write the block into tmp VDISK
 			++stat_alloc;

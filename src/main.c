@@ -260,8 +260,8 @@ MAIN {
 			return EXIT_FAILURE;
 		}
 		if (vdisk_open(&vdin, defopt1, oflags)) {
-			vdisk_perror(__func__);
-			return vdisk_errno;
+			vdisk_perror(&vdin);
+			return vdin.errcode;
 		}
 		return vvd_info(&vdin);
 	}
@@ -272,8 +272,8 @@ MAIN {
 			return EXIT_FAILURE;
 		}
 		if (vdisk_open(&vdin, defopt1, oflags)) {
-			vdisk_perror(__func__);
-			return vdisk_errno;
+			vdisk_perror(&vdin);
+			return vdin.errcode;
 		}
 		return vvd_map(&vdin, 0);
 	}

@@ -18,6 +18,8 @@ typedef int __OSFILE;
 #endif // __OSFILE_H
 #endif
 
+int os_errno;	/// Last OS/CRT error code
+
 /**
  * Open a file stream. File or device must exist. Consult documentation on
  * which devices are supported.

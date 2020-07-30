@@ -8,24 +8,6 @@
 #include "vdisk/vhdx.h"
 
 #define __LINE_BEFORE__ (__LINE__ - 1)
-#define DEFAULT_BLOCKSIZE 1048576
-
-//
-// Global variables
-//
-
-/**
- * (Internal) Last error number set by vdisk_* functions.
- */
-int vdisk_errno;
-/**
- * 
- */
-int vdisk_errln;
-/**
- * 
- */
-const char *vdisk_func;
 
 //
 // Enumerations
@@ -69,19 +51,17 @@ enum {	// VDISK flags, the open/create flags may intertwine in values
 };
 
 enum {	// VDISK error codes
-	VVD_EVDOK	= 0,	// VDISK OK
-	VVD_EVDOPEN	= -1,	// VDISK could not be opened nor created
-	VVD_EVDREAD	= -10,	// Error reading VDISK
-	VVD_EVDSEEK	= -11,	// Error seeking VDISK
-	VVD_EVDWRITE	= -12,	// Error seeking VDISK
-	VVD_EVDFORMAT	= -13,	// Invalid VDISK format
-	VVD_EVDMAGIC	= -14,	// Invalid VDISK magic signature
-	VVD_EVDVERSION	= -15,	// Unsupported VDISK version (major)
-	VVD_EVDTYPE	= -16,	// Unsupported VDISK type
-	VVD_EVDFULL	= -17,	// VDISK is full and no more data can be allocated
-	VVD_EVDUNALLOC	= -18,	// Block is unallocated
-	VVD_EVDBOUND	= -19,	// Index was out of block index bounds
-	VVD_EVDALLOC	= -20,	// Could not allocate memory
+	VVD_EOK	= 0,	// VDISK OK
+	VVD_EOS	= -2,	// OS/CRT related error
+	VVD_ENULL	= -3,	// Input pointer is NULL
+	VVD_EVDFORMAT	= -10,	// Invalid VDISK format
+	VVD_EVDMAGIC	= -11,	// Invalid VDISK magic signature
+	VVD_EVDVERSION	= -12,	// Unsupported VDISK version (major)
+	VVD_EVDTYPE	= -13,	// Unsupported VDISK type
+	VVD_EVDFULL	= -14,	// VDISK is full and no more data can be allocated
+	VVD_EVDUNALLOC	= -15,	// Block is unallocated
+	VVD_EVDBOUND	= -16,	// Index was out of block index bounds
+	VVD_EVDALLOC	= -17,	// Could not allocate memory
 	VVD_EVDTODO	= -254,	// Currently unimplemented
 	VVD_EVDMISC	= -255,	// Unknown
 };
@@ -107,6 +87,12 @@ typedef struct VDISK {
 		uint64_t u64nblocks;	// Total amount of allocated blocks
 		uint32_t u32nblocks;	// Total amount of allocated blocks
 	};
+	//
+	// Error stuff
+	//
+	int errcode;	// Error number
+	int errline;	// Error line
+	const char *errfunc;	// Function name
 	// To avoid wasting memory space, and since a VDISK can only hold one
 	// format at a time, all structures are unionized. Version translation
 	// and header/format validity are done in vdisk_open.
@@ -141,21 +127,33 @@ typedef struct VDISK {
  * When creating a file, the specified file at the file path is overwritten.
  * An empty, unallocated VDISK is created. If VDISK_CREATE_TEMP is defined,
  * path parameter can be NULL, since the function will create a random
- * filename (OS). The fields are NOT populated, to 
+ * filename (OS).
  * 
- * \returns Error code if non-zero.
+ * \param vd VDISK structure
+ * \param path OS string path
+ * \param flags Flags
+ * 
+ * \returns Exit status
  */
 int vdisk_open(VDISK *vd, const _oschar *path, uint16_t flags);
 
 /**
  * Create a VDISK.
+ * 
+ * \param vd VDISK structure
+ * \param path OS string path
+ * \param format Virtual disk format
+ * \param capacity Virtual disk capacity
+ * \param flags Flags
+ * 
+ * \returns Exit status
  */
 int vdisk_create(VDISK *vd, const _oschar *path, int format, uint64_t capacity, uint16_t flags);
 
 /**
  * 
  */
-char *vdisk_str(VDISK *vd);
+const char *vdisk_str(VDISK *vd);
 
 /**
  * Update header information and allocation tables into file or device.
@@ -201,15 +199,10 @@ int vdisk_write_block_at(VDISK *vd, void *buffer, uint64_t bindex, uint64_t dind
 /**
  * Returns an error message depending on the last value of vdisk_errno.
  */
-const char* vdisk_error();
+const char* vdisk_error(VDISK *vd);
 
 /**
  * Print to stdout, with the name of the function, a message with the last
  * value set to vdisk_errno.
  */
-void vdisk_perror(const char *func);
-
-/**
- * Returns the last set value for vdisk_errno.
- */
-int vdisk_last_errno();
+void vdisk_perror(VDISK *vd);

@@ -32,9 +32,9 @@ int uid_str(UID *uid, char *buf, int target) {
 
 void uid_swap(UID *uid) {
 	uid->time_low = bswap32(uid->time_low);
-	uid->time_mid = bswap32(uid->time_mid);
-	uid->time_ver = bswap32(uid->time_ver);
-	uid->clock = bswap32(uid->clock);
+	uid->time_mid = bswap16(uid->time_mid);
+	uid->time_ver = bswap16(uid->time_ver);
+	uid->clock = bswap16(uid->clock);
 }
 
 //

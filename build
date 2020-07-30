@@ -48,11 +48,8 @@ b_clang()
 	$CFLAGS src/fs/gpt.c -o bin/gpt.obj
 	if [ $? -ne 0 ]; then exit; fi
 	# os
-	echo [$CC] fs.obj
-	$CFLAGS src/os/fs.c -o bin/fs.obj
-	if [ $? -ne 0 ]; then exit; fi
-	echo [$CC] err.obj
-	$CFLAGS src/os/err.c -o bin/err.obj
+	echo [$CC] os.obj
+	$CFLAGS src/os/os.c -o bin/os.obj
 	if [ $? -ne 0 ]; then exit; fi
 	# vdisk
 	echo [$CC] vdi.obj

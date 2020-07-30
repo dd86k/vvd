@@ -13,6 +13,11 @@ User manual: `docs/vvd.1`
 
 Technical Manual: Coming soon
 
+# Homes
+
+- https://github.com/dd86k/vvd
+- https://git.dd86k.space/dd86k/vvd
+
 # DISCLAIMER
 
 THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH

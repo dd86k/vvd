@@ -36,7 +36,7 @@ uint32_t mbr_lba_a(CHS_ENTRY *chs, uint64_t dsize) {
 		HPC = 255;
 	else
 		HPC = 16; //TODO: Verify HPC value when disksize >8.5 GiB
-	
+
 	uint8_t sector = chs->sector & 0x3F;
 	uint16_t cylinder = chs->cylinder | ((chs->sector & 0xC0) << 2);
 	return (cylinder * HPC * chs->head) * 63 + (sector - 1);
@@ -56,14 +56,14 @@ void mbr_info_stdout(MBR *mbr) {
 
 	printf(
 	"\n* MBR, SERIAL %08X, USED %s, TYPE %04u\n"
-	"ENTRIES  STATUS  TYPE        LBA        SIZE  C:H:S start ->   C:H:S end\n",
+	"ENTRIES  STATUS  TYPE        LBA        SIZE  C:H:S start~end\n",
 	mbr->serial, size, mbr->type
 	);
 
 	for (unsigned int i = 0; i < 4; ++i) {
 		MBR_PARTITION_ENTRY pe = mbr->pe[i];
 		printf(
-		"ENTRY %u    %3XH  %3XH  %9u  %10u  %4u:%3u:%2u -> %4u:%3u:%2u\n",
+		"ENTRY %u    %3XH  %3XH  %9u  %10u  %4u:%3u:%2u~%4u:%3u:%2u\n",
 		i,
 		pe.status, pe.parttype, pe.lba, pe.sectors,
 		// CHS start
