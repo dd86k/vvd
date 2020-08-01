@@ -48,35 +48,35 @@ __OSFILE os_create(const _oschar *path) {
 	return fd;
 }
 
-int os_seek(__OSFILE handle, int64_t pos, int flags) {
+int os_fseek(__OSFILE fd, int64_t pos, int flags) {
 #ifdef _WIN32
 	LARGE_INTEGER a;
 	a.QuadPart = pos;
-	if (SetFilePointerEx(handle, a, NULL, flags) == 0)
+	if (SetFilePointerEx(fd, a, NULL, flags) == 0)
 		return -1;
 #else
-	if (lseek(handle, (off_t)pos, flags) == -1)
+	if (lseek(fd, (off_t)pos, flags) == -1)
 		return -1;
 #endif
 	return 0;
 }
 
-int os_read(__OSFILE handle, void *buffer, size_t size) {
+int os_fread(__OSFILE fd, void *buffer, size_t size) {
 #ifdef _WIN32
 	DWORD r;
-	if (ReadFile(handle, buffer, size, &r, NULL) == 0)
+	if (ReadFile(fd, buffer, size, &r, NULL) == 0)
 		return -1;
 	/*if (r != size) {
-		fprintf(stderr, "os_read: Failed to read %u/%u bytes",
+		fprintf(stderr, "os_fread: Failed to read %u/%u bytes",
 			(uint32_t)r, (uint32_t)size);
 		return -2;
 	}*/
 #else
 	ssize_t r;
-	if ((r = read(handle, buffer, size)) == -1)
+	if ((r = read(fd, buffer, size)) == -1)
 		return -1;
 	/*if (r != size) {
-		fprintf(stderr, "os_read: Failed to read %d/%u bytes",
+		fprintf(stderr, "os_fread: Failed to read %d/%u bytes",
 			(int32_t)r, (uint32_t)size);
 		return -2;
 	}*/
@@ -84,21 +84,21 @@ int os_read(__OSFILE handle, void *buffer, size_t size) {
 	return 0;
 }
 
-int os_write(__OSFILE handle, void *buffer, size_t size) {
+int os_fwrite(__OSFILE fd, void *buffer, size_t size) {
 #ifdef _WIN32
 	DWORD r;
-	if (WriteFile(handle, buffer, size, &r, NULL) == 0)
+	if (WriteFile(fd, buffer, size, &r, NULL) == 0)
 		return -1;
 	/*if (r != size) {
-		fprintf(stderr, "os_write: Failed to write %u bytes", (unsigned int)r);
+		fprintf(stderr, "os_fwrite: Failed to write %u bytes", (unsigned int)r);
 		return -2;
 	}*/
 #else
 	ssize_t r;
-	if ((r = write(handle, buffer, size)) == -1)
+	if ((r = write(fd, buffer, size)) == -1)
 		return -1;
 	/*if (r != size) {
-		fprintf(stderr, "os_write: Failed to read %u bytes", (unsigned int)r);
+		fprintf(stderr, "os_fwrite: Failed to read %u bytes", (unsigned int)r);
 		return -2;
 	}*/
 #endif
@@ -106,20 +106,20 @@ int os_write(__OSFILE handle, void *buffer, size_t size) {
 }
 
 //
-// os_size
+// os_fsize
 //
 
-int os_size(__OSFILE handle, uint64_t *size) {
+int os_fsize(__OSFILE fd, uint64_t *size) {
 #if _WIN32
 	LARGE_INTEGER li;
-	if (GetFileSizeEx(handle, &li) == 0)
+	if (GetFileSizeEx(fd, &li) == 0)
 		return 1;
 	*size = li.QuadPart;
 	return 0;
 #else
 	// fstat(2) sets st_size to 0 on block devices
 	struct stat s;
-	if (fstat(handle, &s) == -1)
+	if (fstat(fd, &s) == -1)
 		return 1;
 	switch (s.st_mode & __S_IFMT) {
 	case __S_IFREG:
@@ -128,9 +128,33 @@ int os_size(__OSFILE handle, uint64_t *size) {
 		return 0;
 	case __S_IFBLK:
 		//TODO: Non-linux variant
-		ioctl(handle, BLKGETSIZE64, size);
+		ioctl(fd, BLKGETSIZE64, size);
 		return 0;
 	default: return 1;
 	}
 #endif
+}
+
+//
+// os_falloc
+//
+
+int os_falloc(__OSFILE fd, uint64_t fsize) {
+	const int bsize = 1024 * 1024; // 1 MiB
+	uint8_t *buf = calloc(1, bsize); // zeroed
+	if (fsize >= bsize) {
+		if (buf == NULL)
+			return 1;
+		while (fsize > bsize) {
+			if (os_fwrite(fd, buf, bsize))
+				return 1;
+			fsize -= bsize;
+		}
+	}
+	if (fsize > 0) {
+		if (os_fwrite(fd, buf, bsize - fsize))
+			return 1;
+	}
+	free(buf);
+	return 0;
 }

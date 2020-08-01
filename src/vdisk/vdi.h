@@ -14,8 +14,7 @@ enum {
 	VDI_SIGNATURE_SIZE = 64,
 	VDI_COMMENT_SIZE = 256,
 
-	VDI_BLOCK_UNUSED	= 0,	// Usually not used
-	VDI_BLOCK_UNALLOCATED	= -1,	// "not on disk"
+	VDI_BLOCK_UNALLOC	= -1,	// "not on disk"
 	VDI_BLOCK_FREE	= -2,	// aka ZERO
 
 	VDI_DISK_DYN	= 1,
@@ -77,5 +76,3 @@ typedef struct VDIHEADER1 { // v1.1
 	uint32_t cbSector;	// v1.1
 //	uint8_t  pad[40];
 } VDIHEADER1;
-
-struct VDISK;

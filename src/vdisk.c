@@ -25,7 +25,7 @@ int vdisk_open(VDISK *vd, const _oschar *path, uint16_t flags) {
 	if (flags & VDISK_RAW) {
 		vd->format = VDISK_FORMAT_RAW;
 		vd->offset = 0;
-		if (os_size(vd->fd, &vd->capacity))
+		if (os_fsize(vd->fd, &vd->capacity))
 			return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
 		return (vd->errcode = VVD_EOK);
 	}
@@ -37,9 +37,9 @@ int vdisk_open(VDISK *vd, const _oschar *path, uint16_t flags) {
 	// seeking capabilities on the file or device.
 	//
 
-	if (os_read(vd->fd, &vd->format, 4))
+	if (os_fread(vd->fd, &vd->format, 4))
 		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
-	if (os_seek(vd->fd, 0, SEEK_SET))
+	if (os_fseek(vd->fd, 0, SEEK_SET))
 		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
 
 	//
@@ -51,21 +51,21 @@ int vdisk_open(VDISK *vd, const _oschar *path, uint16_t flags) {
 	// VDI
 	//
 	case VDISK_FORMAT_VDI:
-		if (os_seek(vd->fd, 64, SEEK_SET))
+		if (os_fseek(vd->fd, 64, SEEK_SET))
 			return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
-		if (os_read(vd->fd, &vd->vdihdr, sizeof(VDI_HDR)))
+		if (os_fread(vd->fd, &vd->vdihdr, sizeof(VDI_HDR)))
 			return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
 		if (vd->vdihdr.magic != VDI_HEADER_MAGIC)
 			return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
 
 		switch (vd->vdihdr.majorv) { // Use latest major version natively
 		case 1: // Includes all minor releases
-			if (os_read(vd->fd, &vd->vdi, sizeof(VDIHEADER1)))
+			if (os_fread(vd->fd, &vd->vdi, sizeof(VDIHEADER1)))
 				return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
 			break;
 		case 0: { // Or else, translate header
 			VDIHEADER0 vd0;
-			if (os_read(vd->fd, &vd0, sizeof(VDIHEADER0)))
+			if (os_fread(vd->fd, &vd0, sizeof(VDIHEADER0)))
 				return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
 			vd->vdi.disksize = vd0.disksize;
 			vd->vdi.type = vd0.type;
@@ -90,15 +90,15 @@ int vdisk_open(VDISK *vd, const _oschar *path, uint16_t flags) {
 		}
 
 		// allocation table
-		//TODO: Consider if this is an error (or warning
+		//TODO: Consider if this is an error (or warning)
 		if (vd->vdi.blocksize == 0)
 			vd->vdi.blocksize = VDI_BLOCKSIZE;
-		if (os_seek(vd->fd, vd->vdi.offBlocks, SEEK_SET))
+		if (os_fseek(vd->fd, vd->vdi.offBlocks, SEEK_SET))
 			return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
 		int bsize = vd->vdi.totalblocks << 2; // * sizeof(u32)
 		if ((vd->u32blocks = malloc(bsize)) == NULL)
 			return vdisk_i_err(vd, VVD_EALLOC, __LINE_BEFORE__);
-		if (os_read(vd->fd, vd->u32blocks, bsize))
+		if (os_fread(vd->fd, vd->u32blocks, bsize))
 			return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
 		vd->offset = vd->vdi.offData;
 		vd->u32nblocks = vd->vdi.totalblocks;
@@ -108,12 +108,11 @@ int vdisk_open(VDISK *vd, const _oschar *path, uint16_t flags) {
 	// VMDK
 	//
 	case VDISK_FORMAT_VMDK:
-		if (os_read(vd->fd, &vd->vmdk, sizeof(VMDK_HDR)))
+		if (os_fread(vd->fd, &vd->vmdk, sizeof(VMDK_HDR)))
 			return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
 		if (vd->vmdk.version != 1)
 			return vdisk_i_err(vd, VVD_EVDVERSION, __LINE_BEFORE__);
-		if (vd->vmdk.grainSize < 1 || vd->vmdk.grainSize > 128
-			|| pow2(vd->vmdk.grainSize) == 0)
+		if (vd->vmdk.grainSize < 1 || vd->vmdk.grainSize > 128 || pow2(vd->vmdk.grainSize) == 0)
 			return vdisk_i_err(vd, VVD_EVDMISC, __LINE_BEFORE__);
 		vd->offset = SECTOR_TO_BYTE(vd->vmdk.overHead);
 		vd->capacity = SECTOR_TO_BYTE(vd->vmdk.capacity);
@@ -122,7 +121,7 @@ int vdisk_open(VDISK *vd, const _oschar *path, uint16_t flags) {
 	// VHD
 	//
 	case VDISK_FORMAT_VHD:
-		if (os_read(vd->fd, &vd->vhd, sizeof(VHD_HDR)))
+		if (os_fread(vd->fd, &vd->vhd, sizeof(VHD_HDR)))
 			return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
 		if (vd->vhd.magic != VHD_MAGIC)
 			return vdisk_i_err(vd, VVD_EVDMAGIC, __LINE_BEFORE__);
@@ -151,9 +150,9 @@ L_VHD_MAGICOK:
 		vd->vhd.checksum = bswap32(vd->vhd.checksum);
 		uid_swap(&vd->vhd.uuid);
 		if (vd->vhd.type != VHD_DISK_FIXED) {
-			if (os_seek(vd->fd, vd->vhd.offset, SEEK_SET))
+			if (os_fseek(vd->fd, vd->vhd.offset, SEEK_SET))
 				return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
-			if (os_read(vd->fd, &vd->vhddyn, sizeof(VHD_DYN_HDR)))
+			if (os_fread(vd->fd, &vd->vhddyn, sizeof(VHD_DYN_HDR)))
 				return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
 			if (vd->vhddyn.magic != VHD_DYN_MAGIC)
 				return vdisk_i_err(vd, VVD_EVDMAGIC, __LINE_BEFORE__);
@@ -179,12 +178,12 @@ L_VHD_MAGICOK:
 			vd->u32nblocks = vd->vhd.size_original / vd->vhddyn.blocksize;
 			if (vd->u32nblocks <= 0)
 				return vdisk_i_err(vd, VVD_EVDMAGIC, __LINE_BEFORE__);
-			if (os_seek(vd->fd, vd->vhddyn.table_offset, SEEK_SET))
+			if (os_fseek(vd->fd, vd->vhddyn.table_offset, SEEK_SET))
 				return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
 			int batsize = vd->u32nblocks << 2; // "* sizeof(u32)"
 			if ((vd->u32blocks = malloc(batsize)) == NULL)
 				return vdisk_i_err(vd, VVD_EALLOC, __LINE_BEFORE__);
-			if (os_read(vd->fd, vd->u32blocks, batsize))
+			if (os_fread(vd->fd, vd->u32blocks, batsize))
 				return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
 			for (size_t i = 0; i < vd->u32nblocks; ++i)
 				vd->u32blocks[i] = bswap32(vd->u32blocks[i]);
@@ -196,7 +195,7 @@ L_VHD_MAGICOK:
 		break; // VDISK_FORMAT_VHD
 	/*case VDISK_FORMAT_VHDX:
 		// HDR
-		if (os_read(vd->fd, &vd->vhdx, sizeof(VHDX_HDR))) {
+		if (os_fread(vd->fd, &vd->vhdx, sizeof(VHDX_HDR))) {
 			vd->errline = __LINE_BEFORE__;
 			return (vd->errcode = VVD_EOS);
 		}
@@ -209,7 +208,7 @@ L_VHD_MAGICOK:
 			vd->errline = __LINE_BEFORE__;
 			return (vd->errcode = VVD_EOS);
 		}
-		if (os_read(vd->fd, &vd->vhdxhdr, sizeof(VHDX_HEADER1))) {
+		if (os_fread(vd->fd, &vd->vhdxhdr, sizeof(VHDX_HEADER1))) {
 			vd->errline = __LINE_BEFORE__;
 			return (vd->errcode = VVD_EOS)
 		};
@@ -222,7 +221,7 @@ L_VHD_MAGICOK:
 			vd->errline = __LINE_BEFORE__;
 			return (vd->errcode = VVD_EOS);
 		}
-		if (os_read(vd->fd, &vd->vhdxreg, sizeof(VHDX_REGION_HDR))) {
+		if (os_fread(vd->fd, &vd->vhdxreg, sizeof(VHDX_REGION_HDR))) {
 			vd->errline = __LINE_BEFORE__;
 			return (vd->errcode = VVD_EOS)
 		};
@@ -241,9 +240,9 @@ L_VHD_MAGICOK:
 		// Attempt at different offsets
 
 		// Fixed VHD: 512 bytes before EOF
-		if (os_seek(vd->fd, -512, SEEK_END))
+		if (os_fseek(vd->fd, -512, SEEK_END))
 			return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
-		if (os_read(vd->fd, &vd->vhd, sizeof(VHD_HDR)))
+		if (os_fread(vd->fd, &vd->vhd, sizeof(VHD_HDR)))
 			return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
 		if (vd->vhd.magic == VHD_MAGIC) {
 			vd->format = VDISK_FORMAT_VHD;
@@ -282,10 +281,7 @@ int vdisk_create(VDISK *vd, const _oschar *path, int format, uint64_t capacity, 
 
 	if (flags & VDISK_RAW) {
 		vd->format = VDISK_FORMAT_RAW;
-		if (os_seek(vd->fd, capacity - 1, SEEK_SET))
-			return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
-		uint8_t __n = 0;
-		if (os_write(vd->fd, &__n, 1))
+		if (os_falloc(vd->fd, capacity))
 			return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
 		return (vd->errcode = VVD_EOK);
 	}
@@ -336,15 +332,15 @@ int vdisk_create(VDISK *vd, const _oschar *path, int format, uint64_t capacity, 
 		switch (vd->vdi.type) {
 		case VDI_DISK_DYN:
 			for (size_t i = 0; i < vd->vdi.totalblocks; ++i)
-				vd->u32blocks[i] = VDI_BLOCK_UNALLOCATED;
+				vd->u32blocks[i] = VDI_BLOCK_UNALLOC;
 			break;
 		case VDI_DISK_FIXED:
 			if ((buffer = malloc(vd->vdi.blocksize)) == NULL)
 				return vdisk_i_err(vd, VVD_EALLOC, __LINE_BEFORE__);
-			os_seek(vd->fd, vd->vdi.offData, SEEK_SET);
+			os_fseek(vd->fd, vd->vdi.offData, SEEK_SET);
 			for (size_t i = 0; i < vd->vdi.totalblocks; ++i) {
 				vd->u32blocks[i] = VDI_BLOCK_FREE;
-				os_write(vd->fd, buffer, vd->vdi.blocksize);
+				os_fwrite(vd->fd, buffer, vd->vdi.blocksize);
 			}
 			break;
 		default:
@@ -386,21 +382,21 @@ int vdisk_update(VDISK *vd) {
 
 	switch (vd->format) {
 	case VDISK_FORMAT_VDI:
-		if (os_seek(vd->fd, 0, SEEK_SET))
+		if (os_fseek(vd->fd, 0, SEEK_SET))
 			return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
-		if (os_write(vd->fd, VDI_SIGNATURE, 40))
+		if (os_fwrite(vd->fd, VDI_SIGNATURE, 40))
 			return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
 		// skip signature
-		if (os_seek(vd->fd, VDI_SIGNATURE_SIZE, SEEK_SET))
+		if (os_fseek(vd->fd, VDI_SIGNATURE_SIZE, SEEK_SET))
 			return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
-		if (os_write(vd->fd, &vd->vdihdr, sizeof(VDI_HDR)))
+		if (os_fwrite(vd->fd, &vd->vdihdr, sizeof(VDI_HDR)))
 			return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
-		if (os_write(vd->fd, &vd->vdi, sizeof(VDIHEADER1)))
+		if (os_fwrite(vd->fd, &vd->vdi, sizeof(VDIHEADER1)))
 			return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
 		// blocks
-		if (os_seek(vd->fd, vd->vdi.offBlocks, SEEK_SET))
+		if (os_fseek(vd->fd, vd->vdi.offBlocks, SEEK_SET))
 			return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
-		if (os_write(vd->fd, vd->u32blocks, vd->u32nblocks * 4))
+		if (os_fwrite(vd->fd, vd->u32blocks, vd->u32nblocks * 4))
 			return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
 		break;
 	/*case VDISK_FORMAT_VMDK:
@@ -423,54 +419,53 @@ int vdisk_update(VDISK *vd) {
 int vdisk_read_lba(VDISK *vd, void *buffer, uint64_t lba) {
 	vd->errfunc = __func__;
 
-	uint64_t fpos; // New file position
-	uint64_t boff = SECTOR_TO_BYTE(lba); // Byte offset
+	uint64_t base; // Base offset with dealing with blocks
+	uint64_t offset = SECTOR_TO_BYTE(lba); // Byte offset
 	size_t bi; // Block index
 
 	switch (vd->format) {
 	case VDISK_FORMAT_VDI:
-		bi = boff / vd->vdi.blocksize;
+		bi = offset / vd->vdi.blocksize;
 		if (bi >= vd->vdi.totalblocks) // out of bounds
 			return vdisk_i_err(vd, VVD_EVDBOUND, __LINE_BEFORE__);
-		if (vd->u32blocks[bi] == VDI_BLOCK_UNALLOCATED ||
-			vd->u32blocks[bi] == VDI_BLOCK_FREE)
-			return vdisk_i_err(vd, VVD_EVDMISC, __LINE_BEFORE__);
-		fpos = vd->offset + (vd->u32blocks[bi] * vd->vdi.blocksize) + boff;
+		if (vd->u32blocks[bi] == VDI_BLOCK_UNALLOC)
+			return vdisk_i_err(vd, VVD_EVDUNALLOC, __LINE_BEFORE__);
+		base = vd->u32blocks[bi] * vd->vdi.blocksize;
+		offset = vd->vdi.offData + base + (offset - base);
 		break;
 	case VDISK_FORMAT_VMDK:
 		if (lba >= vd->vmdk.capacity)
 			return vdisk_i_err(vd, VVD_EVDMISC, __LINE_BEFORE__);
-		//bi = boff / SECTOR_TO_BYTE(vd->vmdk.grainSize);
-		fpos = vd->offset + boff;
+		//bi = offset / SECTOR_TO_BYTE(vd->vmdk.grainSize);
+		offset += vd->offset;
 		break;
 	case VDISK_FORMAT_VHD:
 		switch (vd->vhd.type) {
-		case VHD_DISK_FIXED:
-			fpos = boff;
-			break;
+		case VHD_DISK_FIXED: break;
 		case VHD_DISK_DYN:
-			// selected index
-			bi = boff / vd->vhddyn.blocksize;
+			bi = lba / vd->vhddyn.blocksize;
 			if (bi >= vd->u32nblocks) // Over
 				return vdisk_i_err(vd, VVD_EVDBOUND, __LINE_BEFORE__);
-			if (vd->u32blocks[bi] == 0xFFFFFFFF) // Unallocated
+			if (vd->u32blocks[bi] == VHD_BLOCK_UNALLOC) // Unallocated
 				return vdisk_i_err(vd, VVD_EVDUNALLOC, __LINE_BEFORE__);
-			fpos = SECTOR_TO_BYTE(vd->u32blocks[bi]) + boff + 512;
+			base = SECTOR_TO_BYTE(vd->u32blocks[bi] * vd->vhddyn.blocksize);
+			offset = vd->offset + base + (offset - base);
 			break;
 		default:
-			return (vd->errcode = VVD_EVDTYPE);
+			return VDISK_ERR(VVD_EVDTYPE);
 		}
 		break;
 	case VDISK_FORMAT_RAW:
-		fpos = boff;
+		if (offset >= vd->capacity)
+			return VDISK_ERR(VVD_EVDBOUND);
 		break;
 	default:
 		return (vd->errcode = VVD_EVDFORMAT);
 	}
 
-	if (os_seek(vd->fd, fpos, SEEK_SET))
+	if (os_fseek(vd->fd, offset, SEEK_SET))
 		return (vd->errcode = VVD_EOS);
-	if (os_read(vd->fd, buffer, 512))
+	if (os_fread(vd->fd, buffer, 512))
 		return (vd->errcode = VVD_EOS);
 
 	return (vd->errcode = VVD_EOK);
@@ -491,7 +486,7 @@ int vdisk_read_block(VDISK *vd, void *buffer, uint64_t index) {
 		if (index >= vd->u32nblocks)
 			return vdisk_i_err(vd, VVD_EVDBOUND, __LINE_BEFORE__);
 		readsize = vd->vdi.blocksize;
-		if (vd->u32blocks[index] == VDI_BLOCK_UNALLOCATED)
+		if (vd->u32blocks[index] == VDI_BLOCK_UNALLOC)
 			return vdisk_i_err(vd, VVD_EVDUNALLOC, __LINE_BEFORE__);
 		pos = (vd->u32blocks[index] * vd->vdi.blocksize) + vd->vdi.offData;
 		break;
@@ -506,9 +501,9 @@ int vdisk_read_block(VDISK *vd, void *buffer, uint64_t index) {
 		return vdisk_i_err(vd, VVD_EVDFORMAT, __LINE_BEFORE__);
 	}
 
-	if (os_seek(vd->fd, pos, SEEK_SET))
+	if (os_fseek(vd->fd, pos, SEEK_SET))
 		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
-	if (os_read(vd->fd, buffer, readsize))
+	if (os_fread(vd->fd, buffer, readsize))
 		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
 
 	return (vd->errcode = VVD_EOK);
@@ -541,7 +536,7 @@ int vdisk_write_block(VDISK *vd, void *buffer, uint64_t index) {
 		//TODO: What should we do if we run out of allocation blocks?
 		if (index >= vd->u32nblocks)
 			return vdisk_i_err(vd, VVD_EVDBOUND, __LINE_BEFORE__);
-		if (vd->u32blocks[index] == VDI_BLOCK_UNALLOCATED) {
+		if (vd->u32blocks[index] == VDI_BLOCK_UNALLOC) {
 			pos = vd->nextblock;
 			vd->u32blocks[index] = ((pos - vd->offset) / vd->vdi.blocksize);
 			vd->nextblock += vd->vdi.blocksize;
@@ -554,9 +549,9 @@ int vdisk_write_block(VDISK *vd, void *buffer, uint64_t index) {
 		return vdisk_i_err(vd, VVD_EVDFORMAT, __LINE_BEFORE__);
 	}
 
-	if (os_seek(vd->fd, pos, SEEK_SET))
+	if (os_fseek(vd->fd, pos, SEEK_SET))
 		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
-	if (os_write(vd->fd, buffer, blocksize))
+	if (os_fwrite(vd->fd, buffer, blocksize))
 		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
 
 	return (vd->errcode = VVD_EOK);
@@ -584,9 +579,9 @@ int vdisk_write_block_at(VDISK *vd, void *buffer, uint64_t bindex, uint64_t dind
 		return vdisk_i_err(vd, VVD_EVDFORMAT, __LINE_BEFORE__);
 	}
 
-	if (os_seek(vd->fd, pos, SEEK_SET))
+	if (os_fseek(vd->fd, pos, SEEK_SET))
 		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
-	if (os_write(vd->fd, buffer, blocksize))
+	if (os_fwrite(vd->fd, buffer, blocksize))
 		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
 
 	return (vd->errcode = VVD_EOK);

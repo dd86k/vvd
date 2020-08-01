@@ -97,7 +97,7 @@ void test() {
 // CLI part
 //
 
-void help() {
+static void help() {
 	puts(
 	"Manage virtual disks\n"
 	"  Usage: vvd OPERATION [FILE [OPTIONS]]\n"
@@ -118,7 +118,7 @@ void help() {
 	exit(EXIT_SUCCESS);
 }
 
-void version(void) {
+static void version(void) {
 	printf(
 	"vvd-" __PLATFORM__ " " PROJECT_VERSION 
 #ifdef TIMESTAMP
@@ -144,7 +144,7 @@ void version(void) {
 	exit(EXIT_SUCCESS);
 }
 
-void license() {
+static void license() {
 	puts(
 	"Copyright 2019-2020 dd86k <dd@dax.moe>\n"
 	"\n"
@@ -167,14 +167,14 @@ void license() {
 #define MAIN int wmain(int argc, wchar_t **argv)
 #define vstr(quote) L##quote
 #define PSTR "%ls"
-int scmp(const wchar_t *s, const wchar_t *t) {
+static int scmp(const wchar_t *s, const wchar_t *t) {
 	return wcscmp(s, t) == 0;
 }
 #else
 #define MAIN int main(int argc, char **argv)
 #define vstr(quote) quote
 #define PSTR "%s"
-int scmp(const char *s, const char *t) {
+static int scmp(const char *s, const char *t) {
 	return strcmp(s, t) == 0;
 }
 #endif
@@ -183,7 +183,7 @@ int scmp(const char *s, const char *t) {
  * Extension vdisk matcher, returns VDISK_FORMAT if matches an extension.
  * Otherwise 0.
  */
-int vdextauto(const _oschar *path) {
+static int vdextauto(const _oschar *path) {
 	if (extcmp(path, vstr("vdi")))	return VDISK_FORMAT_VDI;
 	if (extcmp(path, vstr("vmdk")))	return VDISK_FORMAT_VMDK;
 	if (extcmp(path, vstr("vhd")))	return VDISK_FORMAT_VHD;
@@ -329,6 +329,10 @@ MAIN {
 		return EXIT_FAILURE;
 	}
 
+	if (scmp(action, vstr("ver"))) {
+		puts(PROJECT_VERSION);
+		return EXIT_SUCCESS;
+	}
 	if (scmp(action, vstr("version")) || scmp(action, vstr("--version")))
 		version();
 	if (scmp(action, vstr("help")) || scmp(action, vstr("--help")))

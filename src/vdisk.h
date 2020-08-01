@@ -8,6 +8,9 @@
 #include "vdisk/vhdx.h"
 
 #define __LINE_BEFORE__ (__LINE__ - 1)
+#define VDISK_ERR(n) vdisk_i_err(vd, n, __LINE_BEFORE__)
+
+//TODO: Define function declarations for warnings and specific vdisk stuff
 
 //
 // Enumerations
@@ -79,6 +82,19 @@ typedef struct VDISK {
 	// RAW devices, it's the disk size.
 	uint64_t capacity;
 	__OSFILE fd;	// File descriptor or handle
+	//
+	// Error members
+	//
+	int errcode;	// Error number
+	int errline;	// Error line
+	const char *errfunc;	// Function name
+	//
+	// Internals
+	//
+	//int (*read_lba)(struct VDISK*, void*, uint64_t);
+	//int (*read_block)(struct VDISK*, void*,  uint64_t);
+	//int (*write_lba)(struct VDISK*, void*, uint64_t);
+	//int (*write_block)(struct VDISK*, void*, uint64_t);
 	union {
 		uint64_t *u64blocks;	// 64-bit allocation blocks
 		uint32_t *u32blocks;	// 32-bit allocation blocks
@@ -87,12 +103,6 @@ typedef struct VDISK {
 		uint64_t u64nblocks;	// Total amount of allocated blocks
 		uint32_t u32nblocks;	// Total amount of allocated blocks
 	};
-	//
-	// Error stuff
-	//
-	int errcode;	// Error number
-	int errline;	// Error line
-	const char *errfunc;	// Function name
 	// To avoid wasting memory space, and since a VDISK can only hold one
 	// format at a time, all structures are unionized. Version translation
 	// and header/format validity are done in vdisk_open.
@@ -117,6 +127,11 @@ typedef struct VDISK {
 //
 // Functions
 //
+
+/**
+ * Internal function. Set error code.
+ */
+int vdisk_i_err(VDISK *vd, int e, int l);
 
 /**
  * Open a VDISK.

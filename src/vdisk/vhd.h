@@ -15,6 +15,7 @@ enum {
 	VHD_DISK_RES3	= 6
 };
 enum {
+	VHD_BLOCK_UNALLOC	= -1,	// Block not allocated on disk
 	VHD_FEAT_TEMP	= 1,
 	VHD_FEAT_RES	= 2	// reserved, but always set
 };
@@ -57,12 +58,12 @@ typedef struct VHD_DYN_HDR { // v1
 	uint16_t minor;
 	uint16_t major;
 	uint32_t max_entries;	// For table
-	uint32_t blocksize;
+	uint32_t blocksize;	// In sectors
 	uint32_t checksum;
 	UID      parent_uuid;	// UUID
 	uint32_t parent_timestamp;
 	uint32_t res;
-	uint8_t  parent_name[512];	// UTF-16
+	uint16_t parent_name[256];	// UTF-16
 	VHD_PARENT_LOCATOR parent_locator[8];
 	uint8_t  res1[256];
 } VHD_DYN_HDR;

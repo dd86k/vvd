@@ -160,7 +160,10 @@ int vvd_info(VDISK *vd) {
 	//
 
 	MBR mbr;
-	if (vdisk_read_lba(vd, &mbr, 0)) return VVD_EOK;
+	if (vdisk_read_lba(vd, &mbr, 0)) {
+		fputs(vdisk_error(vd), stderr);
+		return EXIT_FAILURE;
+	}
 	if (mbr.sig != MBR_SIG) return VVD_EOK;
 	mbr_info_stdout(&mbr);
 
@@ -323,7 +326,7 @@ int vvd_compact(VDISK *vd) {
 		vdtmp.format = vd->format;
 		vdtmp.u32nblocks = vd->u32nblocks;
 		for (size_t i = 0; i < vdtmp.u32nblocks; ++i)
-			vdtmp.u32blocks[i] = VDI_BLOCK_UNALLOCATED;
+			vdtmp.u32blocks[i] = VDI_BLOCK_UNALLOC;
 		memcpy(&vdtmp.vdihdr, &vd->vdihdr, sizeof(VDI_HDR));
 		memcpy(&vdtmp.vdi, &vd->vdi, sizeof(VDIHEADER1));
 		if (vdisk_open(&vdtmp, NULL, VDISK_CREATE_TEMP)) {
@@ -347,11 +350,11 @@ int vvd_compact(VDISK *vd) {
 		printf("vdi_compact: Writing (%s blocks, %u checks/%u bytes)...\n",
 			strbsize, (uint32_t)oblocksize, (uint32_t)sizeof(size_t));
 		uint64_t d = 0;	// disk block index
-		os_seek(vd->fd, vd->offset, SEEK_SET);
+		os_fseek(vd->fd, vd->offset, SEEK_SET);
 		for (size_t i = 0; i < vd->u32nblocks; ++i) {
-			if (vd->u32blocks[i] == VDI_BLOCK_UNALLOCATED ||
+			if (vd->u32blocks[i] == VDI_BLOCK_UNALLOC ||
 				vd->u32blocks[i] == VDI_BLOCK_FREE) {
-				vdtmp.u32blocks[i] = VDI_BLOCK_UNALLOCATED;
+				vdtmp.u32blocks[i] = VDI_BLOCK_UNALLOC;
 				++stat_unalloc;
 				continue;
 			}
@@ -373,7 +376,7 @@ L_HASDATA:
 				return vdtmp.errcode;
 			}
 			vdtmp.u32blocks[i] = i;
-			os_write(vdtmp.fd, buffer, vd->vdi.blocksize);
+			os_fwrite(vdtmp.fd, buffer, vd->vdi.blocksize);
 			++stat_occupied;
 			++d;
 		}
