@@ -431,7 +431,7 @@ int vdisk_read_lba(VDISK *vd, void *buffer, uint64_t lba) {
 		if (vd->u32blocks[bi] == VDI_BLOCK_UNALLOC)
 			return vdisk_i_err(vd, VVD_EVDUNALLOC, __LINE_BEFORE__);
 		base = vd->u32blocks[bi] * vd->vdi.blocksize;
-		offset = vd->vdi.offData + base + (offset - base);
+		offset = vd->offset + base + (offset - base);
 		break;
 	case VDISK_FORMAT_VMDK:
 		if (lba >= vd->vmdk.capacity)

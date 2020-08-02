@@ -160,11 +160,8 @@ int vvd_info(VDISK *vd) {
 	//
 
 	MBR mbr;
-	if (vdisk_read_lba(vd, &mbr, 0)) {
-		fputs(vdisk_error(vd), stderr);
-		return EXIT_FAILURE;
-	}
-	if (mbr.sig != MBR_SIG) return VVD_EOK;
+	if (vdisk_read_lba(vd, &mbr, 0)) return EXIT_SUCCESS;
+	if (mbr.sig != MBR_SIG) return EXIT_SUCCESS;
 	mbr_info_stdout(&mbr);
 
 	//

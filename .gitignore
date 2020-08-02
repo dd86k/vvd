@@ -7,6 +7,9 @@ bin
 # vscode
 .vscode
 
+# Tup
+.tup
+
 # Personal stuff
 t
 NOTES
