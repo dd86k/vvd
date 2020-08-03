@@ -46,10 +46,8 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 		"VirtualBox VDI %s disk v%u.%u, %s\n"
 		"Header size: %u, Flags: %XH, Dummy: %u\n"
 		"Blocks: %u (allocated: %u, extra: %u), %s size\n"
-		"Offset to data: %Xh, to alloc blocks: %Xh\n"
-		"Cylinders: %u (legacy: %u)\n"
-		"Heads: %u (legacy: %u)\n"
-		"Sectors: %u (legacy: %u)\n"
+		"Offset to data: %Xh, to allocation table: %Xh\n"
+		"Cylinders: %u (legacy: %u), Heads: %u (legacy: %u), Sectors: %u (legacy: %u)\n"
 		"Sector size: %u (legacy: %u)\n"
 		"Create UUID: %s\n"
 		"Modify UUID: %s\n"
@@ -297,6 +295,8 @@ int vvd_compact(VDISK *vd, uint32_t flags) {
 	// VDI
 	//
 	case VDISK_FORMAT_VDI: {
+		//TODO: Continue vvd_compact::vdi
+
 		if (vd->vdi.type != VDI_DISK_DYN) {
 			fputs("vvd_compact: vdisk not dynamic\n", stderr);
 			return VVD_EVDTYPE;
@@ -333,8 +333,6 @@ int vvd_compact(VDISK *vd, uint32_t flags) {
 		}
 		printf("vvd_compact: %s temporary disk created\n", vdisk_str(&vdtmp));
 
-		//TODO: Continue vvd_compact::vdi
-
 		// "Optimized" buffer size
 		size_t oblocksize = vd->vdi.blocksize / sizeof(size_t);
 		// "Optimized" buffer pointer
@@ -354,8 +352,8 @@ int vvd_compact(VDISK *vd, uint32_t flags) {
 		os_fseek(vd->fd, vd->offset, SEEK_SET);
 		for (uint32_t i = 0; i < vd->u32nblocks; ++i) {
 			os_pupdate(&progress, (uint32_t)i);
-			if (vd->u32blocks[i] == VDI_BLOCK_UNALLOC ||
-				vd->u32blocks[i] == VDI_BLOCK_FREE) {
+			uint32_t bi = vd->u32blocks[i]; // block index
+			if (bi == VDI_BLOCK_UNALLOC || bi == VDI_BLOCK_FREE) {
 				vdtmp.u32blocks[i] = VDI_BLOCK_UNALLOC;
 				++stat_unalloc;
 				continue;
@@ -377,13 +375,14 @@ L_HASDATA:
 				vdisk_perror(&vdtmp);
 				return vdtmp.errcode;
 			}
-			vdtmp.u32blocks[i] = i;
-			os_fwrite(vdtmp.fd, buffer, vd->vdi.blocksize);
 			++stat_occupied;
 			++d;
 		}
 		vdtmp.vdi.blocksalloc = stat_occupied;
-		vdisk_update(&vdtmp);
+		if (vdisk_update(&vdtmp)) {
+			vdisk_perror(&vdtmp);
+			return vdtmp.errcode;
+		}
 		os_pfinish(&progress);
 		printf("vvd_compact: %u/%u blocks written, %u unallocated, %u zero, %u total\n",
 			stat_occupied, stat_alloc, stat_unalloc, stat_zero, vd->u32nblocks

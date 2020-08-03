@@ -211,6 +211,8 @@ MAIN {
 	const _oschar *defopt2 = NULL; // Default option 2 (typically file output/size)
 
 	// Additional arguments are processed first, since they're simpler
+	//TODO: --progress: shows progress bar whenever available
+	//TODO: --verbose: prints those extra lines (>v0.10.0)
 	for (size_t argi = 2; argi < argc; ++argi) {
 		const _oschar *arg = argv[argi];
 		//
