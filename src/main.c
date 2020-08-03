@@ -7,7 +7,8 @@
 
 #endif
 
-#define PROJECT_VERSION "0.0.0"
+#define INCLUDE_TESTS	1
+#define PROJECT_VERSION	"0.0.0"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -85,6 +86,13 @@ void test() {
 	assert(bswap64(0xAABBCCDD11223344) == 0x44332211DDCCBBAA);
 #ifdef _WIN32
 	assert(extcmp(L"test.bin", L"bin"));
+	struct progress_t p;
+	assert(os_pinit(&p, PROG_MODE_NONE, 10) == 0);
+	for (uint32_t i = 0; i <= 10; ++i) {
+		os_pupdate(&p, i);
+		Sleep(1000);
+	}
+	os_pfinish(&p);
 #else
 	assert(extcmp("test.bin", "bin"));
 #endif
@@ -120,11 +128,7 @@ static void help() {
 
 static void version(void) {
 	printf(
-	"vvd-" __PLATFORM__ " " PROJECT_VERSION 
-#ifdef TIMESTAMP
-	" (" TIMESTAMP ")"
-#endif
-	"\n"
+	"vvd-" __PLATFORM__ " " PROJECT_VERSION " (" __DATE__ " " __TIME__ ")\n"
 #ifdef __VERSION__
 	"Compiler: " __VERSION__ "\n"
 #endif
@@ -166,14 +170,14 @@ static void license() {
 #ifdef _WIN32
 #define MAIN int wmain(int argc, wchar_t **argv)
 #define vstr(quote) L##quote
-#define PSTR "%ls"
+#define OSCHARFMT "%ls"
 static int scmp(const wchar_t *s, const wchar_t *t) {
 	return wcscmp(s, t) == 0;
 }
 #else
 #define MAIN int main(int argc, char **argv)
 #define vstr(quote) quote
-#define PSTR "%s"
+#define OSCHARFMT "%s"
 static int scmp(const char *s, const char *t) {
 	return strcmp(s, t) == 0;
 }
@@ -187,6 +191,7 @@ static int vdextauto(const _oschar *path) {
 	if (extcmp(path, vstr("vdi")))	return VDISK_FORMAT_VDI;
 	if (extcmp(path, vstr("vmdk")))	return VDISK_FORMAT_VMDK;
 	if (extcmp(path, vstr("vhd")))	return VDISK_FORMAT_VHD;
+	if (extcmp(path, vstr("vhdx")))	return VDISK_FORMAT_VHDX;
 	return 0;
 }
 
@@ -244,7 +249,7 @@ MAIN {
 		//
 		// Unknown argument
 		//
-		fprintf(stderr, "main: '" PSTR "' unknown option\n", arg);
+		fprintf(stderr, "main: '" OSCHARFMT "' unknown option\n", arg);
 		return EXIT_FAILURE;
 	}
 
@@ -263,7 +268,7 @@ MAIN {
 			vdisk_perror(&vdin);
 			return vdin.errcode;
 		}
-		return vvd_info(&vdin);
+		return vvd_info(&vdin, 0);
 	}
 
 	if (scmp(action, vstr("map"))) {
@@ -279,7 +284,18 @@ MAIN {
 	}
 
 	if (scmp(action, vstr("compact"))) {
-		fputs("main: not implemented\n", stderr);
+		if (defopt1 == NULL) {
+			fputs("main: missing vdisk\n", stderr);
+			return EXIT_FAILURE;
+		}
+		if (vdisk_open(&vdin, defopt1, 0)) {
+			vdisk_perror(&vdin);
+			return vdin.errcode;
+		}
+		if (vvd_compact(&vdin, 0)) {
+			vdisk_perror(&vdin);
+			return vdin.errcode;
+		}
 		return EXIT_FAILURE;
 	}
 
@@ -329,6 +345,10 @@ MAIN {
 		return EXIT_FAILURE;
 	}
 
+	//
+	// Pages
+	//
+
 	if (scmp(action, vstr("ver"))) {
 		puts(PROJECT_VERSION);
 		return EXIT_SUCCESS;
@@ -344,6 +364,6 @@ MAIN {
 		test();
 #endif
 
-	fprintf(stderr, "main: '" PSTR "' unknown operation, see 'vvd help'\n", action);
+	fprintf(stderr, "main: '" OSCHARFMT "' unknown operation, see 'vvd help'\n", action);
 	return EXIT_FAILURE;
 }

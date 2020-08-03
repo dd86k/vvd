@@ -19,7 +19,7 @@ int vdisk_i_err(VDISK *vd, int e, int l) {
 int vdisk_open(VDISK *vd, const _oschar *path, uint16_t flags) {
 	vd->errfunc = __func__;
 
-	if ((vd->fd = os_open(path)) == 0)
+	if ((vd->fd = os_fopen(path)) == 0)
 		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
 
 	if (flags & VDISK_RAW) {
@@ -276,7 +276,7 @@ int vdisk_create(VDISK *vd, const _oschar *path, int format, uint64_t capacity, 
 	if (capacity == 0)
 		return vdisk_i_err(vd, VVD_EVDBOUND, __LINE_BEFORE__);
 
-	if ((vd->fd = os_create(path)) == 0)
+	if ((vd->fd = os_fcreate(path)) == 0)
 		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
 
 	if (flags & VDISK_RAW) {
@@ -303,7 +303,9 @@ int vdisk_create(VDISK *vd, const _oschar *path, int format, uint64_t capacity, 
 		vd->vdi.blocksextra = 0;
 		vd->vdi.blocksize = VDI_BLOCKSIZE;
 		vd->vdi.cbSector = vd->vdi.LegacyGeometry.cbSector = 512;
-		vd->vdi.cCylinders = vd->vdi.cHeads = vd->vdi.cSectors =
+		vd->vdi.cCylinders =
+			vd->vdi.cHeads =
+			vd->vdi.cSectors =
 			vd->vdi.LegacyGeometry.cCylinders =
 			vd->vdi.LegacyGeometry.cHeads =
 			vd->vdi.LegacyGeometry.cSectors = 0;
@@ -485,10 +487,10 @@ int vdisk_read_block(VDISK *vd, void *buffer, uint64_t index) {
 	case VDISK_FORMAT_VDI:
 		if (index >= vd->u32nblocks)
 			return vdisk_i_err(vd, VVD_EVDBOUND, __LINE_BEFORE__);
-		readsize = vd->vdi.blocksize;
 		if (vd->u32blocks[index] == VDI_BLOCK_UNALLOC)
 			return vdisk_i_err(vd, VVD_EVDUNALLOC, __LINE_BEFORE__);
-		pos = (vd->u32blocks[index] * vd->vdi.blocksize) + vd->vdi.offData;
+		readsize = vd->vdi.blocksize;
+		pos = vd->offset + (vd->u32blocks[index] * vd->vdi.blocksize);
 		break;
 	case VDISK_FORMAT_VMDK:
 		return vdisk_i_err(vd, VVD_EVDTODO, __LINE_BEFORE__);

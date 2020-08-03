@@ -14,7 +14,7 @@
 // vvd_info
 //
 
-int vvd_info(VDISK *vd) {
+int vvd_info(VDISK *vd, uint32_t flags) {
 	const char *type;	// vdisk type
 	char dsize[BIN_FLENGTH], bsize[BIN_FLENGTH];	// disk and block size
 	char uid1[UID_LENGTH], uid2[UID_LENGTH], uid3[UID_LENGTH], uid4[UID_LENGTH];
@@ -231,7 +231,7 @@ int vvd_map(VDISK *vd, uint32_t flags) {
 		bsize = vd->vhddyn.blocksize;
 		break;
 	default:
-		fputs("vvd_map: Unsupported format\n", stderr);
+		fputs("vvd_map: unsupported format\n", stderr);
 		return VVD_EVDFORMAT;
 	}
 
@@ -269,13 +269,13 @@ int vvd_map(VDISK *vd, uint32_t flags) {
 // vvd_new
 //
 
-int vvd_new(const _oschar *path, int format, uint64_t vsize, int flags) {
+int vvd_new(const _oschar *path, uint32_t format, uint64_t capacity, uint32_t flags) {
 	VDISK vd;
-	if (vdisk_create(&vd, path, format, vsize, flags)) {
+	if (vdisk_create(&vd, path, format, capacity, flags)) {
 		vdisk_perror(&vd);
 		return vd.errcode;
 	}
-	printf("%s disk created successfully\n", vdisk_str(&vd));
+	printf("vvd_new: %s disk created successfully\n", vdisk_str(&vd));
 	return 0;
 }
 
@@ -283,21 +283,22 @@ int vvd_new(const _oschar *path, int format, uint64_t vsize, int flags) {
 // vvd_compact
 //
 
-int vvd_compact(VDISK *vd) {
+int vvd_compact(VDISK *vd, uint32_t flags) {
 	if (vd->u32nblocks == 0) {
-		fputs("vvd_compact: No allocated blocks\n", stderr);
+		fputs("vvd_compact: no allocated blocks\n", stderr);
 		return VVD_EVDMISC;
 	}
 
-	puts("warning: This function is still being developed");
+	puts("vvd_compact: [warning] This function is still being developed");
 
+	struct progress_t progress;
 	switch (vd->format) {
 	//
 	// VDI
 	//
-	case VDISK_FORMAT_VDI:
+	case VDISK_FORMAT_VDI: {
 		if (vd->vdi.type != VDI_DISK_DYN) {
-			fputs("vdi_compact: vdisk not dynamic\n", stderr);
+			fputs("vvd_compact: vdisk not dynamic\n", stderr);
 			return VVD_EVDTYPE;
 		}
 
@@ -317,7 +318,7 @@ int vvd_compact(VDISK *vd) {
 		//
 
 		VDISK vdtmp;
-		if ((vdtmp.u32blocks = malloc(vd->u32nblocks << 2)) == NULL)
+		if ((vdtmp.u32blocks = malloc(vd->u32nblocks * 4)) == NULL)
 			return VVD_EALLOC;
 		vdtmp.offset = vd->offset;
 		vdtmp.format = vd->format;
@@ -326,11 +327,11 @@ int vvd_compact(VDISK *vd) {
 			vdtmp.u32blocks[i] = VDI_BLOCK_UNALLOC;
 		memcpy(&vdtmp.vdihdr, &vd->vdihdr, sizeof(VDI_HDR));
 		memcpy(&vdtmp.vdi, &vd->vdi, sizeof(VDIHEADER1));
-		if (vdisk_open(&vdtmp, NULL, VDISK_CREATE_TEMP)) {
+		if (vdisk_create(&vdtmp, NULL, VDISK_FORMAT_VDI, vd->capacity, VDISK_CREATE_TEMP)) {
 			vdisk_perror(&vdtmp);
 			return vd->errcode;
 		}
-		printf("vdi_compact: %s disk created\n", vdisk_str(&vdtmp));
+		printf("vvd_compact: %s temporary disk created\n", vdisk_str(&vdtmp));
 
 		//TODO: Continue vvd_compact::vdi
 
@@ -342,13 +343,17 @@ int vvd_compact(VDISK *vd) {
 		uint32_t stat_occupied = 0;	// allocated blocks with data
 		uint32_t stat_zero = 0;	// blocks with no data inside
 		uint32_t stat_alloc = 0;	// allocated blocks
+
 		char strbsize[BIN_FLENGTH];
 		fbins(vd->vdi.blocksize, strbsize);
-		printf("vdi_compact: Writing (%s blocks, %u checks/%u bytes)...\n",
+		printf("vvd_compact: writing (%s/block, %u checks/%u bytes)...\n",
 			strbsize, (uint32_t)oblocksize, (uint32_t)sizeof(size_t));
+		os_pinit(&progress, PROG_MODE_POURCENT, vd->u32nblocks - 1);
+
 		uint64_t d = 0;	// disk block index
 		os_fseek(vd->fd, vd->offset, SEEK_SET);
-		for (size_t i = 0; i < vd->u32nblocks; ++i) {
+		for (uint32_t i = 0; i < vd->u32nblocks; ++i) {
+			os_pupdate(&progress, (uint32_t)i);
 			if (vd->u32blocks[i] == VDI_BLOCK_UNALLOC ||
 				vd->u32blocks[i] == VDI_BLOCK_FREE) {
 				vdtmp.u32blocks[i] = VDI_BLOCK_UNALLOC;
@@ -379,21 +384,20 @@ L_HASDATA:
 		}
 		vdtmp.vdi.blocksalloc = stat_occupied;
 		vdisk_update(&vdtmp);
-		printf(
-			"vdi_compact: %u/%u blocks written, %u unallocated, %u zero, %u total\n",
+		os_pfinish(&progress);
+		printf("vvd_compact: %u/%u blocks written, %u unallocated, %u zero, %u total\n",
 			stat_occupied, stat_alloc, stat_unalloc, stat_zero, vd->u32nblocks
 		);
 		return 0;
+	}
 	//
 	// RAW
 	//
 	case VDISK_FORMAT_RAW:
-		fputs("vvd_compact: RAW files/devices are not supported\n",
-			stderr);
+		fputs("vvd_compact: RAW files/devices are not supported\n", stderr);
 		return VVD_EVDFORMAT;
 	default:
-		fputs("vvd_compact: VDISK format not supported\n",
-			stderr);
+		fputs("vvd_compact: VDISK format not supported\n", stderr);
 		return VVD_EVDFORMAT;
 	}
 

@@ -6,7 +6,11 @@
 #include <linux/fs.h>
 #endif
 
-__OSFILE os_open(const _oschar *path) {
+//
+// os_fopen
+//
+
+__OSFILE os_fopen(const _oschar *path) {
 #ifdef _WIN32
 	__OSFILE fd = CreateFileW(
 		path,
@@ -27,7 +31,11 @@ __OSFILE os_open(const _oschar *path) {
 	return fd;
 }
 
-__OSFILE os_create(const _oschar *path) {
+//
+// os_fcreate
+//
+
+__OSFILE os_fcreate(const _oschar *path) {
 #ifdef _WIN32
 	__OSFILE fd = CreateFileW(
 		path,
@@ -48,6 +56,10 @@ __OSFILE os_create(const _oschar *path) {
 	return fd;
 }
 
+//
+// os_fseek
+//
+
 int os_fseek(__OSFILE fd, int64_t pos, int flags) {
 #ifdef _WIN32
 	LARGE_INTEGER a;
@@ -60,6 +72,10 @@ int os_fseek(__OSFILE fd, int64_t pos, int flags) {
 #endif
 	return 0;
 }
+
+//
+// os_fread
+//
 
 int os_fread(__OSFILE fd, void *buffer, size_t size) {
 #ifdef _WIN32
@@ -83,6 +99,10 @@ int os_fread(__OSFILE fd, void *buffer, size_t size) {
 #endif
 	return 0;
 }
+
+//
+// os_fwrite
+//
 
 int os_fwrite(__OSFILE fd, void *buffer, size_t size) {
 #ifdef _WIN32
@@ -156,5 +176,99 @@ int os_falloc(__OSFILE fd, uint64_t fsize) {
 			return 1;
 	}
 	free(buf);
+	return 0;
+}
+
+//
+// os_pinit
+//
+
+int os_pinit(struct progress_t *p, uint32_t flags, uint32_t max) {
+#if _WIN32
+	p->fd = GetStdHandle(STD_OUTPUT_HANDLE);
+
+	CONSOLE_SCREEN_BUFFER_INFO csbi;
+	GetConsoleScreenBufferInfo(p->fd, &csbi);
+	p->leny = (csbi.srWindow.Bottom - csbi.srWindow.Top + 1);
+	p->lenx = (csbi.srWindow.Right - csbi.srWindow.Left + 1);
+	p->inity = csbi.dwCursorPosition.Y;
+	p->initx = csbi.dwCursorPosition.X;
+#else
+	winsize ws;
+	ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws);
+	p->leny = ws.ws_col;
+	p->lenx = ws.ws_row;
+#endif
+	p->bfill = malloc(1024);
+	p->bspace = malloc(1024);
+	memset(p->bfill, '=', 1024);
+	memset(p->bspace, ' ', 1024);
+	p->maximum = max;
+	p->flags = flags;
+
+	return 0;
+}
+
+//
+// os_pupdate
+//
+
+int os_pupdate(struct progress_t *p, uint32_t val) {
+#if _WIN32
+	COORD c;
+	c.X = 0;
+	c.Y = p->inity;
+	SetConsoleCursorPosition(p->fd, c);
+#else
+	//printf("\033[%d;%dH", p->inity, 0);
+	fputs("\r", stdout); // "CSI2n" clears line
+#endif
+	float cc = (float)val / p->maximum; // current
+	int pc; // printed chars
+	switch (p->flags & 0xF) {
+	case PROG_MODE_CUR_MAX:
+		pc = printf("%d/%d [", val, p->maximum);
+		break;
+	case PROG_MODE_CUR_ONLY:
+		pc = printf("%d [", val);
+		break;
+	case PROG_MODE_POURCENT:
+		pc = printf("%d%% [", (uint32_t)(cc * 100.0f));
+		break;
+	default:
+		pc = printf("[");
+		break;
+	}
+	if (pc < 0)
+		return 1;
+
+	uint32_t total = p->lenx - pc - 2;
+	uint32_t occup = cc * total;	// filled
+	uint32_t space = total - occup;	// what's left
+	printf("%.*s%.*s]", occup, p->bfill, space, p->bspace);
+
+	p->current = val;
+	return 0;
+}
+
+//
+// os_pfinish
+//
+
+int os_pfinish(struct progress_t *p) {
+	if (p->flags & PROG_FLAG_REMOVE) {
+#if _WIN32
+		COORD c;
+		c.X = 0;
+		c.Y = p->inity;
+		SetConsoleCursorPosition(p->fd, c);
+#else
+		fputs("\r", stdout);
+#endif
+		printf("%.*s", p->lenx, p->bspace);
+	}
+	free(p->bfill);
+	free(p->bspace);
+	putchar('\n');
 	return 0;
 }
