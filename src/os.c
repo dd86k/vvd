@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "os.h"
 #ifndef _WIN32
+#include <string.h>	// memset
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <linux/fs.h>
@@ -194,7 +195,7 @@ int os_pinit(struct progress_t *p, uint32_t flags, uint32_t max) {
 	p->inity = csbi.dwCursorPosition.Y;
 	p->initx = csbi.dwCursorPosition.X;
 #else
-	winsize ws;
+	struct winsize ws;
 	ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws);
 	p->leny = ws.ws_col;
 	p->lenx = ws.ws_row;

@@ -183,9 +183,15 @@ static int scmp(const char *s, const char *t) {
 }
 #endif
 
+//TODO: Consider hashing strings for faster lookups
+//	Either SuperFastHash [1] or xxHash [2]
+//	[1] http://www.azillionmonkeys.com/qed/hash.html
+//	[2] https://github.com/Cyan4973/xxHash
+
 /**
- * Extension vdisk matcher, returns VDISK_FORMAT if matches an extension.
- * Otherwise 0.
+ * Match a patch to an exception with the VDISK_FORMAT_* enum.
+ * 
+ * \returns VDISK_FORMAT enum or 0
  */
 static int vdextauto(const _oschar *path) {
 	if (extcmp(path, vstr("vdi")))	return VDISK_FORMAT_VDI;

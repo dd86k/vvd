@@ -63,9 +63,8 @@ void mbr_info_stdout(MBR *mbr) {
 	for (unsigned int i = 0; i < 4; ++i) {
 		MBR_PARTITION_ENTRY pe = mbr->pe[i];
 		printf(
-		"ENTRY %u    %3XH  %3XH  %9u  %10u  %4u:%3u:%2u~%4u:%3u:%2u\n",
-		i,
-		pe.status, pe.parttype, pe.lba, pe.sectors,
+		"ENTRY %u    %3XH  %3XH %10u  %10u  %4u:%3u:%2u~%4u:%3u:%2u\n",
+		i, pe.status, pe.parttype, pe.lba, pe.sectors,
 		// CHS start
 		pe.chsfirst.cylinder | ((pe.chsfirst.sector & 0xC0) << 2),
 		pe.chsfirst.head, pe.chsfirst.sector & 0x3F,
