@@ -11,7 +11,6 @@
 ::TODO: Function for every file being compiled
 
 SET CC=%1
-SET CTIME="\"%DATE% %TIME%\""
 
 IF /I "%CC%"=="clang-cl" GOTO :CLANGCL
 IF /I "%CC%"=="clean" GOTO :CLEAN
@@ -47,7 +46,7 @@ GOTO :EOF
 
 :CLANGCL
 IF NOT EXIST "bin" mkdir bin
-SET CFLAGS=%CC% -c %2 %3 %4 %5 /Zp -DTIMESTAMP=%CTIME% -D_CRT_SECURE_NO_WARNINGS -ferror-limit=2
+SET CFLAGS=%CC% -c %2 %3 %4 %5 /Zp -D_CRT_SECURE_NO_WARNINGS -ferror-limit=2
 ECHO %CC%: main.o
 %CFLAGS% src\main.c -o bin\main.o
 IF ERRORLEVEL 1 GOTO :EOF

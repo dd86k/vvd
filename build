@@ -22,8 +22,7 @@ b_clean()
 
 b_clang()
 {
-	CTIMESTAMP=`date "+%F_%T"`
-	CFLAGS="$CC -D_FILE_OFFSET_BITS=64 -DTIMESTAMP=\"$CTIMESTAMP\" $1 $2 $3 $4 -ferror-limit=2 -std=c99 -fpack-struct=1 -c"
+	CFLAGS="$CC -D_FILE_OFFSET_BITS=64 $1 $2 $3 $4 -ferror-limit=2 -std=c99 -fpack-struct=1 -c"
 	mkdir -p bin
 	echo $CC: main.obj
 	$CFLAGS src/main.c -o bin/main.obj
