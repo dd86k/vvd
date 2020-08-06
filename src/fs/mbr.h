@@ -22,20 +22,20 @@ enum {
 // 8032.5 MiB
 #define MBR_LBA_A_8032_MB	0x1F6080000ULL
 
-typedef struct CHS_ENTRY { // Cylinder-Head-Sector
+typedef struct CHS { // Cylinder-Head-Sector
 	uint8_t head;	// HEAD[7:0]
 	uint8_t sector;	// SECTOR[5:0], bits[7:6] for CYLINDER[9:8]
 	uint8_t cylinder;	// CYLINDER[7:0]
-} CHS_ENTRY;
+} CHS;
 
-typedef struct MBR_PARTITION_ENTRY {
-	uint8_t status;
-	struct CHS_ENTRY chsfirst;	// CHS first absolute address
+typedef struct MBR_PARTITION {
+	uint8_t status;	// Partition status
+	CHS chsfirst;	// CHS first absolute address
 	uint8_t parttype;	// partition type
-	struct CHS_ENTRY chslast;	// CHS last absolute address
+	CHS chslast;	// CHS last absolute address
 	uint32_t lba;	// LBA of first absolute sector in partition
 	uint32_t sectors;	// number of sectors for parition
-} MBR_PARTITION_ENTRY;
+} MBR_PARTITION;
 
 typedef struct MBR {
 	union {
@@ -47,7 +47,7 @@ typedef struct MBR {
 			// (Windows) 5A5AH if protected
 			// (UEFI) AA55H if protective MBR
 			uint16_t type;
-			MBR_PARTITION_ENTRY pe[4];
+			MBR_PARTITION pe[4];
 			uint16_t sig;
 		};
 	};
@@ -61,7 +61,7 @@ typedef struct MBR {
  * 
  * \returns LBA index
  */
-uint32_t mbr_lba(CHS_ENTRY *chs);
+uint32_t mbr_lba(CHS *chs);
 
 /**
  * BIOS-assisted LBA translation from a CHS geometry with a disk size. Useful
@@ -81,7 +81,7 @@ uint32_t mbr_lba(CHS_ENTRY *chs);
  * 
  * \returns LBA index
  */
-uint32_t mbr_lba_a(CHS_ENTRY *chs, uint64_t dsize);
+uint32_t mbr_lba_a(CHS *chs, uint64_t dsize);
 
 /**
  * Print MBR information to stdout.

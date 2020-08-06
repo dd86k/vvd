@@ -141,6 +141,22 @@ int pow2(int n) {
 }
 
 //
+// fpow2
+//
+
+unsigned int fpow2(unsigned int n) {
+	// Adapted from VBox/Storage/VDI.cpp getPowerOfTwo
+	if (n == 0)
+		return 0;
+	unsigned int p = 0;
+	while ((n & 1) == 0) {
+		n >>= 1;
+		++p;
+	}
+	return n == 1 ? p : 0;
+}
+
+//
 // wstra
 //
 

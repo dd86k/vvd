@@ -226,6 +226,7 @@ int os_pupdate(struct progress_t *p, uint32_t val) {
 #endif
 	float cc = (float)val / p->maximum; // current
 	int pc; // printed chars
+	uint32_t ph;	// placeholder
 	switch (p->flags & 0xF) {
 	case PROG_MODE_CUR_MAX:
 		pc = printf("%d/%d [", val, p->maximum);
@@ -234,7 +235,12 @@ int os_pupdate(struct progress_t *p, uint32_t val) {
 		pc = printf("%d [", val);
 		break;
 	case PROG_MODE_POURCENT:
-		pc = printf("%d%% [", (uint32_t)(cc * 100.0f));
+		ph = (uint32_t)(cc * 100.0f);
+		/*if (ph == ((float)p->current / p->maximum) * 100.0f) { // same %
+			p->current = val;
+			return 0; // NOP
+		}*/
+		pc = printf("%d%% [", ph);
 		break;
 	default:
 		pc = printf("[");

@@ -76,6 +76,11 @@ int extcmp(const _oschar *s1, const _oschar *s2);
 int pow2(int);
 
 /**
+ * Find nearest power of 2.
+ */
+unsigned int fpow2(unsigned int);
+
+/**
  * Convert an UTF-16 string to an ASCII string and returns number of charaters
  * copied with the destination's maximum buffer size. This function fills up
  * upto dsize-1 characters and inserts a null terminator and is useful when

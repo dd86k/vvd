@@ -14,7 +14,7 @@ void gpt_info_stdout(GPT *gpt) {
 	UID_TEXT diskguid;
 	uid_str(&gpt->guid, diskguid, UID_GUID);
 	printf(
-	"\n* GPT v%u.%u (%u B), HDR CRC32 %08X, PT CRC32 %08X\n"
+	"\nGPT: v%u.%u (%u B), HDR CRC32 %08X, PT CRC32 %08X\n"
 	"MAIN LBA %u, BACKUP LBA %u, FIRST LBA %u, LAST LBA %u\n"
 	"PT LBA %u, %u MAX ENTRIES, ENTRY SIZE %u\n"
 	"DISK GUID: %s\n",
@@ -29,14 +29,14 @@ void gpt_info_stdout(GPT *gpt) {
 // gpt_info_entries_stdout
 //
 
-void gpt_info_entries_stdout(VDISK *vd, GPT *gpt, uint32_t lba) {
+void gpt_info_entries_stdout(VDISK *vd, GPT *gpt, uint64_t lba) {
 	int max = gpt->pt_entries;	// maximum limiter
 	char partname[EFI_PART_NAME_LENGTH];
 	UID_TEXT partguid, typeguid;
 	GPT_ENTRY entry;
 
 START:
-	if (vdisk_read_lba(vd, &entry, lba)) {
+	if (vdisk_read_sector(vd, &entry, lba)) {
 		fputs("gpt_info_entries_stdout: Could not read GPT_ENTRY", stderr);
 		return;
 	}
@@ -49,7 +49,7 @@ START:
 	wstra(entry.partname, partname, EFI_PART_NAME_LENGTH);
 
 	printf(
-		"%u. %-36s\n"
+		"%" PRIu64 ". %-36s\n"
 		"  LBA %" PRIu64 " TO %" PRIu64 "\n"
 		"  PART: %s\n"
 		"  TYPE: %s\n"

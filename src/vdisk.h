@@ -73,39 +73,57 @@ enum {	// VDISK error codes
 // Structure definitions
 //
 
+// Defines a virtual disk.
+// All fields are more or less internal.
 typedef struct VDISK {
-	uint32_t format;	// See VDISKFORMAT, used by vdisk_open
-	uint32_t flags;	// See VDISK_FLAG
-	uint32_t offset;	// Calculated absolute data offset on disk
-	uint64_t nextblock;	// (Internal) Location of new allocation block
+	// Defines the virtual disk format (e.g. VDI, VMDK, etc.).
+	// See VDISKFORMAT enumeration.
+	uint32_t format;
+	// Flags. See VDISK_FLAG enumeration.
+	uint32_t flags;
+	// Calculated absolute offset to data.
+	uint32_t offset;
+	// (Internal) Location of new allocation block
+	uint64_t nextblock;
 	// Virtual disk capacity in bytes. For RAW files, it's the file size. For
 	// RAW devices, it's the disk size.
 	uint64_t capacity;
-	__OSFILE fd;	// File descriptor or handle
+	// (Posix) File descriptor (Windows) File HANDLE
+	__OSFILE fd;
+	// Dynamic disk block mask for remaining offset to LBA.
+	uint32_t blockmask;
+	// Dynamic disk block index shift number. Populated by fpow2.
+	uint32_t blockshift;
 	//
 	// Error members
 	//
 	int errcode;	// Error number
 	int errline;	// Error line
 	const char *errfunc;	// Function name
-	//
-	// Internals
-	//
+	// Return absolute file position from an LBA index
+	//int (*poslba)(struct VDISK*, uint64_t*);
+	// Return absolute file position from a block index
+	//int (*posblock)(struct VDISK*, uint64_t*);
 	//int (*read_lba)(struct VDISK*, void*, uint64_t);
-	//int (*read_block)(struct VDISK*, void*,  uint64_t);
+	//int (*read_block)(struct VDISK*, void*, uint64_t);
 	//int (*write_lba)(struct VDISK*, void*, uint64_t);
 	//int (*write_block)(struct VDISK*, void*, uint64_t);
 	union {
-		uint64_t *u64blocks;	// 64-bit allocation blocks
-		uint32_t *u32blocks;	// 32-bit allocation blocks
+		// Allocation table using 64-bit indexes
+		uint64_t *u64block;
+		// Allocation table using 32-bit indexes
+		uint32_t *u32block;
 	};
 	union {
-		uint64_t u64nblocks;	// Total amount of allocated blocks
-		uint32_t u32nblocks;	// Total amount of allocated blocks
+		// Total amount of allocated blocks
+		uint64_t u64blockcount;
+		// Total amount of allocated blocks
+		uint32_t u32blockcount;
 	};
 	// To avoid wasting memory space, and since a VDISK can only hold one
 	// format at a time, all structures are unionized. Version translation
 	// and header/format validity are done in vdisk_open.
+	// I'm sure 
 	union {
 		struct {
 			VDI_HDR vdihdr;
@@ -183,7 +201,7 @@ int vdisk_update(VDISK *vd);
  * 
  * Returns error code. Non-zero being an error.
  */
-int vdisk_read_lba(VDISK *vd, void *buffer, uint64_t lba);
+int vdisk_read_sector(VDISK *vd, void *buffer, uint64_t lba);
 
 /**
  * Seek to a block index and read it. The size of the block depends on the size

@@ -8,7 +8,7 @@
 // mbr_lba
 //
 
-uint32_t mbr_lba(CHS_ENTRY *chs) {
+uint32_t mbr_lba(CHS *chs) {
 	// LBA = (C * HPC + H) * SPT + (S − 1)
 	// HPC	Max heads per cylinders, typically 16 (28-bit LBA)
 	// SPT	Max sectors per strack, typically 63 (28-bit LBA)
@@ -21,7 +21,7 @@ uint32_t mbr_lba(CHS_ENTRY *chs) {
 // mbr_lba_a
 //
 
-uint32_t mbr_lba_a(CHS_ENTRY *chs, uint64_t dsize) {
+uint32_t mbr_lba_a(CHS *chs, uint64_t dsize) {
 	uint8_t HPC;
 
 	if (dsize <= MBR_LBA_A_504_MB)
@@ -55,15 +55,15 @@ void mbr_info_stdout(MBR *mbr) {
 	fbins(dtsize, size);
 
 	printf(
-	"\n* MBR, SERIAL %08X, USED %s, TYPE %04u\n"
-	"ENTRIES  STATUS  TYPE        LBA        SIZE  C:H:S start~end\n",
+	"\nMBR: SERIAL %08X, %s USED, TYPE %04u\n"
+	"   STATUS  TYPE        LBA        SIZE  C:H:S start-end\n",
 	mbr->serial, size, mbr->type
 	);
 
 	for (unsigned int i = 0; i < 4; ++i) {
-		MBR_PARTITION_ENTRY pe = mbr->pe[i];
+		MBR_PARTITION pe = mbr->pe[i];
 		printf(
-		"ENTRY %u    %3XH  %3XH %10u  %10u  %4u:%3u:%2u~%4u:%3u:%2u\n",
+		"%u.    %2XH   %2XH %10u  %10u  %4u:%3u:%2u-%4u:%3u:%2u\n",
 		i, pe.status, pe.parttype, pe.lba, pe.sectors,
 		// CHS start
 		pe.chsfirst.cylinder | ((pe.chsfirst.sector & 0xC0) << 2),

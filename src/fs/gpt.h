@@ -112,4 +112,4 @@ void gpt_info_stdout(GPT *);
 /**
  * Run through the list of GPT_ENTRY from a VDISK.
  */
-void gpt_info_entries_stdout(VDISK *vd, GPT *gpt, uint32_t lba);
+void gpt_info_entries_stdout(VDISK *vd, GPT *gpt, uint64_t lba);

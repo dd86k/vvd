@@ -136,13 +136,13 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 			printf(
 			"Dynamic header v%u.%u, data: %" PRIu64 ", table: %" PRIu64 "\n"
 			"Blocksize: %u, checksum: %08X\n"
-			"Parent UUID: %s, Parent timestamp: %u\n"
+			"Parent UUID: %s, timestamp: %u\n"
 			"%u BAT Entries, %u maximum BAT entries\n",
 			vd->vhddyn.minor, vd->vhddyn.major,
 			vd->vhddyn.data_offset, vd->vhddyn.table_offset,
 			vd->vhddyn.blocksize, vd->vhddyn.checksum,
 			paruuid, vd->vhddyn.parent_timestamp,
-			vd->u32nblocks, vd->vhddyn.max_entries
+			vd->u32blockcount, vd->vhddyn.max_entries
 			);
 		}
 		if (vd->vhd.savedState)
@@ -160,7 +160,7 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 	//
 
 	MBR mbr;
-	if (vdisk_read_lba(vd, &mbr, 0)) return EXIT_SUCCESS;
+	if (vdisk_read_sector(vd, &mbr, 0)) return EXIT_SUCCESS;
 	if (mbr.sig != MBR_SIG) return EXIT_SUCCESS;
 	mbr_info_stdout(&mbr);
 
@@ -177,29 +177,29 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 		}
 	}
 
+	uint64_t ebrlba; // Extended MBR LBA
 	switch (ebrtype) {
 	//
 	// GPT detection
 	//
 	case 1: {
-		uint64_t gpt_lba;
 		// Start of disk
-		if (vdisk_read_lba(vd, &mbr, 1)) return VVD_EOK;
+		if (vdisk_read_sector(vd, &mbr, 1)) return VVD_EOK;
 		if (((GPT*)&mbr)->sig == EFI_SIG) {
-			gpt_lba = 2;
+			ebrlba = 2;
 			goto L_GPT_RDY;
 		}
 		// End of disk
-		gpt_lba = BYTE_TO_SECTOR(vd->capacity) - 1;
-		if (vdisk_read_lba(vd, &mbr, gpt_lba)) return VVD_EOK;
+		ebrlba = BYTE_TO_SECTOR(vd->capacity) - 1;
+		if (vdisk_read_sector(vd, &mbr, ebrlba)) return VVD_EOK;
 		if (((GPT*)&mbr)->sig == EFI_SIG) {
-			gpt_lba -= 128;
+			ebrlba -= 128;
 			goto L_GPT_RDY;
 		}
 		break;
 L_GPT_RDY:
 		gpt_info_stdout((GPT *)&mbr);
-		gpt_info_entries_stdout(vd, (GPT *)&mbr, gpt_lba);
+		gpt_info_entries_stdout(vd, (GPT *)&mbr, ebrlba);
 	}
 		break;
 	}
@@ -215,7 +215,7 @@ int vvd_map(VDISK *vd, uint32_t flags) {
 	char bsizestr[BIN_FLENGTH]; // If used
 	uint64_t bsize; // block size
 	uint32_t bcount; // block count
-	uint32_t *b = vd->u32blocks; // block pointer
+	uint32_t *b = vd->u32block; // block pointer
 
 	switch (vd->format) {
 	case VDISK_FORMAT_VDI:
@@ -227,7 +227,7 @@ int vvd_map(VDISK *vd, uint32_t flags) {
 			fputs("vvd_map: vdisk is not dynamic\n", stderr);
 			return VVD_EVDTYPE;
 		}
-		bcount = vd->u32nblocks;
+		bcount = vd->u32blockcount;
 		bsize = vd->vhddyn.blocksize;
 		break;
 	default:
@@ -284,7 +284,7 @@ int vvd_new(const _oschar *path, uint32_t format, uint64_t capacity, uint32_t fl
 //
 
 int vvd_compact(VDISK *vd, uint32_t flags) {
-	if (vd->u32nblocks == 0) {
+	if (vd->u32blockcount == 0) {
 		fputs("vvd_compact: no allocated blocks\n", stderr);
 		return VVD_EVDMISC;
 	}
@@ -304,41 +304,49 @@ int vvd_compact(VDISK *vd, uint32_t flags) {
 			return VVD_EVDTYPE;
 		}
 
-		uint8_t *buffer;	// Block buffer
+		if (vd->vdi.blocksalloc == 0)
+			return EXIT_SUCCESS;
 
 		//
 		// Block buffer for transfer
 		//
 
+		uint8_t *buffer;	// Block buffer
 		if ((buffer = malloc(vd->vdi.blocksize)) == NULL)
 			return VVD_EALLOC;
 
 		//
 		// Temporary VDISK
-		//
 		// Also assigns the same attributes from the source vdisk
 		//
 
 		VDISK vdtmp;
-		if ((vdtmp.u32blocks = malloc(vd->u32nblocks * 4)) == NULL)
+		memcpy(&vdtmp.vdihdr, &vd->vdihdr, sizeof(VDI_HDR));
+		memcpy(&vdtmp.vdi, &vd->vdi, sizeof(VDIHEADER1));
+		/*if (vdisk_create(&vdtmp, NULL, VDISK_FORMAT_VDI, vd->capacity, VDISK_CREATE_TEMP)) {
+			vdisk_perror(&vdtmp);
+			return vd->errcode;
+		}*/
+		if ((vdtmp.u32block = malloc(vd->vdi.blocksalloc * 4)) == NULL)
 			return VVD_EALLOC;
 		vdtmp.offset = vd->offset;
 		vdtmp.format = vd->format;
-		vdtmp.u32nblocks = vd->u32nblocks;
-		for (size_t i = 0; i < vdtmp.u32nblocks; ++i)
-			vdtmp.u32blocks[i] = VDI_BLOCK_UNALLOC;
-		memcpy(&vdtmp.vdihdr, &vd->vdihdr, sizeof(VDI_HDR));
-		memcpy(&vdtmp.vdi, &vd->vdi, sizeof(VDIHEADER1));
-		if (vdisk_create(&vdtmp, NULL, VDISK_FORMAT_VDI, vd->capacity, VDISK_CREATE_TEMP)) {
-			vdisk_perror(&vdtmp);
-			return vd->errcode;
-		}
+		vdtmp.u32blockcount = vd->u32blockcount;
+
+		for (size_t i = 0; i < vd->vdi.blocksalloc; ++i)
+			vdtmp.u32block[i] = VDI_BLOCK_FREE;
+
 		printf("vvd_compact: %s temporary disk created\n", vdisk_str(&vdtmp));
+
+		//
+		// Main housework
+		//
 
 		// "Optimized" buffer size
 		size_t oblocksize = vd->vdi.blocksize / sizeof(size_t);
 		// "Optimized" buffer pointer
 		size_t *obuffer = (size_t*)buffer;
+
 		uint32_t stat_unalloc = 0;	// unallocated blocks
 		uint32_t stat_occupied = 0;	// allocated blocks with data
 		uint32_t stat_zero = 0;	// blocks with no data inside
@@ -348,38 +356,45 @@ int vvd_compact(VDISK *vd, uint32_t flags) {
 		fbins(vd->vdi.blocksize, strbsize);
 		printf("vvd_compact: writing (%s/block, %u checks/%u bytes)...\n",
 			strbsize, (uint32_t)oblocksize, (uint32_t)sizeof(size_t));
-		os_pinit(&progress, PROG_MODE_POURCENT, vd->u32nblocks - 1);
+		os_pinit(&progress, PROG_MODE_POURCENT, vd->u32blockcount - 1);
 
-		uint64_t d = 0;	// disk block index
-		os_fseek(vd->fd, vd->offset, SEEK_SET);
-		for (uint32_t i = 0; i < vd->u32nblocks; ++i) {
-			os_pupdate(&progress, (uint32_t)i);
-			uint32_t bi = vd->u32blocks[i]; // block index
-			if (bi == VDI_BLOCK_UNALLOC || bi == VDI_BLOCK_FREE) {
-				vdtmp.u32blocks[i] = VDI_BLOCK_UNALLOC;
+		uint32_t d = 0;
+		uint32_t i = 0;
+		// check/fix allocation errors before compating
+		for (; i < vd->u32blockcount; ++i) {
+			uint32_t bi = vd->u32block[i]; // block index
+			if (bi >= VDI_BLOCK_FREE) {
 				++stat_unalloc;
 				continue;
 			}
-			if (vdisk_read_block(vd, buffer, i)) {
-				vdisk_perror(vd);
-				return vd->errcode;
+			os_pupdate(&progress, (uint32_t)i);
+			if (bi < vd->vdi.blocksalloc) {
+				if (vdtmp.u32block[bi] == VDI_BLOCK_FREE) {
+					vdtmp.u32block[bi] = i;
+				} else {
+					vd->u32block[bi] = VDI_BLOCK_FREE;
+					//TODO: Update header once manipulating source
+					//rc = vdiUpdateBlockInfo(pImage, i);
+					vdisk_write_block_at(&vdtmp, buffer, i, d++);
+				}
+			} else {
+				vd->u32block[bi] = VDI_BLOCK_FREE;
+				//TODO: Update header once manipulating source
+				//vd->u32block[bi] = VDI_BLOCK_FREE;
+				vdisk_write_block_at(&vdtmp, buffer, i, d++);
 			}
-			// Check if block has data, if so, write the block into tmp VDISK
-			++stat_alloc;
-			for (size_t b = 0; b < oblocksize; ++b) {
-				if (obuffer[b])
-					goto L_HASDATA;
-			}
-			++stat_zero;
-			continue;
-L_HASDATA:
-			if (vdisk_write_block_at(&vdtmp, buffer, i, d)) {
-				vdisk_perror(&vdtmp);
-				return vdtmp.errcode;
-			}
-			++stat_occupied;
-			++d;
 		}
+		// Find redundant information and update the block pointers accordingly
+		for (i = 0; i < vd->u32blockcount; ++i) {
+			uint32_t bi = vd->u32block[i]; // block index
+			if (bi >= VDI_BLOCK_FREE) {
+				++stat_unalloc;
+				continue;
+			}
+		}
+		// Fill bubbles with other data if available
+//		for (i = 0; o < vd->vdi.blocksalloc
+		
 		vdtmp.vdi.blocksalloc = stat_occupied;
 		if (vdisk_update(&vdtmp)) {
 			vdisk_perror(&vdtmp);
@@ -387,7 +402,7 @@ L_HASDATA:
 		}
 		os_pfinish(&progress);
 		printf("vvd_compact: %u/%u blocks written, %u unallocated, %u zero, %u total\n",
-			stat_occupied, stat_alloc, stat_unalloc, stat_zero, vd->u32nblocks
+			stat_occupied, stat_alloc, stat_unalloc, stat_zero, vd->u32blockcount
 		);
 		return 0;
 	}

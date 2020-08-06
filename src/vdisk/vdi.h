@@ -9,13 +9,26 @@
 
 #define VDI_SIGNATURE	"<<< Oracle VM VirtualBox Disk Image >>>\n"
 #define VDI_SIGNATURE_OLDER	"<<< InnoTek VirtualBox Disk Image >>>\n"
+
+/**
+ * Block marked as free is not allocated in image file, read from this
+ * block may returns any random data.
+ */
+static const uint32_t VDI_BLOCK_FREE = ~0;
+
+/**
+ * Block marked as zero is not allocated in image file, read from this
+ * block returns zeroes.
+ */
+static const uint32_t VDI_BLOCK_ZERO = ~1;
+
 enum {
 	VDI_HEADER_MAGIC = 0xBEDA107F,
 	VDI_SIGNATURE_SIZE = 64,
 	VDI_COMMENT_SIZE = 256,
 
-	VDI_BLOCK_UNALLOC	= -1,	// "not on disk"
-	VDI_BLOCK_FREE	= -2,	// aka ZERO
+//	VDI_BLOCK_FREE	= ~0,	// aka ZERO
+//	VDI_BLOCK_ZERO	= ~1,	// "not on disk"
 
 	VDI_DISK_DYN	= 1,
 	VDI_DISK_FIXED	= 2,

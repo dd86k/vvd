@@ -54,8 +54,8 @@ void test() {
 	(int)sizeof(wchar_t)
 	);
 	assert(sizeof(MBR) == 512);
-	assert(sizeof(MBR_PARTITION_ENTRY) == 16);
-	assert(sizeof(CHS_ENTRY) == 3);
+	assert(sizeof(MBR_PARTITION) == 16);
+	assert(sizeof(CHS) == 3);
 	assert(sizeof(GPT) == 512);
 	assert(sizeof(GPT_ENTRY) == 512);
 	assert(sizeof(LBA64) == 8);
