@@ -49,15 +49,15 @@ START:
 	wstra(entry.partname, partname, EFI_PART_NAME_LENGTH);
 
 	printf(
-		"%" PRIu64 ". %-36s\n"
-		"  LBA %" PRIu64 " TO %" PRIu64 "\n"
-		"  PART: %s\n"
-		"  TYPE: %s\n"
-		"  FLAGS: %XH, PART FLAGS: %XH\n",
-		lba - 1, partname,
-		entry.firstlba.lba, entry.lastlba.lba,
-		partguid, typeguid,
-		entry.flags, entry.partflags
+	"%" PRIu64 ". %-36s\n"
+	"  LBA %" PRIu64 " TO %" PRIu64 "\n"
+	"  PART: %s\n"
+	"  TYPE: %s\n"
+	"  FLAGS: %XH, PART FLAGS: %XH\n",
+	lba - 1, partname,
+	entry.firstlba.lba, entry.lastlba.lba,
+	partguid, typeguid,
+	entry.flags, entry.partflags
 	);
 
 	// GPT flags

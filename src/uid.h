@@ -5,7 +5,7 @@
 enum {
 	UID_GUID	= 0,
 	UID_UUID	= 1,
-	UID_LENGTH	= 38	// usually 36 but.. {} and \0
+	UID_LENGTH	= 40	// usually 36 but.. {} and \0
 };
 typedef char UID_TEXT[UID_LENGTH];
 /**

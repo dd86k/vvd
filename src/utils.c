@@ -161,17 +161,15 @@ unsigned int fpow2(unsigned int n) {
 //
 
 void wstra(char16 *src, char *dest, int dsize) {
-	size_t bi = 0; // buffer index
-	if (src[bi] == 0) {
+	char c = src[0];
+	if (c == 0) {
 		strcpy(dest, "<NO NAME>");
 		return;
 	}
+	size_t bi = 0; // buffer index
 	--dsize; // to include null byte later on
-	while (bi < dsize && src[bi]) {
-		if (src[bi] >= 0x20 && src[bi] <= 0x7E)
-			dest[bi] = (char)src[bi];
-		else
-			dest[bi] = '?';
+	while (bi < dsize && (c = src[bi])) {
+		dest[bi] = c < 0x20 || c > 0x7E ? '?' : c;
 		++bi;
 	}
 	dest[bi] = 0;
