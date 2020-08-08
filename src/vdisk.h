@@ -6,9 +6,11 @@
 #include "vdisk/vmdk.h"
 #include "vdisk/vhd.h"
 #include "vdisk/vhdx.h"
+#include "vdisk/qed.h"
+#include "vdisk/qcow.h"
+#include "vdisk/phdd.h"
 
 #define __LINE_BEFORE__ (__LINE__ - 1)
-#define VDISK_ERR(n) vdisk_i_err(vd, n, __LINE_BEFORE__)
 
 //TODO: Define function declarations for warnings and specific vdisk stuff
 
@@ -18,16 +20,15 @@
 
 enum {	// DISKFORMAT magical hints (LSB), used for VDISK.format
 	VDISK_FORMAT_NONE	= 0,	// No formats has been specificied yet
-	VDISK_FORMAT_RAW	= 0xAAAAAAAA,	// Files/Devices
+	VDISK_FORMAT_RAW	= 0xAAAAAAAA,	// Raw files and devices
 	VDISK_FORMAT_VDI	= 0x203C3C3C,	// "<<< " VirtualBox
 	VDISK_FORMAT_VMDK	= 0x564D444B,	// "VMDK" VMware
 	VDISK_FORMAT_VHD	= 0x656E6F63,	// "cone" VirtualPC/Hyper-V
 	VDISK_FORMAT_VHDX	= 0x78646876,	// "vhdx" Hyper-V
 	VDISK_FORMAT_QED	= 0x00444551,	// "QED\0" QEMU Enhanced Disk
 	VDISK_FORMAT_QCOW	= 0xFB494651,	// "QFI\xFB" QEMU Copy-On-Write, v1/v2
+	VDISK_FORMAT_PHDD	= 0x68746957,	// "With" Parallels HDD
 //	VDISK_FORMAT_DMG	= 0x,	// "" Apple DMG
-//	VDISK_FORMAT_PARAHDD	= 0x,	// "" Parallels HDD
-//	VDISK_FORMAT_CUE	= 0x,	// "" Cue/Bin, Disk metadata
 };
 
 enum {	// VDISK flags, the open/create flags may intertwine in values
@@ -90,16 +91,15 @@ typedef struct VDISK {
 	uint64_t capacity;
 	// (Posix) File descriptor (Windows) File HANDLE
 	__OSFILE fd;
-	// Dynamic disk block mask for remaining offset to LBA.
-	uint32_t blockmask;
-	// Dynamic disk block index shift number. Populated by fpow2.
-	uint32_t blockshift;
 	//
 	// Error members
 	//
 	int errcode;	// Error number
 	int errline;	// Error line
 	const char *errfunc;	// Function name
+	//
+	// Function pointers
+	//
 	// Return absolute file position from an LBA index
 	//int (*poslba)(struct VDISK*, uint64_t*);
 	// Return absolute file position from a block index
@@ -108,6 +108,9 @@ typedef struct VDISK {
 	//int (*read_block)(struct VDISK*, void*, uint64_t);
 	//int (*write_lba)(struct VDISK*, void*, uint64_t);
 	//int (*write_block)(struct VDISK*, void*, uint64_t);
+	//
+	// BATs
+	//
 	union {
 		// Allocation table using 64-bit indexes
 		uint64_t *u64block;
@@ -123,13 +126,17 @@ typedef struct VDISK {
 	// To avoid wasting memory space, and since a VDISK can only hold one
 	// format at a time, all structures are unionized. Version translation
 	// and header/format validity are done in vdisk_open.
-	// I'm sure 
+	//TODO: Consider making these pointers and only allocate required structures
 	union {
 		struct {
 			VDI_HDR vdihdr;
 			VDIHEADER1 vdi;
+			// Dynamic disk block mask for remaining offset to LBA.
+			uint32_t vdi_blockmask;
+			// Dynamic disk block index shift number. Populated by fpow2.
+			uint32_t vdi_blockshift;
 		};
-		struct VMDK_HDR vmdk;
+		VMDK_HDR vmdk;
 		struct {
 			VHD_HDR vhd;
 			VHD_DYN_HDR vhddyn;
@@ -139,6 +146,18 @@ typedef struct VDISK {
 			VHDX_HEADER1 vhdxhdr;
 			VHDX_REGION_HDR vhdxreg;
 		};
+		struct {
+			QED_HDR qed;
+			uint64_t qed_offset_mask;
+			uint64_t qed_L2_mask;
+			uint32_t qed_L2_shift;
+			uint64_t qed_L1_mask;
+			uint32_t qed_L1_shift;
+			uint64_t *qed_L1; // L1 table
+			uint64_t *qed_L2; // L2 table
+		};
+		QCOW_HDR qcow;
+		PHDD_HDR phdd;
 	};
 } VDISK;
 
@@ -147,7 +166,9 @@ typedef struct VDISK {
 //
 
 /**
- * Internal function. Set error code.
+ * (Internal) Set errcode and errline.
+ * 
+ * \returns errcode
  */
 int vdisk_i_err(VDISK *vd, int e, int l);
 
@@ -168,7 +189,7 @@ int vdisk_i_err(VDISK *vd, int e, int l);
  * 
  * \returns Exit status
  */
-int vdisk_open(VDISK *vd, const _oschar *path, uint16_t flags);
+int vdisk_open(VDISK *vd, const _oschar *path, uint32_t flags);
 
 /**
  * Create a VDISK.

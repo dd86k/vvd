@@ -145,9 +145,37 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 			vd->u32blockcount, vd->vhddyn.max_entries
 			);
 		}
+
 		if (vd->vhd.savedState)
 			puts("+ Saved state");
 	}
+		break;
+//	case VDISK_FORMAT_VHDX:
+	case VDISK_FORMAT_QED:
+		fbins(vd->capacity, dsize);
+		printf(
+		"QEMU Enhanced Disk\n"
+		"Cluster size: %u, table size: %u, header size: %u\n"
+		"Features: %" PRIx64 "\n"
+		"Compat features: %" PRIx64 "\n"
+		"Autoclear features: %" PRIx64 "\n"
+		"L1 offset: %" PRIu64 "\n",
+		vd->qed.cluster_size,
+		vd->qed.table_size,
+		vd->qed.header_size,
+		vd->qed.features,
+		vd->qed.compat_features,
+		vd->qed.autoclear_features,
+		vd->qed.l1_offset
+		);
+		if (vd->qed.features & QED_FEAT_BACKING_FILE) {
+			printf(
+			"Backing name offset: %u\n"
+			"Backing name size: %u\n",
+			vd->qed.backup_name_offset,
+			vd->qed.backup_name_size
+			);
+		}
 		break;
 	case VDISK_FORMAT_RAW: break; // No header info
 	default:

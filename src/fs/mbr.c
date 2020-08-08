@@ -1,8 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "mbr.h"
-#include "gpt.h"
-#include "../vdisk.h"
+#include <assert.h>
 
 //
 // mbr_lba
@@ -56,14 +55,14 @@ void mbr_info_stdout(MBR *mbr) {
 
 	printf(
 	"\nMBR: SERIAL %08X, %s USED, TYPE %04u\n"
-	"   STATUS  TYPE        LBA        SIZE  C:H:S start-end\n",
+	"   STAT  TYPE        LBA        SIZE  C:H:S start-end\n",
 	mbr->serial, size, mbr->type
 	);
 
 	for (unsigned int i = 0; i < 4; ++i) {
 		MBR_PARTITION pe = mbr->pe[i];
 		printf(
-		"%u.    %2XH   %2XH %10u  %10u  %4u:%3u:%2u-%4u:%3u:%2u\n",
+		"%u.  %2XH   %2XH %10u  %10u  %4u:%3u:%2u-%4u:%3u:%2u\n",
 		i, pe.status, pe.parttype, pe.lba, pe.sectors,
 		// CHS start
 		pe.chsfirst.cylinder | ((pe.chsfirst.sector & 0xC0) << 2),
@@ -73,4 +72,13 @@ void mbr_info_stdout(MBR *mbr) {
 		pe.chslast.head, pe.chslast.sector & 0x3F
 		);
 	}
+}
+
+//
+// mbr_part_type_str
+//
+
+const char *mbr_part_type_str(uint8_t type) {
+	assert(0);
+	return NULL;
 }

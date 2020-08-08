@@ -86,6 +86,15 @@ IF ERRORLEVEL 1 GOTO :EOF
 ECHO %CC%: vhdx.o
 %CFLAGS% src\vdisk\vhdx.c -o bin\vhdx.o
 IF ERRORLEVEL 1 GOTO :EOF
+ECHO %CC%: qed.o
+%CFLAGS% src\vdisk\qed.c -o bin\qed.o
+IF ERRORLEVEL 1 GOTO :EOF
+ECHO %CC%: qcow.o
+%CFLAGS% src\vdisk\qcow.c -o bin\qcow.o
+IF ERRORLEVEL 1 GOTO :EOF
+ECHO %CC%: phdd.o
+%CFLAGS% src\vdisk\phdd.c -o bin\phdd.o
+IF ERRORLEVEL 1 GOTO :EOF
 :: LINK
 ECHO %CC%: Linking vvd
 %CC% %2 %3 %4 %5 bin\*.o -o vvd.exe

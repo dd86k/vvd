@@ -53,4 +53,6 @@ typedef struct VMDK_MARKER {
 
 //TODO: grain list
 
-struct VDISK;
+typedef struct VDISK VDISK;
+
+int vdisk_vmdk_open(VDISK *vd, uint32_t flags, uint32_t internal);

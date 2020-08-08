@@ -1,3 +1,7 @@
+/**
+ * VHD: (Connectix) Virtual Hard Disk
+ */
+
 #include <stdint.h>
 
 #define VHDMAGIC "conectix"
@@ -68,4 +72,6 @@ typedef struct VHD_DYN_HDR { // v1
 	uint8_t  res1[256];
 } VHD_DYN_HDR;
 
-struct VDISK;
+typedef struct VDISK VDISK;
+
+int vdisk_vhd_open(VDISK *vd, uint32_t flags, uint32_t internal);

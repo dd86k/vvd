@@ -1,5 +1,5 @@
 /**
- * 
+ * VDI: Virtualbox DIsk
  * 
  * https://forums.virtualbox.org/viewtopic.php?t=8046
  */
@@ -23,9 +23,9 @@ static const uint32_t VDI_BLOCK_FREE = ~0;
 static const uint32_t VDI_BLOCK_ZERO = ~1;
 
 enum {
-	VDI_HEADER_MAGIC = 0xBEDA107F,
-	VDI_SIGNATURE_SIZE = 64,
-	VDI_COMMENT_SIZE = 256,
+	VDI_HEADER_MAGIC	= 0xBEDA107F,
+	VDI_SIGNATURE_SIZE	= 64,
+	VDI_COMMENT_SIZE	= 256,
 
 //	VDI_BLOCK_FREE	= ~0,	// aka ZERO
 //	VDI_BLOCK_ZERO	= ~1,	// "not on disk"
@@ -89,3 +89,7 @@ typedef struct VDIHEADER1 { // v1.1
 	uint32_t cbSector;	// v1.1
 //	uint8_t  pad[40];
 } VDIHEADER1;
+
+typedef struct VDISK VDISK;
+
+int vdisk_vdi_open(VDISK *vd, uint32_t flags, uint32_t internal);

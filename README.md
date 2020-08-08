@@ -7,7 +7,7 @@
 ⚠ **NOT PRODUCTION READY** ⚠
 
 vvd aims to be a simple, robust, stable, universal tool to administrate
-virtual disks.
+virtual disk images.
 
 User manual: `docs/vvd.1`
 

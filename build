@@ -63,6 +63,15 @@ b_clang()
 	echo $CC: vhdx.obj
 	$CFLAGS src/vdisk/vhdx.c -o bin/vhdx.obj
 	if [ $? -ne 0 ]; then exit; fi
+	echo $CC: qed.obj
+	$CFLAGS src/vdisk/qed.c -o bin/qed.obj
+	if [ $? -ne 0 ]; then exit; fi
+	echo $CC: qcow.obj
+	$CFLAGS src/vdisk/qcow.c -o bin/qcow.obj
+	if [ $? -ne 0 ]; then exit; fi
+	echo $CC: phdd.obj
+	$CFLAGS src/vdisk/phdd.c -o bin/phdd.obj
+	if [ $? -ne 0 ]; then exit; fi
 	# LINK
 	echo $CC: Linking vvd
 	$CC $1 $2 $3 $4 bin/*.obj -o vvd

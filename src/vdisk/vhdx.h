@@ -1,8 +1,11 @@
 /**
+ * VHDX: (Microsoft) Virtual Hard Disk eXtended
+ * 
  * MS-VHDX v20160714
  * 
  * BAT entry 8-Byte
  */
+
 #include <stdint.h>
 #include "../uid.h"
 
@@ -40,6 +43,7 @@ typedef struct VHDX_HEADER1 {
 	uint32_t logsize;
 	uint64_t logoffset;
 	// Rest is reserved (4016 Bytes)
+	// It is not defined to avoid reading what we don't need
 } VHDX_HEADER1;
 
 typedef struct VHDX_REGION_HDR {
@@ -116,7 +120,7 @@ typedef struct VHDX_METADATA_HDR {
 typedef struct VHDX_METADATA_ENTRY {
 	// File Parameters	CAA16737-FA36-4D43-B3B6-33F0AA44E76B
 	// Virtual Disk Size	2FA54224-CD1B-4876-B211-5DBED83BF4B8
-	// Page 83 Data	BECA12AB-B2E6-4523-93EF-C309E000C746
+	// "Page 83 Data"	BECA12AB-B2E6-4523-93EF-C309E000C746
 	// Logical Sector Size	8141BF1D-A96F-4709-BA47-F233A8FAAB5F
 	// Logical Sector Size	CDA348C7-445D-4471-9CC9-E9885251C556
 	// Parent Locator	A8D35F2D-B30B-454D-ABF7-D3D84834AB0C
@@ -126,4 +130,6 @@ typedef struct VHDX_METADATA_ENTRY {
 	uint32_t flags; // ...plus 2 bits? what the hell?
 } VHDX_METADATA_ENTRY;
 
-struct VDISK;
+typedef struct VDISK VDISK;
+
+int vdisk_vhdx_open(VDISK *vd, uint32_t flags, uint32_t internal);

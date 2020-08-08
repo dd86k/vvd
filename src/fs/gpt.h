@@ -2,7 +2,6 @@
 
 #include <stdint.h>
 #include "../uid.h"
-#include "../vdisk.h"
 
 // GNU GRUB "Hah!IdontNeedEFI"
 
@@ -64,10 +63,10 @@ typedef struct GPT { // v1.0
 	LBA64    backup;
 	LBA64    firstlba;
 	LBA64    lastlba;
-	UID      guid;	// Disk GUID
+	UID      guid;	// Unique disk GUID
 	LBA64    pt_location;	// (partition table) location
 	uint32_t pt_entries;	// (partition table) number of entries
-	uint32_t pt_esize;	// (parition entry) structure size
+	uint32_t pt_esize;	// (partition entry) structure size
 	uint32_t pt_crc32;	// (partition table) CRC32
 	uint8_t  pad[420];
 } GPT;
@@ -77,7 +76,7 @@ typedef struct GPT_ENTRY {
 	// Unused entry        : 00000000-0000-0000-0000-000000000000
 	// EFI System Partition: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
 	// Contains legacy MBR : 024DEE41-33E7-11D3-9D69-0008C781F39F
-	UID      type;	// Parition type GUID
+	UID      type;	// Partition type GUID
 	UID      part;	// Unique partition GUID
 	LBA64    firstlba;
 	LBA64    lastlba;
@@ -85,7 +84,7 @@ typedef struct GPT_ENTRY {
 		uint64_t flagsraw;
 		struct {
 			// Bit 0 - Required for platform
-			// Bit 1 - If on, do not produce EFI_BLOCK_IO_PROTOCOL
+			// Bit 1 - If set, do not produce EFI_BLOCK_IO_PROTOCOL
 			// Bit 2 - Legacy PC-AT BIOS bootable 
 			uint32_t flags;	// GPT entry flags
 			uint16_t resflags;	// Reserved
@@ -103,7 +102,19 @@ typedef struct GPT_ENTRY {
 	uint8_t  pad[384];
 } GPT_ENTRY;
 
-struct VDISK;
+/*#ifndef _GPT_ENTRIES
+#define _GPT_ENTRIES
+//TODO: Array instead?
+const UID GPT_ENTRY_EMPTY = {
+	.time_low	= 0,
+	.time_mid	= 0,
+	.time_ver	= 0,
+	.clock	= 0,
+	.node = { 0, 0, 0, 0, 0, 0 }
+};
+#endif // _GPT_ENTRIES*/
+
+typedef struct VDISK VDISK;
 
 /**
  * Prints GPT information to stdout.
