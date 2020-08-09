@@ -7,7 +7,7 @@
 #include <stdint.h>
 
 // QCOW header structure
-typedef struct QCOW_HDR {
+typedef struct {
 	// 
 	uint32_t magic;
 	// 
@@ -36,6 +36,6 @@ typedef struct QCOW_HDR {
 	uint64_t snapshots_offset;
 } QCOW_HDR;
 
-typedef struct VDISK VDISK;
+struct VDISK;
 
-int vdisk_qcow_open(VDISK *vd, uint32_t flags, uint32_t internal);
+int vdisk_qcow_open(struct VDISK *vd, uint32_t flags, uint32_t internal);

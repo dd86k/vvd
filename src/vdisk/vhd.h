@@ -24,7 +24,7 @@ enum {
 	VHD_FEAT_RES	= 2	// reserved, but always set
 };
 
-typedef struct VHD_HDR { // v1
+typedef struct { // v1
 	uint64_t magic;	// "conectix"
 	uint32_t features;
 	uint16_t major;
@@ -47,7 +47,7 @@ typedef struct VHD_HDR { // v1
 	uint8_t  reserved[427];
 } VHD_HDR;
 
-typedef struct VHD_PARENT_LOCATOR {
+typedef struct {
 	uint32_t code;
 	uint32_t dataspace;
 	uint32_t datasize;
@@ -55,7 +55,7 @@ typedef struct VHD_PARENT_LOCATOR {
 	uint64_t offset;
 } VHD_PARENT_LOCATOR;
 
-typedef struct VHD_DYN_HDR { // v1
+typedef struct { // v1
 	uint64_t magic;
 	uint64_t data_offset;
 	uint64_t table_offset;
@@ -72,6 +72,6 @@ typedef struct VHD_DYN_HDR { // v1
 	uint8_t  res1[256];
 } VHD_DYN_HDR;
 
-typedef struct VDISK VDISK;
+struct VDISK;
 
-int vdisk_vhd_open(VDISK *vd, uint32_t flags, uint32_t internal);
+int vdisk_vhd_open(struct VDISK *vd, uint32_t flags, uint32_t internal);

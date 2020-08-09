@@ -38,20 +38,20 @@ enum {
 	VDI_BLOCKSIZE	= 1024 * 1024,	// Typical block size, 1 MiB
 };
 
-typedef struct VDIDISKGEOMETRY {
+typedef struct {
 	uint32_t cCylinders;
 	uint32_t cHeads;
 	uint32_t cSectors;
 	uint32_t cbSector;
 } VDIDISKGEOMETRY;
 
-typedef struct VDI_HDR { // Excludes char[64] at start
+typedef struct { // Excludes char[64] at start
 	uint32_t magic;
 	uint16_t majorv;
 	uint16_t minorv;
 } VDI_HDR;
 
-typedef struct VDIHEADER0 { // v0.0
+typedef struct { // v0.0
 	uint32_t type;
 	uint32_t fFlags;
 	uint8_t  szComment[VDI_COMMENT_SIZE];
@@ -65,7 +65,7 @@ typedef struct VDIHEADER0 { // v0.0
 	UID      uuidLinkage;
 } VDIHEADER0;
 
-typedef struct VDIHEADER1 { // v1.1
+typedef struct { // v1.1
 	uint32_t hdrsize;
 	uint32_t type;
 	uint32_t fFlags;
@@ -90,6 +90,6 @@ typedef struct VDIHEADER1 { // v1.1
 //	uint8_t  pad[40];
 } VDIHEADER1;
 
-typedef struct VDISK VDISK;
+struct VDISK;
 
-int vdisk_vdi_open(VDISK *vd, uint32_t flags, uint32_t internal);
+int vdisk_vdi_open(struct VDISK *vd, uint32_t flags, uint32_t internal);

@@ -8,7 +8,7 @@
 #include <stdint.h>
 
 // Parallels header structure
-typedef struct PHDD_HDR {
+typedef struct {
 	// Magic header
 	char     magic[16];
 	// Virtual disk version, currently 2
@@ -27,6 +27,6 @@ typedef struct PHDD_HDR {
 //	char Padding[24];
 } PHDD_HDR;
 
-typedef struct VDISK VDISK;
+struct VDISK;
 
-int vdisk_phdd_open(VDISK *vd, uint32_t flags, uint32_t internal);
+int vdisk_phdd_open(struct VDISK *vd, uint32_t flags, uint32_t internal);

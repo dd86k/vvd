@@ -48,9 +48,23 @@ void test() {
 #endif
 	printf(
 	"sizeof	VDISK		%u\n"
+	"sizeof	VDI_HDR		%u+%u\n"
+	"sizeof	VMDK_HDR	%u\n"
+	"sizeof	VHD_HDR		%u\n"
+	"sizeof	VHDX_HDR	%u+%u\n"
+	"sizeof	QED_HDR		%u\n"
+	"sizeof	QCOW_HDR	%u\n"
+	"sizeof	PHDD_HDR	%u\n"
 	"sizeof	wchar_t		%u\n"
 	"Running tests...\n",
 	(int)sizeof(VDISK),
+	(int)sizeof(VDI_HDR), (int)sizeof(VDIHEADER1),
+	(int)sizeof(VMDK_HDR),
+	(int)sizeof(VHD_HDR),
+	(int)sizeof(VHDX_HDR), (int)sizeof(VHDX_HEADER1),
+	(int)sizeof(QED_HDR),
+	(int)sizeof(QCOW_HDR),
+	(int)sizeof(PHDD_HDR),
 	(int)sizeof(wchar_t)
 	);
 	assert(sizeof(MBR) == 512);
@@ -86,13 +100,6 @@ void test() {
 	assert(bswap64(0xAABBCCDD11223344) == 0x44332211DDCCBBAA);
 #ifdef _WIN32
 	assert(extcmp(L"test.bin", L"bin"));
-	struct progress_t p;
-	assert(os_pinit(&p, PROG_MODE_NONE, 10) == 0);
-	for (uint32_t i = 0; i <= 10; ++i) {
-		os_pupdate(&p, i);
-		Sleep(1000);
-	}
-	os_pfinish(&p);
 #else
 	assert(extcmp("test.bin", "bin"));
 #endif
@@ -108,16 +115,23 @@ void test() {
 static void help() {
 	puts(
 	"Manage virtual disks\n"
-	"  Usage: vvd OPERATION [FILE [OPTIONS]]\n"
-	"\nOPERATION\n"
+	"  Usage: vvd OPERATION [FILE] [OPTIONS]\n"
+	"         vvd PAGE\n"
+	"         vvd {--help|--version|--license}\n"
+	"\n"
+	"OPERATION\n"
 	"  info       Get vdisk image information\n"
 	"  new        Create new empty vdisk\n"
 	"  map        Show allocation map\n"
 	"  compact    Compact vdisk image\n"
+	"\n"
+	"PAGES\n"
 	"  help       Show help page and exit\n"
+	"  ver        Only show version and exit\n"
 	"  version    Show version page and exit\n"
 	"  license    Show license page and exit\n"
-	"\nOPTIONS\n"
+	"\n"
+	"OPTIONS\n"
 	"  --raw           Open as RAW\n"
 	"  --create-raw    Create as RAW\n"
 	"  --create-dyn    Create vdisk as dynamic\n"

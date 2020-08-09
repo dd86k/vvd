@@ -26,12 +26,12 @@ enum {
 	VDHX_LOG_ALIGN = 4 * 1024,	// 4 KiB
 };
 
-typedef struct VHDX_HDR {
+typedef struct {
 	uint64_t magic;
 	uint16_t creator[256];
 } VHDX_HDR;
 
-typedef struct VHDX_HEADER1 {
+typedef struct {
 	uint32_t magic;
 	uint32_t crc32;
 	uint32_t seqnumber;
@@ -46,14 +46,14 @@ typedef struct VHDX_HEADER1 {
 	// It is not defined to avoid reading what we don't need
 } VHDX_HEADER1;
 
-typedef struct VHDX_REGION_HDR {
+typedef struct {
 	uint32_t magic;
 	uint32_t crc32;
 	uint32_t count;
 	uint32_t res;
 } VHDX_REGION_HDR;
 
-typedef struct VHDX_REGION_ENTRY {
+typedef struct {
 	// BAT	2DC27766-F623-4200-9D64-115E9BFD4A08	required
 	// METADATA	8B7CA206-4790-4B9A-B8FE-575F050F886E	required
 	UID      guid;
@@ -62,7 +62,7 @@ typedef struct VHDX_REGION_ENTRY {
 	uint32_t required;
 } VHDX_REGION_ENTRY;
 
-typedef struct VHDX_LOG_HDR {
+typedef struct {
 	uint32_t magic;
 	uint32_t crc32;
 	uint32_t count;
@@ -75,7 +75,7 @@ typedef struct VHDX_LOG_HDR {
 	uint64_t lastoffset;
 } VHDX_LOG_HDR;
 
-typedef struct VHDX_LOG_ZERO {
+typedef struct {
 	uint32_t magic;
 	uint32_t res;
 	uint64_t length;	// Multiple of 4 KiB
@@ -83,7 +83,7 @@ typedef struct VHDX_LOG_ZERO {
 	uint64_t sequence;
 } VHDX_LOG_ZERO;
 
-typedef struct VDHX_LOG_DESC {
+typedef struct {
 	uint32_t magic;
 	uint32_t trail;
 	uint64_t leading;
@@ -91,7 +91,7 @@ typedef struct VDHX_LOG_DESC {
 	uint64_t sequence;
 } VDHX_LOG_DESC;
 
-typedef struct VHDX_LOG_DATA {
+typedef struct {
 	uint32_t magic;
 	union {
 		uint8_t cdata[4096];	// Cluster
@@ -110,14 +110,14 @@ typedef struct VHDX_LOG_DATA {
 	};
 } VHDX_LOG_DATA;
 
-typedef struct VHDX_METADATA_HDR {
+typedef struct {
 	uint64_t magic;
 	uint16_t res;
 	uint16_t count;
 	uint8_t  res2[20];
 } VHDX_METADATA_HDR;
 
-typedef struct VHDX_METADATA_ENTRY {
+typedef struct {
 	// File Parameters	CAA16737-FA36-4D43-B3B6-33F0AA44E76B
 	// Virtual Disk Size	2FA54224-CD1B-4876-B211-5DBED83BF4B8
 	// "Page 83 Data"	BECA12AB-B2E6-4523-93EF-C309E000C746
@@ -130,6 +130,6 @@ typedef struct VHDX_METADATA_ENTRY {
 	uint32_t flags; // ...plus 2 bits? what the hell?
 } VHDX_METADATA_ENTRY;
 
-typedef struct VDISK VDISK;
+struct VDISK;
 
-int vdisk_vhdx_open(VDISK *vd, uint32_t flags, uint32_t internal);
+int vdisk_vhdx_open(struct VDISK *vd, uint32_t flags, uint32_t internal);

@@ -23,7 +23,7 @@ enum {
 };
 
 // 512 bytes then 10 KiB of text buffer
-typedef struct VMDK_HDR {
+typedef struct {
 	uint32_t magicNumber;
 	uint32_t version;
 	uint32_t flags;
@@ -44,7 +44,7 @@ typedef struct VMDK_HDR {
 	uint8_t  pad[433];
 } VMDK_HDR;
 
-typedef struct VMDK_MARKER {
+typedef struct {
 	uint64_t uSector;
 	uint32_t cbSize;
 	uint32_t uType;
@@ -53,6 +53,6 @@ typedef struct VMDK_MARKER {
 
 //TODO: grain list
 
-typedef struct VDISK VDISK;
+struct VDISK;
 
-int vdisk_vmdk_open(VDISK *vd, uint32_t flags, uint32_t internal);
+int vdisk_vmdk_open(struct VDISK *vd, uint32_t flags, uint32_t internal);

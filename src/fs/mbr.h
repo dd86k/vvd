@@ -123,13 +123,13 @@ enum {
 // 8032.5 MiB
 #define MBR_LBA_A_8032_MB	0x1F6080000ULL
 
-typedef struct CHS { // Cylinder-Head-Sector
+typedef struct { // Cylinder-Head-Sector
 	uint8_t head;	// HEAD[7:0]
 	uint8_t sector;	// SECTOR[5:0], bits[7:6] for CYLINDER[9:8]
 	uint8_t cylinder;	// CYLINDER[7:0]
 } CHS;
 
-typedef struct MBR_PARTITION {
+typedef struct {
 	uint8_t status;	// Partition status
 	CHS chsfirst;	// CHS first absolute address
 	uint8_t parttype;	// partition type
@@ -138,7 +138,7 @@ typedef struct MBR_PARTITION {
 	uint32_t sectors;	// number of sectors for parition
 } MBR_PARTITION;
 
-typedef struct MBR {
+typedef struct {
 	union {
 		uint8_t data[512];
 		struct {

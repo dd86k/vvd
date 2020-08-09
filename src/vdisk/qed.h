@@ -2,6 +2,35 @@
  * QED: QEMU Enhanced Disk
  * 
  * Little-endian format featuring clusters, including the header (cluster0).
+ *
+ * Layout:
+ * +--------+----------+----------+----------+-----+
+ * | Header | L1 table | Cluster0 | Cluster1 | ... |
+ * +--------+----------+----------+----------+-----+
+ *
+ * For cluster allocation, there is a 2-level table:
+ * 
+ *            +----------+
+ *            | L1 table |            <- Fixed
+ *            +----------+
+ *                 |
+ *       +---------+---------+
+ *       |         |         |
+ * +----------+ +-----+ +----------+
+ * | L2 table | | ... | | L2 table |  <- Allocated on-demand
+ * +----------+ +-----+ +----------+
+ *                 |
+ *          +------+------+
+ *          |      |      |
+ *     +------+ +-----+ +------+
+ *     | Data | | ... | | Data |      <- Cluster data
+ *     +------+ +-----+ +------+
+ *
+ * The L1 table is fixed size and always present. L2 tables are allocated on
+ * demand. The L1 table size determines the maximum possible image size; it
+ * can be influenced using the cluster_size and table_size values.
+ *
+ * All fields are little-endian on disk.
  * 
  * https://wiki.qemu.org/Features/QED/Specification
  * https://github.com/qemu/qemu/blob/master/docs/interop/qed_spec.txt
@@ -11,8 +40,8 @@
 
 static const uint32_t QED_CLUSTER_DEFAULT	= 64 * 1024; // 64K
 static const uint32_t QED_TABLE_DEFAULT	= 4; // 4 clusters
-static const uint32_t QED_CLUSTER_MIN	= 4096; // 2^12
-static const uint32_t QED_CLUSTER_MAX	= 67108864; // 2^26
+static const uint32_t QED_CLUSTER_MIN	= 4096; // 2^12, or 4 * 1024
+static const uint32_t QED_CLUSTER_MAX	= 67108864; // 2^26, or 64 * 1024 * 1024
 static const uint32_t QED_TABLE_MIN	= 1;
 static const uint32_t QED_TABLE_MAX	= 16;
 
@@ -26,7 +55,7 @@ static const uint64_t QED_FEAT_BACKING_FILE_NO_PROBE	= 4; // bit 2
 static const uint64_t QED_FEATS = QED_FEAT_BACKING_FILE | QED_FEAT_NEED_CHECK | QED_FEAT_BACKING_FILE_NO_PROBE;
 
 // QED header structure
-typedef struct QED_HDR {
+typedef struct {
 	// Magic signature
 	uint32_t magic;
 	// In bytes, must be a power of 2 within [2^12, 2^26].
@@ -52,6 +81,6 @@ typedef struct QED_HDR {
 	uint32_t backup_name_size;
 } QED_HDR;
 
-typedef struct VDISK VDISK;
+struct VDISK;
 
-int vdisk_qed_open(VDISK *vd, uint32_t flags, uint32_t internal);
+int vdisk_qed_open(struct VDISK *vd, uint32_t flags, uint32_t internal);

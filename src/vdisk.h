@@ -91,26 +91,17 @@ typedef struct VDISK {
 	uint64_t capacity;
 	// (Posix) File descriptor (Windows) File HANDLE
 	__OSFILE fd;
-	//
-	// Error members
-	//
 	int errcode;	// Error number
 	int errline;	// Error line
 	const char *errfunc;	// Function name
-	//
-	// Function pointers
-	//
-	// Return absolute file position from an LBA index
-	//int (*poslba)(struct VDISK*, uint64_t*);
-	// Return absolute file position from a block index
-	//int (*posblock)(struct VDISK*, uint64_t*);
+	// Function pointer: Read a sector with a LBA index
 	//int (*read_lba)(struct VDISK*, void*, uint64_t);
+	// Function pointer: Read a dynamic block with a block index
 	//int (*read_block)(struct VDISK*, void*, uint64_t);
+	// Function pointer: Read a sector with a LBA index
 	//int (*write_lba)(struct VDISK*, void*, uint64_t);
+	// Function pointer: Read a sector with a LBA index
 	//int (*write_block)(struct VDISK*, void*, uint64_t);
-	//
-	// BATs
-	//
 	union {
 		// Allocation table using 64-bit indexes
 		uint64_t *u64block;

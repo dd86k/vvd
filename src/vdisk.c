@@ -297,7 +297,7 @@ int vdisk_read_sector(VDISK *vd, void *buffer, uint64_t lba) {
 #endif
 		break;
 	case VDISK_FORMAT_VMDK:
-		if (lba >= vd->vmdk.capacity)
+		if (offset >= vd->vmdk.capacity)
 			return vdisk_i_err(vd, VVD_EVDMISC, __LINE_BEFORE__);
 		//bi = offset / SECTOR_TO_BYTE(vd->vmdk.grainSize);
 		//TODO: Work with the grainSize

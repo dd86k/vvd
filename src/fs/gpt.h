@@ -47,7 +47,7 @@ typedef struct LBA64 {
 } LBA64;
 
 // Protective MBRs have type of EEH, and the header is usually found at LBA 1
-typedef struct GPT { // v1.0
+typedef struct { // v1.0
 	union {
 		uint64_t sig; // "EFI PART"
 		struct {
@@ -72,7 +72,7 @@ typedef struct GPT { // v1.0
 } GPT;
 
 // GPT entry structure
-typedef struct GPT_ENTRY {
+typedef struct {
 	// Unused entry        : 00000000-0000-0000-0000-000000000000
 	// EFI System Partition: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
 	// Contains legacy MBR : 024DEE41-33E7-11D3-9D69-0008C781F39F
@@ -114,7 +114,7 @@ const UID GPT_ENTRY_EMPTY = {
 };
 #endif // _GPT_ENTRIES*/
 
-typedef struct VDISK VDISK;
+struct VDISK;
 
 /**
  * Prints GPT information to stdout.
@@ -123,4 +123,4 @@ void gpt_info_stdout(GPT *);
 /**
  * Run through the list of GPT_ENTRY from a VDISK.
  */
-void gpt_info_entries_stdout(VDISK *vd, GPT *gpt, uint64_t lba);
+void gpt_info_entries_stdout(struct VDISK *vd, GPT *gpt, uint64_t lba);
