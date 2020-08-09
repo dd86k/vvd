@@ -1,16 +1,16 @@
 ifeq (@(TUP_PLATFORM),win32)
 CC	= clang-cl
-CF	= /Zp -D_CRT_SECURE_NO_WARNINGS
+CF	= /Zp -D_CRT_SECURE_NO_WARNINGS -c
 OUTNAME	= vvd.exe
 OBJEXT	= o
 endif
 
-ifeq (@(TUP_PLATFORM),linux)
+ifneq (@(TUP_PLATFORM),win32)
 CC	= clang
-CF	= -std=c99 -fpack-struct=1 -D_FILE_OFFSET_BITS=64
+CF	= -std=c99 -fpack-struct=1 -D_FILE_OFFSET_BITS=64 -c
 OUTNAME	= vvd
 OBJEXT	= obj
 endif
 
-: foreach src/*.c src/fs/*.c src/vdisk/*.c |> $(CC) $(CF) -c "%f" -o "%o" |> bin/%B.$(OBJEXT)
-: bin/*.o |> $(CC) %f -o $(OUTNAME) |> $(OUTNAME)
+: foreach src/*.c src/fs/*.c src/vdisk/*.c |> $(CC) $(CF) "%f" -o "%o" |> bin/%B.$(OBJEXT)
+#: bin/*.o |> $(CC) %f -o $(OUTNAME) |> $(OUTNAME)
