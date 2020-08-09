@@ -13,6 +13,22 @@ User manual: `docs/vvd.1`
 
 Technical Manual: Coming soon
 
+# Compiling
+
+## Using the scripts
+
+There are two build scripts (`smake.cmd` on Windows, and `smake`
+Posix platforms) that use clang-cl (Windows) and clang (Posix) by default.
+
+You may set (and export) the `CC` (C compiler) and `CF` (C flags) variables
+for the scripts. For more info, you can invoke the scripts with `--help`.
+
+## Using tup
+
+There is experimental tup support. This only builds the object files since
+tup will complain if the compiler creates a temporary file not within tup's
+database. You can still invoke `smake link` to complete the process.
+
 # Homes
 
 - https://github.com/dd86k/vvd

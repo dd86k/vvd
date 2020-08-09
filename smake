@@ -7,7 +7,7 @@ if [ -z ${CF+x} ]; then
 	CF="-D_FILE_OFFSET_BITS=64 $2 $3 $4 -ferror-limit=2 -std=c99 -fpack-struct=1 -c"
 fi
 
-show_help()
+help()
 {
 	echo USAGE
 	echo "  ./smake ACTION"
@@ -18,7 +18,7 @@ show_help()
 	exit
 }
 
-b_clean()
+clean()
 {
 	rm -r bin/* vvd vvd.exe
 	exit
@@ -44,66 +44,10 @@ link()
 	exit
 }
 
-b_clang()
-{
-	CFLAGS="$CC -D_FILE_OFFSET_BITS=64 $1 $2 $3 $4 -ferror-limit=2 -std=c99 -fpack-struct=1 -c"
-	mkdir -p bin
-	echo $CC: main.obj
-	$CFLAGS src/main.c -o bin/main.obj
-	if [ $? -ne 0 ]; then exit; fi
-	echo $CC: uid.obj
-	$CFLAGS src/uid.c -o bin/uid.obj
-	if [ $? -ne 0 ]; then exit; fi
-	echo $CC: utils.obj
-	$CFLAGS src/utils.c -o bin/utils.obj
-	if [ $? -ne 0 ]; then exit; fi
-	echo $CC: vdisk.obj
-	$CFLAGS src/vdisk.c -o bin/vdisk.obj
-	if [ $? -ne 0 ]; then exit; fi
-	echo $CC: vvd.obj
-	$CFLAGS src/vvd.c -o bin/vvd.obj
-	if [ $? -ne 0 ]; then exit; fi
-	# fs
-	echo $CC: mbr.obj
-	$CFLAGS src/fs/mbr.c -o bin/mbr.obj
-	if [ $? -ne 0 ]; then exit; fi
-	echo $CC: gpt.obj
-	$CFLAGS src/fs/gpt.c -o bin/gpt.obj
-	if [ $? -ne 0 ]; then exit; fi
-	# os
-	echo $CC: os.obj
-	$CFLAGS src/os.c -o bin/os.obj
-	if [ $? -ne 0 ]; then exit; fi
-	# vdisk
-	echo $CC: vdi.obj
-	$CFLAGS src/vdisk/vdi.c -o bin/vdi.obj
-	if [ $? -ne 0 ]; then exit; fi
-	echo $CC: vmdk.obj
-	$CFLAGS src/vdisk/vmdk.c -o bin/vmdk.obj
-	if [ $? -ne 0 ]; then exit; fi
-	echo $CC: vhd.obj
-	$CFLAGS src/vdisk/vhd.c -o bin/vhd.obj
-	if [ $? -ne 0 ]; then exit; fi
-	echo $CC: vhdx.obj
-	$CFLAGS src/vdisk/vhdx.c -o bin/vhdx.obj
-	if [ $? -ne 0 ]; then exit; fi
-	echo $CC: qed.obj
-	$CFLAGS src/vdisk/qed.c -o bin/qed.obj
-	if [ $? -ne 0 ]; then exit; fi
-	echo $CC: qcow.obj
-	$CFLAGS src/vdisk/qcow.c -o bin/qcow.obj
-	if [ $? -ne 0 ]; then exit; fi
-	echo $CC: phdd.obj
-	$CFLAGS src/vdisk/phdd.c -o bin/phdd.obj
-	if [ $? -ne 0 ]; then exit; fi
-	# LINK
-	echo $CC: Linking vvd
-	$CC $1 $2 $3 $4 bin/*.obj -o vvd
-	exit
-}
-
+if [ "$1" = "help" ]; then help; fi
+if [ "$1" = "--help" ]; then help; fi
 if [ "$1" = "clean" ]; then clean; fi
 if [ "$1" = "build" ]; then build; fi
 if [ "$1" = "link" ]; then link; fi
 
-echo "ERROR: Action not found ($CC)"
+echo "ERROR: Action not found ($1)"
