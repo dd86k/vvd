@@ -4,9 +4,13 @@
 #ifdef _WIN32
 // Represent a 'native' OS character
 #define _oschar wchar_t
+#define vstr(quote) L##quote
+#define OSCHARFMT "%ls"
 #else // POSIX
 // Represent a 'native' OS character
 #define _oschar char
+#define vstr(quote) quote
+#define OSCHARFMT "%s"
 #endif
 
 #ifndef _CHAR16

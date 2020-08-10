@@ -183,15 +183,11 @@ static void license() {
 
 #ifdef _WIN32
 #define MAIN int wmain(int argc, wchar_t **argv)
-#define vstr(quote) L##quote
-#define OSCHARFMT "%ls"
 static int scmp(const wchar_t *s, const wchar_t *t) {
 	return wcscmp(s, t) == 0;
 }
 #else
 #define MAIN int main(int argc, char **argv)
-#define vstr(quote) quote
-#define OSCHARFMT "%s"
 static int scmp(const char *s, const char *t) {
 	return strcmp(s, t) == 0;
 }
