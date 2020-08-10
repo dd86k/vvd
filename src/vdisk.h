@@ -12,8 +12,6 @@
 
 #define __LINE_BEFORE__ (__LINE__ - 1)
 
-//TODO: Define function declarations for warnings and specific vdisk stuff
-
 //
 // Enumerations
 //

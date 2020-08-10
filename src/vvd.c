@@ -243,7 +243,7 @@ int vvd_map(VDISK *vd, uint32_t flags) {
 	char bsizestr[BIN_FLENGTH]; // If used
 	uint64_t bsize; // block size
 	uint32_t bcount; // block count
-	uint32_t *b = vd->u32block; // block pointer
+	int index64 = 0;
 
 	switch (vd->format) {
 	case VDISK_FORMAT_VDI:
@@ -258,37 +258,69 @@ int vvd_map(VDISK *vd, uint32_t flags) {
 		bcount = vd->u32blockcount;
 		bsize = vd->vhddyn.blocksize;
 		break;
+	case VDISK_FORMAT_QED:
+		index64 = 1;
+		bcount = vd->u32blockcount;
+		bsize = vd->qed.cluster_size;
+		break;
 	default:
 		fputs("vvd_map: unsupported format\n", stderr);
 		return VVD_EVDFORMAT;
 	}
 
 	fbins(bsize, bsizestr);
-	printf(
-	"Allocation map: %u blocks of %s each\n"
-	"   offset |        0 |        1 |        2 |        3 |"
-	           "        4 |        5 |        6 |        7 |\n"
-	"----------+----------+----------+----------+----------+"
-	           "----------+----------+----------+----------+\n",
-	bcount, bsizestr
-	);
 	size_t i = 0;
-	size_t bn = bcount - 8;
-	for (; i < bn; i += 8) {
+	size_t bn;
+	if (index64) {
 		printf(
-		" %8zu | %8X | %8X | %8X | %8X | %8X | %8X | %8X | %8X |\n",
-		i,
-		b[i],     b[i + 1],
-		b[i + 2], b[i + 3],
-		b[i + 4], b[i + 5],
-		b[i + 6], b[i + 7]
+		"Allocation map: %u blocks of %s each\n"
+		" offset d |                0 |                1 |"
+			"                2 |                3 |\n"
+		"----------+------------------+------------------+"
+			"------------------+------------------+\n",
+		bcount, bsizestr
 		);
-	}
-	if (bcount - i > 0) { // Left over
-		printf(" %8zu |", i);
-		for (; i < bcount; ++i)
-			printf(" %8X |", b[i]);
-		putchar('\n');
+		bn = bcount - 4;
+		for (; i < bn; i += 4) {
+			printf(
+			" %8zu | %16"PRIX64" | %16"PRIX64" | %16"PRIX64" | %16"PRIX64" |\n",
+			i,
+			vd->u64block[i],     vd->u64block[i + 1],
+			vd->u64block[i + 2], vd->u64block[i + 3]
+			);
+		}
+		if (bcount - i > 0) { // Left over
+			printf(" %8zu |", i);
+			for (; i < bcount; ++i)
+				printf(" %16"PRIX64" |", vd->u64block[i]);
+			putchar('\n');
+		}
+	} else {
+		printf(
+		"Allocation map: %u blocks of %s each\n"
+		" offset d |        0 |        1 |        2 |        3 |"
+			"        4 |        5 |        6 |        7 |\n"
+		"----------+----------+----------+----------+----------+"
+			"----------+----------+----------+----------+\n",
+		bcount, bsizestr
+		);
+		bn = bcount - 8;
+		for (; i < bn; i += 8) {
+			printf(
+			" %8zu | %8X | %8X | %8X | %8X | %8X | %8X | %8X | %8X |\n",
+			i,
+			vd->u32block[i],     vd->u32block[i + 1],
+			vd->u32block[i + 2], vd->u32block[i + 3],
+			vd->u32block[i + 4], vd->u32block[i + 5],
+			vd->u32block[i + 6], vd->u32block[i + 7]
+			);
+		}
+		if (bcount - i > 0) { // Left over
+			printf(" %8zu |", i);
+			for (; i < bcount; ++i)
+				printf(" %8X |", vd->u32block[i]);
+			putchar('\n');
+		}
 	}
 	return VVD_EOK;
 }

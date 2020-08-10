@@ -153,7 +153,7 @@ static void version(void) {
 	"VMDK    info\n"
 	"VHD     info, map\n"
 	"VHDX    \n"
-	"QED     \n"
+	"QED     info, map\n"
 	"QCOW    \n"
 	"VHD     \n"
 	"PHDD    \n"
