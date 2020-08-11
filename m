@@ -18,6 +18,8 @@ m_help()
 m_tips()
 {
 	echo clang
+	echo "\t-On\tOptimize to level n"
+	exit
 }
 
 m_clean()

@@ -47,10 +47,12 @@ GOTO :EOF
 
 :TIPS
 ECHO clang-cl
-ECHO 	/Os	Optimize size
-ECHO 	/Ot	Optimize speed
+ECHO 	/Os	Optimize for size
+ECHO 	/Ot	Optimize for speed
 ECHO 	/MT	Compile static
 ECHO 	/MD	Compile dynamic
+ECHO clang
+ECHO 	-On	Optimize to level n
 GOTO :EOF
 
 ::
