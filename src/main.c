@@ -232,22 +232,22 @@ MAIN {
 		//
 		// Open flags
 		//
-		if (scmp(arg, vstr("--raw"))) {
+		if (oscmp(arg, vstr("--raw")) == 0) {
 			oflags |= VDISK_RAW;
 			continue;
 		}
 		//
 		// Create flags
 		//
-		if (scmp(arg, vstr("--create-raw"))) {
+		if (oscmp(arg, vstr("--create-raw")) == 0) {
 			cflags |= VDISK_RAW;
 			continue;
 		}
-		if (scmp(arg, vstr("--create-dynamic"))) {
+		if (oscmp(arg, vstr("--create-dynamic")) == 0) {
 			cflags |= VDISK_CREATE_DYN;
 			continue;
 		}
-		if (scmp(arg, vstr("--create-fixed"))) {
+		if (oscmp(arg, vstr("--create-fixed")) == 0) {
 			cflags |= VDISK_CREATE_FIXED;
 			continue;
 		}
@@ -275,7 +275,7 @@ MAIN {
 	// Operations
 	//
 
-	if (scmp(action, vstr("info"))) {
+	if (oscmp(action, vstr("info")) == 0) {
 		if (defopt1 == NULL) {
 			fputs("main: missing vdisk\n", stderr);
 			return EXIT_FAILURE;
@@ -287,7 +287,7 @@ MAIN {
 		return vvd_info(&vdin, 0);
 	}
 
-	if (scmp(action, vstr("map"))) {
+	if (oscmp(action, vstr("map")) == 0) {
 		if (defopt1 == NULL) {
 			fputs("main: missing vdisk\n", stderr);
 			return EXIT_FAILURE;
@@ -299,7 +299,7 @@ MAIN {
 		return vvd_map(&vdin, 0);
 	}
 
-	if (scmp(action, vstr("compact"))) {
+	if (oscmp(action, vstr("compact")) == 0) {
 		if (defopt1 == NULL) {
 			fputs("main: missing vdisk\n", stderr);
 			return EXIT_FAILURE;
@@ -315,12 +315,12 @@ MAIN {
 		return EXIT_FAILURE;
 	}
 
-	if (scmp(action, vstr("defrag"))) {
+	if (oscmp(action, vstr("defrag")) == 0) {
 		fputs("main: not implemented\n", stderr);
 		return EXIT_FAILURE;
 	}
 
-	if (scmp(action, vstr("new"))) {
+	if (oscmp(action, vstr("new")) == 0) {
 		if (defopt1 == NULL) {
 			fputs("main: missing path specifier\n", stderr);
 			return EXIT_FAILURE;
@@ -346,17 +346,17 @@ MAIN {
 		return vvd_new(defopt1, format, vsize, cflags);
 	}
 
-	if (scmp(action, vstr("resize"))) {
+	if (oscmp(action, vstr("resize")) == 0) {
 		fputs("main: not implemented\n", stderr);
 		return EXIT_FAILURE;
 	}
 
-	if (scmp(action, vstr("repair"))) {
+	if (oscmp(action, vstr("repair")) == 0) {
 		fputs("main: not implemented\n", stderr);
 		return EXIT_FAILURE;
 	}
 
-	if (scmp(action, vstr("convert"))) {
+	if (oscmp(action, vstr("convert")) == 0) {
 		fputs("main: not implemented\n", stderr);
 		return EXIT_FAILURE;
 	}
@@ -365,18 +365,18 @@ MAIN {
 	// Pages
 	//
 
-	if (scmp(action, vstr("ver"))) {
+	if (oscmp(action, vstr("ver")) == 0) {
 		puts(PROJECT_VERSION);
 		return EXIT_SUCCESS;
 	}
-	if (scmp(action, vstr("version")) || scmp(action, vstr("--version")))
+	if (oscmp(action, vstr("version")) == 0 || oscmp(action, vstr("--version")) == 0)
 		version();
-	if (scmp(action, vstr("help")) || scmp(action, vstr("--help")))
+	if (oscmp(action, vstr("help")) == 0 || oscmp(action, vstr("--help")) == 0)
 		help();
-	if (scmp(action, vstr("license")) || scmp(action, vstr("--license")))
+	if (oscmp(action, vstr("license")) == 0 || oscmp(action, vstr("--license")) == 0)
 		license();
 #ifdef INCLUDE_TESTS
-	if (scmp(action, vstr("--test")))
+	if (oscmp(action, vstr("--test")) == 0)
 		test();
 #endif
 
