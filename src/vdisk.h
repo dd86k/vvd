@@ -178,7 +178,7 @@ int vdisk_i_err(VDISK *vd, int e, int l);
  * 
  * \returns Exit status
  */
-int vdisk_open(VDISK *vd, const _oschar *path, uint32_t flags);
+int vdisk_open(VDISK *vd, const oschar *path, uint32_t flags);
 
 /**
  * Create a VDISK.
@@ -191,7 +191,7 @@ int vdisk_open(VDISK *vd, const _oschar *path, uint32_t flags);
  * 
  * \returns Exit status
  */
-int vdisk_create(VDISK *vd, const _oschar *path, int format, uint64_t capacity, uint16_t flags);
+int vdisk_create(VDISK *vd, const oschar *path, int format, uint64_t capacity, uint16_t flags);
 
 /**
  * 

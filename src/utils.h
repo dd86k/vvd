@@ -3,14 +3,16 @@
 
 #ifdef _WIN32
 // Represent a 'native' OS character
-#define _oschar wchar_t
+#define oschar wchar_t
 #define vstr(quote) L##quote
 #define OSCHARFMT "%ls"
+#define scmp wcscmp
 #else // POSIX
 // Represent a 'native' OS character
-#define _oschar char
+#define oschar char
 #define vstr(quote) quote
 #define OSCHARFMT "%s"
+#define scmp strcmp
 #endif
 
 #ifndef _CHAR16
@@ -44,7 +46,7 @@ void fbins(uint64_t, char *);
 /**
  * 
  */
-int sbinf(const _oschar *input, uint64_t *size);
+int sbinf(const oschar *input, uint64_t *size);
 
 /**
  * Print array with prefix string
@@ -70,7 +72,7 @@ uint64_t bswap64(uint64_t);
  * 
  * E.g. `extcmp("test.bin", "bin")` evaluates to non-zero
  */
-int extcmp(const _oschar *s1, const _oschar *s2);
+int extcmp(const oschar *s1, const oschar *s2);
 
 /**
  * Checks if number is a power of 2.

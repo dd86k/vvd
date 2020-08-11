@@ -11,7 +11,7 @@
 // os_fopen
 //
 
-__OSFILE os_fopen(const _oschar *path) {
+__OSFILE os_fopen(const oschar *path) {
 #ifdef _WIN32
 	__OSFILE fd = CreateFileW(
 		path,
@@ -36,7 +36,7 @@ __OSFILE os_fopen(const _oschar *path) {
 // os_fcreate
 //
 
-__OSFILE os_fcreate(const _oschar *path) {
+__OSFILE os_fcreate(const oschar *path) {
 #ifdef _WIN32
 	__OSFILE fd = CreateFileW(
 		path,

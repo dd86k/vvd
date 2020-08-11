@@ -183,14 +183,8 @@ static void license() {
 
 #ifdef _WIN32
 #define MAIN int wmain(int argc, wchar_t **argv)
-static int scmp(const wchar_t *s, const wchar_t *t) {
-	return wcscmp(s, t) == 0;
-}
 #else
 #define MAIN int main(int argc, char **argv)
-static int scmp(const char *s, const char *t) {
-	return strcmp(s, t) == 0;
-}
 #endif
 
 //TODO: Consider hashing strings for faster lookups
@@ -203,11 +197,15 @@ static int scmp(const char *s, const char *t) {
  * 
  * \returns VDISK_FORMAT enum or 0
  */
-static int vdextauto(const _oschar *path) {
+static int vdextauto(const oschar *path) {
 	if (extcmp(path, vstr("vdi")))	return VDISK_FORMAT_VDI;
 	if (extcmp(path, vstr("vmdk")))	return VDISK_FORMAT_VMDK;
 	if (extcmp(path, vstr("vhd")))	return VDISK_FORMAT_VHD;
 	if (extcmp(path, vstr("vhdx")))	return VDISK_FORMAT_VHDX;
+	if (extcmp(path, vstr("qed")))	return VDISK_FORMAT_QED;
+	if (extcmp(path, vstr("qcow")) || extcmp(path, vstr("qcow2")))
+		return VDISK_FORMAT_QCOW;
+	if (extcmp(path, vstr("hdd")))	return VDISK_FORMAT_PHDD;
 	return 0;
 }
 
@@ -223,14 +221,14 @@ MAIN {
 	VDISK vdin;	// vdisk IN
 	VDISK vdout;	// vdisk OUT
 	uint64_t vsize;	// virtual disk size, used in 'new' and 'resize'
-	const _oschar *defopt1 = NULL; // Default option 1 (typically file input)
-	const _oschar *defopt2 = NULL; // Default option 2 (typically file output/size)
+	const oschar *defopt1 = NULL; // Default option 1 (typically file input)
+	const oschar *defopt2 = NULL; // Default option 2 (typically file output/size)
 
 	// Additional arguments are processed first, since they're simpler
 	//TODO: --progress: shows progress bar whenever available
 	//TODO: --verbose: prints those extra lines (>v0.10.0)
 	for (size_t argi = 2; argi < argc; ++argi) {
-		const _oschar *arg = argv[argi];
+		const oschar *arg = argv[argi];
 		//
 		// Open flags
 		//
@@ -271,7 +269,7 @@ MAIN {
 		return EXIT_FAILURE;
 	}
 
-	const _oschar *action = argv[1];
+	const oschar *action = argv[1];
 
 	//
 	// Operations

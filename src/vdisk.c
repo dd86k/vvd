@@ -19,7 +19,7 @@ int vdisk_i_err(VDISK *vd, int e, int l) {
 // vdisk_open
 //
 
-int vdisk_open(VDISK *vd, const _oschar *path, uint32_t flags) {
+int vdisk_open(VDISK *vd, const oschar *path, uint32_t flags) {
 	vd->errfunc = __func__;
 
 	if ((vd->fd = os_fopen(path)) == 0)
@@ -105,7 +105,7 @@ L_OPEN:
 // vdisk_create
 //
 
-int vdisk_create(VDISK *vd, const _oschar *path, int format, uint64_t capacity, uint16_t flags) {
+int vdisk_create(VDISK *vd, const oschar *path, int format, uint64_t capacity, uint16_t flags) {
 	vd->errfunc = __func__;
 
 	if (flags & VDISK_CREATE_TEMP) {
