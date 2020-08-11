@@ -17,8 +17,8 @@ Technical Manual: Coming soon
 
 ## Using the build scripts
 
-There are two build scripts (`m.cmd` on Windows, and `m`
-Posix platforms) that use clang-cl (Windows) or clang (Posix) by default.
+There are two build scripts (`m.cmd` on Windows, and `m` on Posix platforms)
+that use clang-cl (Windows) or clang (Posix) by default.
 
 You may set (and export) the `CC` (C compiler) and `CF` (C flags) variables
 for the scripts. For more info, you can invoke the scripts with `--help`.
