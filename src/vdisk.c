@@ -82,9 +82,10 @@ int vdisk_open(VDISK *vd, const oschar *path, uint32_t flags) {
 		if (os_fread(vd->fd, &vd->vhd, sizeof(VHD_HDR)))
 			return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
 		if (vd->vhd.magic == VHD_MAGIC) {
+			vd->format = VDISK_FORMAT_VHD;
 			vdopen = vdisk_vhd_open;
 			internal = 2;
-			goto L_OPEN;
+			break;
 		}
 
 		return vdisk_i_err(vd, VVD_EVDFORMAT, __LINE_BEFORE__);
@@ -94,7 +95,6 @@ int vdisk_open(VDISK *vd, const oschar *path, uint32_t flags) {
 	// Open
 	//
 
-L_OPEN:
 	if (vdopen(vd, flags, internal))
 		return vd->errcode;
 
@@ -321,8 +321,13 @@ int vdisk_read_sector(VDISK *vd, void *buffer, uint64_t lba) {
 		break;
 //	case VDISK_FORMAT_VHDX:
 	case VDISK_FORMAT_QED:
-//		bi = offset >> vd->blockshift;
-		
+		uint32_t l1 = (offset >> vd->qed_L1_shift) & vd->qed_L1_mask;
+		uint32_t l2 = (offset >> vd->qed_L2_shift) & vd->qed_L2_mask;
+		if (l1 >= vd->qed_L2.entries || l2 >= vd->qed_L2.entries)
+			return vdisk_i_err(vd, VVD_EVDMISC, __LINE_BEFORE__);
+		if (vdisk_qed_L2_load(vd, vd->qed_L1[l1]))
+			return vdisk_i_err(vd, VVD_EVDMISC, __LINE_BEFORE__);
+		offset = vd->qed_L2.offsets[l2] + (offset & vd->qed_offset_mask);
 		break;
 	case VDISK_FORMAT_RAW:
 		if (offset >= vd->capacity)

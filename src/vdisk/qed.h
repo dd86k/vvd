@@ -1,7 +1,7 @@
 /**
  * QED: QEMU Enhanced Disk
  * 
- * Little-endian format featuring clusters, including the header (cluster0).
+ * Little-endian format. Features clusters, including the header (cluster0).
  *
  * Layout:
  * +--------+----------+----------+----------+-----+
@@ -26,11 +26,9 @@
  *     | Data | | ... | | Data |      <- Cluster data
  *     +------+ +-----+ +------+
  *
- * The L1 table is fixed size and always present. L2 tables are allocated on
- * demand. The L1 table size determines the maximum possible image size; it
- * can be influenced using the cluster_size and table_size values.
- *
- * All fields are little-endian on disk.
+ * Both the L1 table and L2 tables are of the same size (table_size * cluster_size).
+ * The L1 table holds absolute file offsets to L2 table clusters, which the
+ * L2 table holds absolute file offsets to data clusters.
  * 
  * https://wiki.qemu.org/Features/QED/Specification
  * https://github.com/qemu/qemu/blob/master/docs/interop/qed_spec.txt
@@ -81,6 +79,15 @@ typedef struct {
 	uint32_t backup_name_size;
 } QED_HDR;
 
+typedef struct {
+	uint64_t *offsets;	// L2 table offsets to data clusters
+	uint64_t offset;	// Last loaded offset
+	uint32_t tablesize;	// table_size
+	uint32_t entries;	/// number of entries
+} QED_L2CACHE;
+
 struct VDISK;
 
 int vdisk_qed_open(struct VDISK *vd, uint32_t flags, uint32_t internal);
+
+int vdisk_qed_L2_load(struct VDISK *vd, uint64_t index);

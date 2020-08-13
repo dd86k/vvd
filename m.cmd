@@ -49,8 +49,10 @@ GOTO :EOF
 ECHO clang-cl
 ECHO 	/Os	Optimize for size
 ECHO 	/Ot	Optimize for speed
-ECHO 	/MT	Compile static
-ECHO 	/MD	Compile dynamic
+ECHO 	/MT	Use static runtime
+ECHO 	/MTd	Use static debug runtime
+ECHO 	/MD	Use dynamic runtime
+ECHO 	/MDd	Use dynamic debug runtime
 ECHO clang
 ECHO 	-On	Optimize to level n
 GOTO :EOF

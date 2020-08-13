@@ -137,13 +137,13 @@ typedef struct VDISK {
 		};
 		struct {
 			QED_HDR qed;
+			uint64_t *qed_L1; // L1 table
+			QED_L2CACHE qed_L2;
 			uint64_t qed_offset_mask;
 			uint64_t qed_L2_mask;
 			uint32_t qed_L2_shift;
 			uint64_t qed_L1_mask;
 			uint32_t qed_L1_shift;
-			uint64_t *qed_L1; // L1 table
-			uint64_t *qed_L2; // L2 table
 		};
 		QCOW_HDR qcow;
 		PHDD_HDR phdd;

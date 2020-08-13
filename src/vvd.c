@@ -120,7 +120,7 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 
 		printf(
 		"Conectix/Microsoft VHD %s disk v%u.%u, %s/%s\n"
-		"Created via %.4s v%u.%u on %s\n"
+		"Created by %.4s v%u.%u on %s\n"
 		"Cylinders: %u, Heads: %u, Sectors: %u\n"
 		"CRC32: %08X, UUID: %s\n",
 		type, vd->vhd.major, vd->vhd.minor, sizecur, dsize,
@@ -273,7 +273,7 @@ int vvd_map(VDISK *vd, uint32_t flags) {
 	size_t bn;
 	if (index64) {
 		printf(
-		"Allocation map: %u blocks of %s each\n"
+		"Allocation map: %u blocks to %s blocks\n"
 		" offset d |                0 |                1 |"
 			"                2 |                3 |\n"
 		"----------+------------------+------------------+"

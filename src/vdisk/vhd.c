@@ -12,6 +12,7 @@ int vdisk_vhd_open(VDISK *vd, uint32_t flags, uint32_t internal) {
 		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
 	if (vd->vhd.magic != VHD_MAGIC)
 		return vdisk_i_err(vd, VVD_EVDMAGIC, __LINE_BEFORE__);
+
 L_VHD_MAGICOK:
 #if ENDIAN_LITTLE
 	vd->vhd.major = bswap16(vd->vhd.major);
