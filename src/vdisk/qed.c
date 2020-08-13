@@ -3,8 +3,6 @@
 #include "../platform.h"
 #include <assert.h>
 
-#include <stdio.h>
-
 int vdisk_qed_open(VDISK *vd, uint32_t flags, uint32_t internal) {
 	vd->errfunc = __func__;
 
