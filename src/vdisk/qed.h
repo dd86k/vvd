@@ -46,13 +46,13 @@ static const uint32_t QED_TABLE_MIN	= 1;
 static const uint32_t QED_TABLE_MAX	= 16;
 
 // Disk image uses a backup file for unallocated clusters
-static const uint64_t QED_FEAT_BACKING_FILE	= 1; // bit 0
+static const uint64_t QED_F_BACKING_FILE	= 1; // bit 0
 // Disk image needs to be checked before use
-static const uint64_t QED_FEAT_NEED_CHECK	= 2; // bit 1
+static const uint64_t QED_F_NEED_CHECK	= 2; // bit 1
 // Treat as raw
-static const uint64_t QED_FEAT_BACKING_FILE_NO_PROBE	= 4; // bit 2
+static const uint64_t QED_F_BACKING_FILE_NO_PROBE	= 4; // bit 2
 // Known features
-static const uint64_t QED_FEATS = QED_FEAT_BACKING_FILE | QED_FEAT_NEED_CHECK | QED_FEAT_BACKING_FILE_NO_PROBE;
+static const uint64_t QED_FEATS = QED_F_BACKING_FILE | QED_F_NEED_CHECK | QED_F_BACKING_FILE_NO_PROBE;
 
 // QED header structure
 typedef struct {
@@ -74,10 +74,10 @@ typedef struct {
 	uint64_t l1_offset;
 	// Disk logical capacity in bytes
 	uint64_t capacity;
-	// (QED_FEAT_BACKING_FILE) Offset, in bytes from start of header, to the
+	// (QED_F_BACKING_FILE) Offset, in bytes from start of header, to the
 	// name of the backing filename.
 	uint32_t backup_name_offset;
-	// (QED_FEAT_BACKING_FILE) Size, in bytes, of the backing filename.
+	// (QED_F_BACKING_FILE) Size, in bytes, of the backing filename.
 	uint32_t backup_name_size;
 } QED_HDR;
 

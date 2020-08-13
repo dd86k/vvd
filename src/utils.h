@@ -43,8 +43,9 @@ void putout(const char *s);
  * Get formatted binary (ISO) size with suffix, buffer fixed at 16 characters
  */
 void fbins(uint64_t, char *);
+
 /**
- * 
+ * Unformat a binary number into a 64-bit number.
  */
 int sbinf(const oschar *input, uint64_t *size);
 

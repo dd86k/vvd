@@ -7,7 +7,7 @@
 
 #endif
 
-#define INCLUDE_TESTS	1
+#define DEBUG	1
 #define PROJECT_VERSION	"0.0.0"
 
 #include <stdio.h>
@@ -18,7 +18,7 @@
 #include "vvd.h"
 #include "platform.h"
 
-#ifdef INCLUDE_TESTS
+#ifdef DEBUG
 #include <assert.h>
 #include "fs/gpt.h"
 #include "fs/mbr.h"
@@ -361,6 +361,16 @@ MAIN {
 		return EXIT_FAILURE;
 	}
 
+	if (oscmp(action, vstr("upgrade")) == 0) {
+		fputs("main: not implemented\n", stderr);
+		return EXIT_FAILURE;
+	}
+
+	if (oscmp(action, vstr("cleanfs")) == 0) {
+		fputs("main: not implemented\n", stderr);
+		return EXIT_FAILURE;
+	}
+
 	//
 	// Pages
 	//
@@ -375,7 +385,7 @@ MAIN {
 		help();
 	if (oscmp(action, vstr("license")) == 0 || oscmp(action, vstr("--license")) == 0)
 		license();
-#ifdef INCLUDE_TESTS
+#ifdef DEBUG
 	if (oscmp(action, vstr("--test")) == 0)
 		test();
 #endif

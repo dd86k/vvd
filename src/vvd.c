@@ -168,7 +168,7 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 		vd->qed.autoclear_features,
 		vd->qed.l1_offset
 		);
-		if (vd->qed.features & QED_FEAT_BACKING_FILE) {
+		if (vd->qed.features & QED_F_BACKING_FILE) {
 			printf(
 			"Backing name offset: %u\n"
 			"Backing name size: %u\n",
