@@ -66,5 +66,7 @@ int vdisk_qed_L2_load(VDISK *vd, uint64_t offset) {
 	if (os_fread(vd->fd, vd->qed_L2.offsets, vd->qed_L2.tablesize))
 		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
 
+	vd->qed_L2.offset = offset;
+
 	return 0;
 }

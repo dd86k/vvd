@@ -197,8 +197,8 @@ int os_pinit(struct progress_t *p, uint32_t flags, uint32_t max) {
 #else
 	struct winsize ws;
 	ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws);
-	p->leny = ws.ws_col;
-	p->lenx = ws.ws_row;
+	p->leny = ws.ws_row;
+	p->lenx = ws.ws_col;
 #endif
 	p->bfill = malloc(1024);
 	p->bspace = malloc(1024);

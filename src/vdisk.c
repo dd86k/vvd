@@ -320,7 +320,7 @@ int vdisk_read_sector(VDISK *vd, void *buffer, uint64_t lba) {
 		}
 		break;
 //	case VDISK_FORMAT_VHDX:
-	case VDISK_FORMAT_QED:
+	case VDISK_FORMAT_QED: {
 		uint32_t l1 = (offset >> vd->qed_L1_shift) & vd->qed_L1_mask;
 		uint32_t l2 = (offset >> vd->qed_L2_shift) & vd->qed_L2_mask;
 		if (l1 >= vd->qed_L2.entries || l2 >= vd->qed_L2.entries)
@@ -328,6 +328,7 @@ int vdisk_read_sector(VDISK *vd, void *buffer, uint64_t lba) {
 		if (vdisk_qed_L2_load(vd, vd->qed_L1[l1]))
 			return vdisk_i_err(vd, VVD_EVDMISC, __LINE_BEFORE__);
 		offset = vd->qed_L2.offsets[l2] + (offset & vd->qed_offset_mask);
+	}
 		break;
 	case VDISK_FORMAT_RAW:
 		if (offset >= vd->capacity)

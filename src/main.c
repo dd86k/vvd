@@ -148,7 +148,7 @@ static void version(void) {
 #endif
 	"MIT License: Copyright (c) 2019-2020 dd86k <dd@dax.moe>\n"
 	"Project page: <https://github.com/dd86k/vvd>\n\n"
-	"VDISK   OPERATIONS\n"
+	"FORMAT  OPERATIONS\n"
 	"VDI     info, map, new, compact\n"
 	"VMDK    info\n"
 	"VHD     info, map\n"

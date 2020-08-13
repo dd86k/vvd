@@ -1,4 +1,4 @@
-# vvd, universal vdisk manager
+# vvd, Universal virtual disk management tool
 
 ⚠ **EARLY DEVELOPMENT: MAY EXPLODE VIOLENTLY** ⚠
 
