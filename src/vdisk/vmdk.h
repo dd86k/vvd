@@ -8,7 +8,7 @@
 #include <stdint.h>
 
 enum {
-	VDMK_COMPRESSED = 0x10000, // Flag[BIN_FLENGTH]
+	VDMK_COMPRESSED = 0x10000, // Flag
 	VMDK_2G_SPLIT_SIZE = 2047 * 1024 * 1024, // 64K Grain size *512 (2G)
 	VMDK_TEXT_LENGTH = 10 * 1024	// 10K text overhead buffer
 };

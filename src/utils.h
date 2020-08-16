@@ -4,13 +4,13 @@
 #ifdef _WIN32
 // Represent a 'native' OS character
 #define oschar wchar_t
-#define vstr(quote) L##quote
+#define osstr(quote) L##quote
 #define OSCHARFMT "%ls"
 #define oscmp wcscmp
 #else // POSIX
 // Represent a 'native' OS character
 #define oschar char
-#define vstr(quote) quote
+#define osstr(quote) quote
 #define OSCHARFMT "%s"
 #define oscmp strcmp
 #endif
@@ -26,10 +26,14 @@ typedef uint16_t char16;
 // Convert byte offset/size to sector number/size.
 #define BYTE_TO_SECTOR(u) ((u) >> 9)
 
-#define TB 1099511627776
-#define GB 1073741824
-#define MB 1048576
-#define KB 1024
+#define TiB 1099511627776
+#define TB  1000000000000
+#define GiB 1073741824
+#define GB  1000000000
+#define MiB 1048576
+#define MB  1000000
+#define KiB 1024
+#define KB  1000
 
 /**
  * Imitates `fputs(*, stdout)` for ease of typing.
@@ -37,17 +41,17 @@ typedef uint16_t char16;
 void putout(const char *s);
 
 /// Binary character buffer length
-#define BIN_FLENGTH	16
+#define BINSTR_LENGTH	16
 
 /**
  * Get formatted binary (ISO) size with suffix, buffer fixed at 16 characters
  */
-void fbins(uint64_t, char *);
+int bintostr(char *buffer, uint64_t size);
 
 /**
  * Unformat a binary number into a 64-bit number.
  */
-int sbinf(const oschar *input, uint64_t *size);
+int strtobin(uint64_t *size, const oschar *input);
 
 /**
  * Print array with prefix string
@@ -93,4 +97,4 @@ unsigned int fpow2(unsigned int);
  * upto dsize-1 characters and inserts a null terminator and is useful when
  * processing GPT entries.
  */
-void wstra(char16 *src, char *dest, int dsize);
+void wstra(char *dest, char16 *src, int nchars);

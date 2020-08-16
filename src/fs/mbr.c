@@ -45,18 +45,19 @@ uint32_t mbr_lba_a(CHS *chs, uint64_t dsize) {
 // mbr_info_stdout
 //
 
-void mbr_info_stdout(MBR *mbr) {
-	uint64_t dtsize = SECTOR_TO_BYTE(
+void mbr_info_stdout(MBR *mbr, uint32_t flags) {
+	//TODO: Simplified view (and leave this one in "--raw-info")
+	uint64_t totalsize = SECTOR_TO_BYTE(
 		(uint64_t)mbr->pe[0].sectors + (uint64_t)mbr->pe[1].sectors +
 		(uint64_t)mbr->pe[2].sectors + (uint64_t)mbr->pe[3].sectors
 	);
-	char size[BIN_FLENGTH];
-	fbins(dtsize, size);
+	char strsize[BINSTR_LENGTH];
+	bintostr(strsize, totalsize);
 
 	printf(
 	"\nMBR: SERIAL %08X, %s USED, TYPE %04u\n"
-	"   STAT  TYPE        LBA        SIZE  C:H:S start-end\n",
-	mbr->serial, size, mbr->type
+	"   STAT  TYPE        LBA        SIZE    CHS start-end\n",
+	mbr->serial, strsize, mbr->type
 	);
 
 	for (unsigned int i = 0; i < 4; ++i) {

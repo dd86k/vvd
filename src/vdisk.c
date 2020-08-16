@@ -26,11 +26,11 @@ int vdisk_open(VDISK *vd, const oschar *path, uint32_t flags) {
 		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
 
 	if (flags & VDISK_RAW) {
-		vd->format = VDISK_FORMAT_RAW;
-		vd->offset = 0;
 		if (os_fsize(vd->fd, &vd->capacity))
 			return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
-		return (vd->errcode = VVD_EOK);
+		vd->format = VDISK_FORMAT_RAW;
+		vd->offset = 0;
+		return 0;
 	}
 
 	//
@@ -231,6 +231,7 @@ int vdisk_update(VDISK *vd) {
 
 	switch (vd->format) {
 	case VDISK_FORMAT_VDI:
+		//TODO: Move pre-header signature in creation function
 		if (os_fseek(vd->fd, 0, SEEK_SET))
 			return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
 		if (os_fwrite(vd->fd, VDI_SIGNATURE, 40))

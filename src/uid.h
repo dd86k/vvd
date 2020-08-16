@@ -30,7 +30,7 @@ typedef struct UID {
 /**
  * Format a UID (GUID/UUID) to a string buffer.
  */
-int uid_str(UID *uid, char *str, int target);
+int uid_str(char *str, UID *uid, int target);
 /**
  * Byte swap GUID/UUID fields to convert a GUID into an UUID or vice-versa.
  * Useful when the endianess differs from a machine. GUIDs is usually

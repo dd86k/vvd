@@ -10,7 +10,7 @@
 // uid_str
 //
 
-int uid_str(UID *uid, char *buf, int target) {
+int uid_str(char *buf, UID *uid, int target) {
 	#ifdef ENDIAN_LITTLE
 		if (target == UID_UUID)
 			uid_swap(uid);

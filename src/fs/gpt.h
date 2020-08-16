@@ -41,7 +41,7 @@ typedef struct LBA64 {
 	union {
 		uint64_t lba;
 		struct {
-			uint32_t low, high;
+			uint32_t lowlba, highlba;
 		};
 	};
 } LBA64;
@@ -60,9 +60,9 @@ typedef struct { // v1.0
 	uint32_t crc32;
 	uint32_t reserved;	// reserved
 	LBA64    current;
-	LBA64    backup;
-	LBA64    firstlba;
-	LBA64    lastlba;
+	LBA64    backup;	// Backup LBA index
+	LBA64    first;	// First LBA index
+	LBA64    last;	// Last LBA index
 	UID      guid;	// Unique disk GUID
 	LBA64    pt_location;	// (partition table) location
 	uint32_t pt_entries;	// (partition table) number of entries
@@ -78,8 +78,8 @@ typedef struct {
 	// Contains legacy MBR : 024DEE41-33E7-11D3-9D69-0008C781F39F
 	UID      type;	// Partition type GUID
 	UID      part;	// Unique partition GUID
-	LBA64    firstlba;
-	LBA64    lastlba;
+	LBA64    first;
+	LBA64    last;
 	union {
 		uint64_t flagsraw;
 		struct {
@@ -119,8 +119,8 @@ struct VDISK;
 /**
  * Prints GPT information to stdout.
  */
-void gpt_info_stdout(GPT *);
+void gpt_info_stdout(GPT *gpt, uint32_t flags);
 /**
  * Run through the list of GPT_ENTRY from a VDISK.
  */
-void gpt_info_entries_stdout(struct VDISK *vd, GPT *gpt, uint64_t lba);
+void gpt_info_entries_stdout(struct VDISK *vd, GPT *gpt, uint64_t lba, uint32_t flags);

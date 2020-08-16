@@ -1,11 +1,10 @@
 #include "utils.h"
 #include "vdisk.h"
 
-#ifdef _WIN32	// Windows
+#ifdef _WIN32
 #include <windows.h>
 typedef HANDLE __OSFILE;
-
-#else
+#else // Posix
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -90,16 +89,33 @@ struct progress_t {
 #endif // DEFINITION_OS_PROGRESS
 
 /**
+ * Initiate a new progress bar. This function allocates, but manages its own
+ * memory.
  * 
+ * \param p struct progress_t pointer
+ * \param flags See PROG enumerations
+ * \param max Maximum value
+ * 
+ * \returns Status code
  */
 int os_pinit(struct progress_t *p, uint32_t flags, uint32_t max);
 
 /**
+ * Update the progress bar with a new current value.
  * 
+ * \param p struct progress_t pointer
+ * \param val New current value
+ * 
+ * \returns Status code
  */
 int os_pupdate(struct progress_t *p, uint32_t val);
 
 /**
+ * Indiate that the progress bar is finished and will no longer be used. This
+ * function frees memory it had previously allocated.
  * 
+ * \param p struct progress_t pointer
+ * 
+ * \returns Status code
  */
 int os_pfinish(struct progress_t *p);

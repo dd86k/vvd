@@ -3,34 +3,35 @@
 #include "utils.h"
 
 //
-// fbins
+// bintostr
 //
 
-void fbins(uint64_t n, char *buf) { // Lazy code 2.0, sorry
+int bintostr(char *buf, uint64_t n) { // Lazy code 2.0, sorry
 	float f = n;
 	char *fs;
-	if (f >= TB) {
+	//TODO: base-10 {kB|MB|GB|TB|PB}
+	if (f >= TiB) {
 		fs = "%.2f TiB";
-		f /= TB;
-	} else if (f >= GB) {
+		f /= TiB;
+	} else if (f >= GiB) {
 		fs = "%.2f GiB";
-		f /= GB;
-	} else if (f >= MB) {
+		f /= GiB;
+	} else if (f >= MiB) {
 		fs = "%.1f MiB";
-		f /= MB;
-	} else if (f >= KB) {
+		f /= MiB;
+	} else if (f >= KiB) {
 		fs = "%.1f KiB";
-		f /= KB;
+		f /= KiB;
 	} else
 		fs = "%g B";
-	snprintf(buf, 16, fs, f);
+	return snprintf(buf, BINSTR_LENGTH, fs, f);
 }
 
 //
-// sbinf
+// strtobin
 //
 
-int sbinf(const oschar *input, uint64_t *size) {
+int strtobin(uint64_t *size, const oschar *input) {
 	float f;
 	char c;
 #ifdef _WIN32
@@ -160,15 +161,15 @@ unsigned int fpow2(unsigned int n) {
 // wstra
 //
 
-void wstra(char16 *src, char *dest, int dsize) {
+void wstra(char *dest, char16 *src, int nchars) {
 	char c = src[0];
 	if (c == 0) {
 		strcpy(dest, "<NO NAME>");
 		return;
 	}
 	size_t bi = 0; // buffer index
-	--dsize; // to include null byte later on
-	while (bi < dsize && (c = src[bi])) {
+	--nchars; // to include null byte later on
+	while (bi < nchars && (c = src[bi])) {
 		dest[bi] = c < 0x20 || c > 0x7E ? '?' : c;
 		++bi;
 	}

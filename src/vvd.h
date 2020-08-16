@@ -1,7 +1,14 @@
 #include "vdisk.h"
 
-enum {
+enum {	// Flags for the cli/vvd interface
+	// General flags
 	VVD_PROGRESS	= 0x10,
+	// vvd_info flags
+	VVD_INFO_RAW	= 0x100,
+	// vvd_map flags
+	//VVD_MAP_	= 0x1000,
+	// vvd_compact flags
+	//VVD_COMPACT_CLEAN_WS	= 0x10000,
 };
 
 /**

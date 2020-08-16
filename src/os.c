@@ -14,11 +14,11 @@
 __OSFILE os_fopen(const oschar *path) {
 #ifdef _WIN32
 	__OSFILE fd = CreateFileW(
-		path,
+		path,	// lpFileName
 		GENERIC_READ | GENERIC_WRITE,	// dwDesiredAccess
-		0,	// dwShareMode: No sharing
+		0,	// dwShareMode
 		NULL,	// lpSecurityAttributes
-		OPEN_EXISTING,	// dwCreationDisposition: Open only if existing
+		OPEN_EXISTING,	// dwCreationDisposition
 		0,	// dwFlagsAndAttributes
 		NULL	// hTemplateFile
 	);
@@ -39,11 +39,11 @@ __OSFILE os_fopen(const oschar *path) {
 __OSFILE os_fcreate(const oschar *path) {
 #ifdef _WIN32
 	__OSFILE fd = CreateFileW(
-		path,
+		path,	// lpFileName
 		GENERIC_READ | GENERIC_WRITE,	// dwDesiredAccess
-		0,	// dwShareMode: No sharing
+		0,	// dwShareMode
 		NULL,	// lpSecurityAttributes
-		CREATE_ALWAYS,	// dwCreationDisposition: Always create
+		CREATE_ALWAYS,	// dwCreationDisposition
 		0,	// dwFlagsAndAttributes
 		NULL	// hTemplateFile
 	);
@@ -110,18 +110,14 @@ int os_fwrite(__OSFILE fd, void *buffer, size_t size) {
 	DWORD r;
 	if (WriteFile(fd, buffer, size, &r, NULL) == 0)
 		return -1;
-	/*if (r != size) {
-		fprintf(stderr, "os_fwrite: Failed to write %u bytes", (unsigned int)r);
-		return -2;
-	}*/
+	/*if (r != size)
+		return -2;*/
 #else
 	ssize_t r;
 	if ((r = write(fd, buffer, size)) == -1)
 		return -1;
-	/*if (r != size) {
-		fprintf(stderr, "os_fwrite: Failed to read %u bytes", (unsigned int)r);
-		return -2;
-	}*/
+	/*if (r != size)
+		return -2;*/
 #endif
 	return 0;
 }
@@ -133,8 +129,10 @@ int os_fwrite(__OSFILE fd, void *buffer, size_t size) {
 int os_fsize(__OSFILE fd, uint64_t *size) {
 #if _WIN32
 	LARGE_INTEGER li;
-	if (GetFileSizeEx(fd, &li) == 0)
-		return 1;
+	// NOTE: Doc says 0 (FALSE) on failure which apparently doesn't.
+	// NOTE: Not supported in Windows Store Apps (use GetFileInformationByHandleEx)
+	if (GetFileSizeEx(fd, &li))
+		return -1;
 	*size = li.QuadPart;
 	return 0;
 #else
@@ -151,7 +149,7 @@ int os_fsize(__OSFILE fd, uint64_t *size) {
 		//TODO: Non-linux variant
 		ioctl(fd, BLKGETSIZE64, size);
 		return 0;
-	default: return 1;
+	default: return -1;
 	}
 #endif
 }
@@ -168,13 +166,13 @@ int os_falloc(__OSFILE fd, uint64_t fsize) {
 			return 1;
 		while (fsize > bsize) {
 			if (os_fwrite(fd, buf, bsize))
-				return 1;
+				return -1;
 			fsize -= bsize;
 		}
 	}
 	if (fsize > 0) {
 		if (os_fwrite(fd, buf, bsize - fsize))
-			return 1;
+			return -1;
 	}
 	free(buf);
 	return 0;
@@ -225,14 +223,14 @@ int os_pupdate(struct progress_t *p, uint32_t val) {
 	fputs("\r", stdout); // "CSI2n" clears line
 #endif
 	float cc = (float)val / p->maximum; // current
-	int pc; // printed chars
+	int pc; // characters printed
 	uint32_t ph;	// placeholder
 	switch (p->flags & 0xF) {
 	case PROG_MODE_CUR_MAX:
-		pc = printf("%d/%d [", val, p->maximum);
+		pc = printf("%u/%u [", val, p->maximum);
 		break;
 	case PROG_MODE_CUR_ONLY:
-		pc = printf("%d [", val);
+		pc = printf("%u [", val);
 		break;
 	case PROG_MODE_POURCENT:
 		ph = (uint32_t)(cc * 100.0f);
@@ -240,14 +238,14 @@ int os_pupdate(struct progress_t *p, uint32_t val) {
 			p->current = val;
 			return 0; // NOP
 		}*/
-		pc = printf("%d%% [", ph);
+		pc = printf("%u%% [", ph);
 		break;
 	default:
 		pc = printf("[");
 		break;
 	}
 	if (pc < 0)
-		return 1;
+		return -11;
 
 	uint32_t total = p->lenx - pc - 2;
 	uint32_t occup = cc * total;	// filled

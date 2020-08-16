@@ -16,7 +16,7 @@
 
 int vvd_info(VDISK *vd, uint32_t flags) {
 	const char *type;	// vdisk type
-	char dsize[BIN_FLENGTH], bsize[BIN_FLENGTH];	// disk and block size
+	char disksize[BINSTR_LENGTH], blocksize[BINSTR_LENGTH];
 	char uid1[UID_LENGTH], uid2[UID_LENGTH], uid3[UID_LENGTH], uid4[UID_LENGTH];
 
 	switch (vd->format) {
@@ -35,12 +35,12 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 		char create_uuid[UID_LENGTH], modify_uuid[UID_LENGTH],
 			link_uuid[UID_LENGTH], parent_uuid[UID_LENGTH];
 
-		fbins(vd->vdi.disksize, dsize);
-		fbins(vd->vdi.blocksize, bsize);
-		uid_str(&vd->vdi.uuidCreate, uid1, UID_UUID);
-		uid_str(&vd->vdi.uuidModify, uid2, UID_UUID);
-		uid_str(&vd->vdi.uuidLinkage, uid3, UID_UUID);
-		uid_str(&vd->vdi.uuidParentModify, uid4, UID_UUID);
+		bintostr(disksize, vd->vdi.disksize);
+		bintostr(blocksize, vd->vdi.blocksize);
+		uid_str(uid1, &vd->vdi.uuidCreate, UID_UUID);
+		uid_str(uid2, &vd->vdi.uuidModify, UID_UUID);
+		uid_str(uid3, &vd->vdi.uuidLinkage, UID_UUID);
+		uid_str(uid4, &vd->vdi.uuidParentModify, UID_UUID);
 
 		printf(
 		"VirtualBox VDI %s disk v%u.%u, %s\n"
@@ -55,9 +55,9 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 		"Modify UUID: %s\n"
 		"Link   UUID: %s\n"
 		"Parent UUID: %s\n",
-		type, vd->vdihdr.majorv, vd->vdihdr.minorv, dsize,
+		type, vd->vdihdr.majorv, vd->vdihdr.minorv, disksize,
 		vd->vdi.hdrsize, vd->vdi.fFlags, vd->vdi.u32Dummy,
-		vd->vdi.totalblocks, vd->vdi.blocksalloc, vd->vdi.blocksextra, bsize,
+		vd->vdi.totalblocks, vd->vdi.blocksalloc, vd->vdi.blocksextra, blocksize,
 		vd->vdi.offData, vd->vdi.offBlocks,
 		vd->vdi.cCylinders, vd->vdi.LegacyGeometry.cCylinders,
 		vd->vdi.cHeads, vd->vdi.LegacyGeometry.cHeads,
@@ -79,13 +79,13 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 		default: comp = "?";
 		}
 
-		fbins(vd->capacity, dsize);
+		bintostr(disksize, vd->capacity);
 		printf(
 		"VMware VMDK disk v%u, %s compression, %s\n"
 		"Capacity: %"PRIu64" Sectors\n"
 		"Overhead: %"PRIu64" Sectors\n"
 		"Grain size (Raw): %"PRIu64" Sectors\n",
-		vd->vmdk.version, comp, dsize,
+		vd->vmdk.version, comp, disksize,
 		vd->vmdk.capacity, vd->vmdk.overHead, vd->vmdk.grainSize
 		);
 
@@ -97,7 +97,7 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 	// VHD
 	//
 	case VDISK_FORMAT_VHD: {
-		char sizecur[BIN_FLENGTH];
+		char sizecur[BINSTR_LENGTH];
 		const char *os;
 
 		switch (vd->vhd.type) {
@@ -114,16 +114,16 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 		default:	os = "unknown"; break;
 		}
 
-		uid_str(&vd->vhd.uuid, uid1, UID_UUID);
-		fbins(vd->vhd.size_current, sizecur);
-		fbins(vd->vhd.size_original, dsize);
+		uid_str(uid1, &vd->vhd.uuid, UID_UUID);
+		bintostr(sizecur, vd->vhd.size_current);
+		bintostr(disksize, vd->vhd.size_original);
 
 		printf(
 		"Conectix/Microsoft VHD %s disk v%u.%u, %s/%s\n"
 		"Created by %.4s v%u.%u on %s\n"
 		"Cylinders: %u, Heads: %u, Sectors: %u\n"
 		"CRC32: %08X, UUID: %s\n",
-		type, vd->vhd.major, vd->vhd.minor, sizecur, dsize,
+		type, vd->vhd.major, vd->vhd.minor, sizecur, disksize,
 		vd->vhd.creator_app, vd->vhd.creator_major, vd->vhd.creator_minor, os,
 		vd->vhd.cylinders, vd->vhd.heads, vd->vhd.sectors,
 		vd->vhd.checksum,
@@ -132,7 +132,7 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 
 		if (vd->vhd.type != VHD_DISK_FIXED) {
 			char paruuid[UID_LENGTH];
-			uid_str(&vd->vhddyn.parent_uuid, paruuid, UID_UUID);
+			uid_str(paruuid, &vd->vhddyn.parent_uuid, UID_UUID);
 			printf(
 			"Dynamic header v%u.%u, data: %" PRIu64 ", table: %" PRIu64 "\n"
 			"Blocksize: %u, checksum: %08X\n"
@@ -152,7 +152,7 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 		break;
 //	case VDISK_FORMAT_VHDX:
 	case VDISK_FORMAT_QED:
-		fbins(vd->capacity, dsize);
+		bintostr(disksize, vd->capacity);
 		printf(
 		"QEMU Enhanced Disk\n"
 		"Cluster size: %u, table size: %u, header size: %u\n"
@@ -190,7 +190,7 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 	MBR mbr;
 	if (vdisk_read_sector(vd, &mbr, 0)) return EXIT_SUCCESS;
 	if (mbr.sig != MBR_SIG) return EXIT_SUCCESS;
-	mbr_info_stdout(&mbr);
+	mbr_info_stdout(&mbr, 0);
 
 	//
 	// Extended MBR detection (EBR)
@@ -210,7 +210,7 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 	//
 	// GPT detection
 	//
-	case 1: {
+	case 1:
 		// Start of disk
 		if (vdisk_read_sector(vd, &mbr, 1)) return VVD_EOK;
 		if (((GPT*)&mbr)->sig == EFI_SIG) {
@@ -226,9 +226,8 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 		}
 		break;
 L_GPT_RDY:
-		gpt_info_stdout((GPT *)&mbr);
-		gpt_info_entries_stdout(vd, (GPT *)&mbr, ebrlba);
-	}
+		gpt_info_stdout((GPT *)&mbr, 0);
+		gpt_info_entries_stdout(vd, (GPT *)&mbr, ebrlba, 0);
 		break;
 	}
 
@@ -240,7 +239,7 @@ L_GPT_RDY:
 //
 
 int vvd_map(VDISK *vd, uint32_t flags) {
-	char bsizestr[BIN_FLENGTH]; // If used
+	char bsizestr[BINSTR_LENGTH]; // If used
 	uint64_t bsize; // block size
 	uint32_t bcount; // block count
 	int index64 = 0;
@@ -268,7 +267,7 @@ int vvd_map(VDISK *vd, uint32_t flags) {
 		return VVD_EVDFORMAT;
 	}
 
-	fbins(bsize, bsizestr);
+	bintostr(bsizestr, bsize);
 	size_t i = 0;
 	size_t bn;
 	if (index64) {
@@ -412,8 +411,8 @@ int vvd_compact(VDISK *vd, uint32_t flags) {
 		uint32_t stat_zero = 0;	// blocks with no data inside
 		uint32_t stat_alloc = 0;	// allocated blocks
 
-		char strbsize[BIN_FLENGTH];
-		fbins(vd->vdi.blocksize, strbsize);
+		char strbsize[BINSTR_LENGTH];
+		bintostr(strbsize, vd->vdi.blocksize);
 		printf("vvd_compact: writing (%s/block, %u checks/%u bytes)...\n",
 			strbsize, (uint32_t)oblocksize, (uint32_t)sizeof(size_t));
 		os_pinit(&progress, PROG_MODE_POURCENT, vd->u32blockcount - 1);

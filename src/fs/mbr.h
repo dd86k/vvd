@@ -187,7 +187,7 @@ uint32_t mbr_lba_a(CHS *chs, uint64_t dsize);
 /**
  * Print MBR information to stdout.
  */
-void mbr_info_stdout(MBR *s);
+void mbr_info_stdout(MBR *s, uint32_t flags);
 
 /**
  * Get partition type string

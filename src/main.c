@@ -198,15 +198,15 @@ static void license() {
  * \returns VDISK_FORMAT enum or 0
  */
 static int vdextauto(const oschar *path) {
-	if (extcmp(path, vstr("vdi")))	return VDISK_FORMAT_VDI;
-	if (extcmp(path, vstr("vmdk")))	return VDISK_FORMAT_VMDK;
-	if (extcmp(path, vstr("vhd")))	return VDISK_FORMAT_VHD;
-	if (extcmp(path, vstr("vhdx")))	return VDISK_FORMAT_VHDX;
-	if (extcmp(path, vstr("qed")))	return VDISK_FORMAT_QED;
-	if (extcmp(path, vstr("qcow")) || extcmp(path, vstr("qcow2")))
+	if (extcmp(path, osstr("vdi")))	return VDISK_FORMAT_VDI;
+	if (extcmp(path, osstr("vmdk")))	return VDISK_FORMAT_VMDK;
+	if (extcmp(path, osstr("vhd")))	return VDISK_FORMAT_VHD;
+	if (extcmp(path, osstr("vhdx")))	return VDISK_FORMAT_VHDX;
+	if (extcmp(path, osstr("qed")))	return VDISK_FORMAT_QED;
+	if (extcmp(path, osstr("qcow")) || extcmp(path, osstr("qcow2")))
 		return VDISK_FORMAT_QCOW;
-	if (extcmp(path, vstr("hdd")))	return VDISK_FORMAT_PHDD;
-	return 0;
+	if (extcmp(path, osstr("hdd")))	return VDISK_FORMAT_PHDD;
+	return VDISK_FORMAT_NONE;
 }
 
 // Main entry point. This only performs intepreting the command-line options
@@ -221,8 +221,9 @@ MAIN {
 	VDISK vdin;	// vdisk IN
 	VDISK vdout;	// vdisk OUT
 	uint64_t vsize;	// virtual disk size, used in 'new' and 'resize'
-	const oschar *defopt1 = NULL; // Default option 1 (typically file input)
-	const oschar *defopt2 = NULL; // Default option 2 (typically file output/size)
+	// 0=Typically file input path
+	// 1=Typically file output path or binary size
+	const oschar *defopt[2] = { NULL, NULL }; // Default options
 
 	// Additional arguments are processed first, since they're simpler
 	//TODO: --progress: shows progress bar whenever available
@@ -232,34 +233,34 @@ MAIN {
 		//
 		// Open flags
 		//
-		if (oscmp(arg, vstr("--raw")) == 0) {
+		if (oscmp(arg, osstr("--raw")) == 0) {
 			oflags |= VDISK_RAW;
 			continue;
 		}
 		//
 		// Create flags
 		//
-		if (oscmp(arg, vstr("--create-raw")) == 0) {
+		if (oscmp(arg, osstr("--create-raw")) == 0) {
 			cflags |= VDISK_RAW;
 			continue;
 		}
-		if (oscmp(arg, vstr("--create-dynamic")) == 0) {
+		if (oscmp(arg, osstr("--create-dynamic")) == 0) {
 			cflags |= VDISK_CREATE_DYN;
 			continue;
 		}
-		if (oscmp(arg, vstr("--create-fixed")) == 0) {
+		if (oscmp(arg, osstr("--create-fixed")) == 0) {
 			cflags |= VDISK_CREATE_FIXED;
 			continue;
 		}
 		//
 		// Default arguments
 		//
-		if (defopt1 == NULL) {
-			defopt1 = arg;
+		if (defopt[0] == NULL) {
+			defopt[0] = arg;
 			continue;
 		}
-		if (defopt2 == NULL) {
-			defopt2 = arg;
+		if (defopt[1] == NULL) {
+			defopt[1] = arg;
 			continue;
 		}
 		//
@@ -275,36 +276,36 @@ MAIN {
 	// Operations
 	//
 
-	if (oscmp(action, vstr("info")) == 0) {
-		if (defopt1 == NULL) {
+	if (oscmp(action, osstr("info")) == 0) {
+		if (defopt[0] == NULL) {
 			fputs("main: missing vdisk\n", stderr);
 			return EXIT_FAILURE;
 		}
-		if (vdisk_open(&vdin, defopt1, oflags)) {
+		if (vdisk_open(&vdin, defopt[0], oflags)) {
 			vdisk_perror(&vdin);
 			return vdin.errcode;
 		}
 		return vvd_info(&vdin, 0);
 	}
 
-	if (oscmp(action, vstr("map")) == 0) {
-		if (defopt1 == NULL) {
+	if (oscmp(action, osstr("map")) == 0) {
+		if (defopt[0] == NULL) {
 			fputs("main: missing vdisk\n", stderr);
 			return EXIT_FAILURE;
 		}
-		if (vdisk_open(&vdin, defopt1, oflags)) {
+		if (vdisk_open(&vdin, defopt[0], oflags)) {
 			vdisk_perror(&vdin);
 			return vdin.errcode;
 		}
 		return vvd_map(&vdin, 0);
 	}
 
-	if (oscmp(action, vstr("compact")) == 0) {
-		if (defopt1 == NULL) {
+	if (oscmp(action, osstr("compact")) == 0) {
+		if (defopt[0] == NULL) {
 			fputs("main: missing vdisk\n", stderr);
 			return EXIT_FAILURE;
 		}
-		if (vdisk_open(&vdin, defopt1, 0)) {
+		if (vdisk_open(&vdin, defopt[0], 0)) {
 			vdisk_perror(&vdin);
 			return vdin.errcode;
 		}
@@ -315,58 +316,58 @@ MAIN {
 		return EXIT_FAILURE;
 	}
 
-	if (oscmp(action, vstr("defrag")) == 0) {
+	if (oscmp(action, osstr("defrag")) == 0) {
 		fputs("main: not implemented\n", stderr);
 		return EXIT_FAILURE;
 	}
 
-	if (oscmp(action, vstr("new")) == 0) {
-		if (defopt1 == NULL) {
+	if (oscmp(action, osstr("new")) == 0) {
+		if (defopt[0] == NULL) {
 			fputs("main: missing path specifier\n", stderr);
 			return EXIT_FAILURE;
 		}
-		if (defopt2 == NULL) {
+		if (defopt[1] == NULL) {
 			fputs("main: missing size specifier\n", stderr);
 			return EXIT_FAILURE;
 		}
 
 		// Get vdisk type out of extension name
-		int format = vdextauto(defopt1);
-		if (format == 0) {
+		int format = vdextauto(defopt[0]);
+		if (format == VDISK_FORMAT_NONE) {
 			fputs("main: could not determine vdisk type\n", stderr);
 			return EXIT_FAILURE;
 		}
 
 		// Convert binary text (e.g. "10G") to a 64-bit number
-		if (sbinf(defopt2, &vsize)) {
+		if (strtobin(&vsize, defopt[1])) {
 			fputs("main: invalid binary size\n", stderr);
 			return EXIT_FAILURE;
 		}
 
-		return vvd_new(defopt1, format, vsize, cflags);
+		return vvd_new(defopt[0], format, vsize, cflags);
 	}
 
-	if (oscmp(action, vstr("resize")) == 0) {
+	if (oscmp(action, osstr("resize")) == 0) {
 		fputs("main: not implemented\n", stderr);
 		return EXIT_FAILURE;
 	}
 
-	if (oscmp(action, vstr("repair")) == 0) {
+	if (oscmp(action, osstr("repair")) == 0) {
 		fputs("main: not implemented\n", stderr);
 		return EXIT_FAILURE;
 	}
 
-	if (oscmp(action, vstr("convert")) == 0) {
+	if (oscmp(action, osstr("convert")) == 0) {
 		fputs("main: not implemented\n", stderr);
 		return EXIT_FAILURE;
 	}
 
-	if (oscmp(action, vstr("upgrade")) == 0) {
+	if (oscmp(action, osstr("upgrade")) == 0) {
 		fputs("main: not implemented\n", stderr);
 		return EXIT_FAILURE;
 	}
 
-	if (oscmp(action, vstr("cleanfs")) == 0) {
+	if (oscmp(action, osstr("cleanfs")) == 0) {
 		fputs("main: not implemented\n", stderr);
 		return EXIT_FAILURE;
 	}
@@ -375,18 +376,18 @@ MAIN {
 	// Pages
 	//
 
-	if (oscmp(action, vstr("ver")) == 0) {
+	if (oscmp(action, osstr("ver")) == 0) {
 		puts(PROJECT_VERSION);
 		return EXIT_SUCCESS;
 	}
-	if (oscmp(action, vstr("version")) == 0 || oscmp(action, vstr("--version")) == 0)
+	if (oscmp(action, osstr("version")) == 0 || oscmp(action, osstr("--version")) == 0)
 		version();
-	if (oscmp(action, vstr("help")) == 0 || oscmp(action, vstr("--help")) == 0)
+	if (oscmp(action, osstr("help")) == 0 || oscmp(action, osstr("--help")) == 0)
 		help();
-	if (oscmp(action, vstr("license")) == 0 || oscmp(action, vstr("--license")) == 0)
+	if (oscmp(action, osstr("license")) == 0 || oscmp(action, osstr("--license")) == 0)
 		license();
 #ifdef DEBUG
-	if (oscmp(action, vstr("--test")) == 0)
+	if (oscmp(action, osstr("--test")) == 0)
 		test();
 #endif
 

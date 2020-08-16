@@ -29,7 +29,7 @@ enum {	// DISKFORMAT magical hints (LSB), used for VDISK.format
 //	VDISK_FORMAT_DMG	= 0x,	// "" Apple DMG
 };
 
-enum {	// VDISK flags, the open/create flags may intertwine in values
+enum {	// VDISK flags, the open/create flags may overlap
 	VDISK_RAW	= 0x1,	// Open or create vdisk as raw
 
 	//
@@ -194,7 +194,8 @@ int vdisk_open(VDISK *vd, const oschar *path, uint32_t flags);
 int vdisk_create(VDISK *vd, const oschar *path, int format, uint64_t capacity, uint16_t flags);
 
 /**
- * 
+ * Returns a string representation of the loaded virtual disk. If a format was
+ * not found, a null pointer is returned.
  */
 const char *vdisk_str(VDISK *vd);
 
