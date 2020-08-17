@@ -52,6 +52,8 @@ int vdisk_qed_open(VDISK *vd, uint32_t flags, uint32_t internal) {
 	vd->u64block = vd->qed_L1;
 	vd->u32blockcount = table_entries;
 
+	vd->read_lba = vdisk_qed_read_sector;
+
 	return 0;
 }
 
@@ -67,6 +69,29 @@ int vdisk_qed_L2_load(VDISK *vd, uint64_t offset) {
 		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
 
 	vd->qed_L2.offset = offset;
+
+	return 0;
+}
+
+int vdisk_qed_read_sector(VDISK *vd, void *buffer, uint64_t index) {
+	vd->errfunc = __func__;
+
+	uint64_t offset = SECTOR_TO_BYTE(index);
+
+	uint32_t l1 = (offset >> vd->qed_L1_shift) & vd->qed_L1_mask;
+	uint32_t l2 = (offset >> vd->qed_L2_shift) & vd->qed_L2_mask;
+
+	if (l1 >= vd->qed_L2.entries || l2 >= vd->qed_L2.entries)
+		return vdisk_i_err(vd, VVD_EVDMISC, __LINE_BEFORE__);
+	if (vdisk_qed_L2_load(vd, vd->qed_L1[l1]))
+		return vdisk_i_err(vd, VVD_EVDMISC, __LINE_BEFORE__);
+
+	offset = (uint64_t)vd->qed_L2.offsets[l2] + (offset & vd->qed_offset_mask);
+
+	if (os_fseek(vd->fd, offset, SEEK_SET))
+		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
+	if (os_fread(vd->fd, buffer, 512))
+		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
 
 	return 0;
 }

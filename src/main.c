@@ -28,6 +28,8 @@
 //
 
 void test() {
+	//TODO: Move this to its own (tests/init.c)
+	//	With others like tests/vdisk_qed.c
 	fputs(
 	"* Defines\n"
 #ifdef ENDIAN_LITTLE
@@ -148,16 +150,16 @@ static void version(void) {
 #endif
 	"MIT License: Copyright (c) 2019-2020 dd86k <dd@dax.moe>\n"
 	"Project page: <https://github.com/dd86k/vvd>\n\n"
-	"FORMAT  OPERATIONS\n"
-	"VDI     info, map, new, compact\n"
-	"VMDK    info\n"
-	"VHD     info, map\n"
-	"VHDX    \n"
-	"QED     info, map\n"
-	"QCOW    \n"
-	"VHD     \n"
-	"PHDD    \n"
-	"RAW     info\n"
+	"FORMAT	OPERATIONS\n"
+	"VDI	info, map, new, compact\n"
+	"VMDK	info\n"
+	"VHD	info, map\n"
+	"VHDX	\n"
+	"QED	info, map\n"
+	"QCOW	\n"
+	"VHD	\n"
+	"PHDD	\n"
+	"RAW	info\n"
 	);
 	exit(EXIT_SUCCESS);
 }

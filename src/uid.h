@@ -3,8 +3,9 @@
 #include <stdint.h>
 
 enum {
-	UID_GUID	= 0,
-	UID_UUID	= 1,
+	UID_ASIS	= 0,	// Leave as-is, no swap intended
+	UID_GUID	= 1,	// Meant as GUID, swap if on big-endian
+	UID_UUID	= 2,	// Meant as UUID, swap if on little-endian
 	UID_LENGTH	= 40	// usually 36 but.. {} and \0
 };
 typedef char UID_TEXT[UID_LENGTH];

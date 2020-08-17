@@ -91,3 +91,5 @@ struct VDISK;
 int vdisk_qed_open(struct VDISK *vd, uint32_t flags, uint32_t internal);
 
 int vdisk_qed_L2_load(struct VDISK *vd, uint64_t index);
+
+int vdisk_qed_read_sector(struct VDISK *vd, void *buffer, uint64_t index);

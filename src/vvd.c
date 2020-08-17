@@ -24,7 +24,7 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 	// VDI
 	//
 	case VDISK_FORMAT_VDI: {
-		switch (vd->vdi.type) {
+		switch (vd->vdiv1.type) {
 		case VDI_DISK_DYN:	type = "dynamic"; break;
 		case VDI_DISK_FIXED:	type = "fixed"; break;
 		case VDI_DISK_UNDO:	type = "undo"; break;
@@ -35,12 +35,12 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 		char create_uuid[UID_LENGTH], modify_uuid[UID_LENGTH],
 			link_uuid[UID_LENGTH], parent_uuid[UID_LENGTH];
 
-		bintostr(disksize, vd->vdi.disksize);
-		bintostr(blocksize, vd->vdi.blocksize);
-		uid_str(uid1, &vd->vdi.uuidCreate, UID_UUID);
-		uid_str(uid2, &vd->vdi.uuidModify, UID_UUID);
-		uid_str(uid3, &vd->vdi.uuidLinkage, UID_UUID);
-		uid_str(uid4, &vd->vdi.uuidParentModify, UID_UUID);
+		bintostr(disksize, vd->vdiv1.disksize);
+		bintostr(blocksize, vd->vdiv1.blocksize);
+		uid_str(uid1, &vd->vdiv1.uuidCreate, UID_UUID);
+		uid_str(uid2, &vd->vdiv1.uuidModify, UID_UUID);
+		uid_str(uid3, &vd->vdiv1.uuidLinkage, UID_UUID);
+		uid_str(uid4, &vd->vdiv1.uuidParentModify, UID_UUID);
 
 		printf(
 		"VirtualBox VDI %s disk v%u.%u, %s\n"
@@ -56,13 +56,13 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 		"Link   UUID: %s\n"
 		"Parent UUID: %s\n",
 		type, vd->vdihdr.majorv, vd->vdihdr.minorv, disksize,
-		vd->vdi.hdrsize, vd->vdi.fFlags, vd->vdi.u32Dummy,
-		vd->vdi.totalblocks, vd->vdi.blocksalloc, vd->vdi.blocksextra, blocksize,
-		vd->vdi.offData, vd->vdi.offBlocks,
-		vd->vdi.cCylinders, vd->vdi.LegacyGeometry.cCylinders,
-		vd->vdi.cHeads, vd->vdi.LegacyGeometry.cHeads,
-		vd->vdi.cSectors, vd->vdi.LegacyGeometry.cSectors,
-		vd->vdi.cbSector, vd->vdi.LegacyGeometry.cbSector,
+		vd->vdiv1.hdrsize, vd->vdiv1.fFlags, vd->vdiv1.u32Dummy,
+		vd->vdiv1.totalblocks, vd->vdiv1.blocksalloc, vd->vdiv1.blocksextra, blocksize,
+		vd->vdiv1.offData, vd->vdiv1.offBlocks,
+		vd->vdiv1.cCylinders, vd->vdiv1.LegacyGeometry.cCylinders,
+		vd->vdiv1.cHeads, vd->vdiv1.LegacyGeometry.cHeads,
+		vd->vdiv1.cSectors, vd->vdiv1.LegacyGeometry.cSectors,
+		vd->vdiv1.cbSector, vd->vdiv1.LegacyGeometry.cbSector,
 		uid1, uid2, uid3, uid4
 		);
 	}
@@ -114,7 +114,7 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 		default:	os = "unknown"; break;
 		}
 
-		uid_str(uid1, &vd->vhd.uuid, UID_UUID);
+		uid_str(uid1, &vd->vhd.uuid, UID_ASIS);
 		bintostr(sizecur, vd->vhd.size_current);
 		bintostr(disksize, vd->vhd.size_original);
 
@@ -132,7 +132,7 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 
 		if (vd->vhd.type != VHD_DISK_FIXED) {
 			char paruuid[UID_LENGTH];
-			uid_str(paruuid, &vd->vhddyn.parent_uuid, UID_UUID);
+			uid_str(paruuid, &vd->vhddyn.parent_uuid, UID_ASIS);
 			printf(
 			"Dynamic header v%u.%u, data: %" PRIu64 ", table: %" PRIu64 "\n"
 			"Blocksize: %u, checksum: %08X\n"
@@ -246,8 +246,8 @@ int vvd_map(VDISK *vd, uint32_t flags) {
 
 	switch (vd->format) {
 	case VDISK_FORMAT_VDI:
-		bcount = vd->vdi.totalblocks;
-		bsize = vd->vdi.blocksize;
+		bcount = vd->vdiv1.totalblocks;
+		bsize = vd->vdiv1.blocksize;
 		break;
 	case VDISK_FORMAT_VHD:
 		if (vd->vhd.type != VHD_DISK_DYN) {
@@ -358,12 +358,12 @@ int vvd_compact(VDISK *vd, uint32_t flags) {
 	case VDISK_FORMAT_VDI: {
 		//TODO: Continue vvd_compact::vdi
 
-		if (vd->vdi.type != VDI_DISK_DYN) {
+		if (vd->vdiv1.type != VDI_DISK_DYN) {
 			fputs("vvd_compact: vdisk not dynamic\n", stderr);
 			return VVD_EVDTYPE;
 		}
 
-		if (vd->vdi.blocksalloc == 0)
+		if (vd->vdiv1.blocksalloc == 0)
 			return EXIT_SUCCESS;
 
 		//
@@ -371,7 +371,7 @@ int vvd_compact(VDISK *vd, uint32_t flags) {
 		//
 
 		uint8_t *buffer;	// Block buffer
-		if ((buffer = malloc(vd->vdi.blocksize)) == NULL)
+		if ((buffer = malloc(vd->vdiv1.blocksize)) == NULL)
 			return VVD_EALLOC;
 
 		//
@@ -381,18 +381,18 @@ int vvd_compact(VDISK *vd, uint32_t flags) {
 
 		VDISK vdtmp;
 		memcpy(&vdtmp.vdihdr, &vd->vdihdr, sizeof(VDI_HDR));
-		memcpy(&vdtmp.vdi, &vd->vdi, sizeof(VDIHEADER1));
+		memcpy(&vdtmp.vdiv1, &vd->vdiv1, sizeof(VDIHEADER1));
 		/*if (vdisk_create(&vdtmp, NULL, VDISK_FORMAT_VDI, vd->capacity, VDISK_CREATE_TEMP)) {
 			vdisk_perror(&vdtmp);
 			return vd->errcode;
 		}*/
-		if ((vdtmp.u32block = malloc(vd->vdi.blocksalloc * 4)) == NULL)
+		if ((vdtmp.u32block = malloc(vd->vdiv1.blocksalloc * 4)) == NULL)
 			return VVD_EALLOC;
 		vdtmp.offset = vd->offset;
 		vdtmp.format = vd->format;
 		vdtmp.u32blockcount = vd->u32blockcount;
 
-		for (size_t i = 0; i < vd->vdi.blocksalloc; ++i)
+		for (size_t i = 0; i < vd->vdiv1.blocksalloc; ++i)
 			vdtmp.u32block[i] = VDI_BLOCK_FREE;
 
 		printf("vvd_compact: %s temporary disk created\n", vdisk_str(&vdtmp));
@@ -402,7 +402,7 @@ int vvd_compact(VDISK *vd, uint32_t flags) {
 		//
 
 		// "Optimized" buffer size
-		size_t oblocksize = vd->vdi.blocksize / sizeof(size_t);
+		size_t oblocksize = vd->vdiv1.blocksize / sizeof(size_t);
 		// "Optimized" buffer pointer
 		size_t *obuffer = (size_t*)buffer;
 
@@ -412,7 +412,7 @@ int vvd_compact(VDISK *vd, uint32_t flags) {
 		uint32_t stat_alloc = 0;	// allocated blocks
 
 		char strbsize[BINSTR_LENGTH];
-		bintostr(strbsize, vd->vdi.blocksize);
+		bintostr(strbsize, vd->vdiv1.blocksize);
 		printf("vvd_compact: writing (%s/block, %u checks/%u bytes)...\n",
 			strbsize, (uint32_t)oblocksize, (uint32_t)sizeof(size_t));
 		os_pinit(&progress, PROG_MODE_POURCENT, vd->u32blockcount - 1);
@@ -427,7 +427,7 @@ int vvd_compact(VDISK *vd, uint32_t flags) {
 				continue;
 			}
 			os_pupdate(&progress, (uint32_t)i);
-			if (bi < vd->vdi.blocksalloc) {
+			if (bi < vd->vdiv1.blocksalloc) {
 				if (vdtmp.u32block[bi] == VDI_BLOCK_FREE) {
 					vdtmp.u32block[bi] = i;
 				} else {
@@ -454,7 +454,7 @@ int vvd_compact(VDISK *vd, uint32_t flags) {
 		// Fill bubbles with other data if available
 //		for (i = 0; o < vd->vdi.blocksalloc
 		
-		vdtmp.vdi.blocksalloc = stat_occupied;
+		vdtmp.vdiv1.blocksalloc = stat_occupied;
 		if (vdisk_update(&vdtmp)) {
 			vdisk_perror(&vdtmp);
 			return vdtmp.errcode;

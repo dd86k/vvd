@@ -2,6 +2,7 @@
 
 #include "os.h"
 #include "utils.h"
+#include "vdisk/raw.h"
 #include "vdisk/vdi.h"
 #include "vdisk/vmdk.h"
 #include "vdisk/vhd.h"
@@ -36,20 +37,25 @@ enum {	// VDISK flags, the open/create flags may overlap
 	// vdisk_open flags
 	//
 
-	VDISK_OPEN_VDI_ONLY	= 0x1000,	// Only open successfully if VDISK is VDI
-	VDISK_OPEN_VMDK_ONLY	= 0x2000,	// Only open successfully if VDISK is VMDK
-	VDISK_OPEN_VHD_ONLY	= 0x3000,	// Only open successfully if VDISK is VHD
-	VDISK_OPEN_VHDX_ONLY	= 0x4000,	// Only open successfully if VDISK is VHDX
-	VDISK_OPEN_QED_ONLY	= 0x5000,	// Only open successfully if VDISK is QED
-	VDISK_OPEN_QCOW_ONLY	= 0x6000,	// Only open successfully if VDISK is QCOW
+	VDISK_OPEN_VDI_ONLY	= 0x0100,	//TODO: Only open successfully if VDISK is VDI
+	VDISK_OPEN_VMDK_ONLY	= 0x0200,	//TODO: Only open successfully if VDISK is VMDK
+	VDISK_OPEN_VHD_ONLY	= 0x0400,	//TODO: Only open successfully if VDISK is VHD
+	VDISK_OPEN_VHDX_ONLY	= 0x0800,	//TODO: Only open successfully if VDISK is VHDX
+	VDISK_OPEN_QED_ONLY	= 0x1000,	//TODO: Only open successfully if VDISK is QED
+	VDISK_OPEN_QCOW_ONLY	= 0x2000,	//TODO: Only open successfully if VDISK is QCOW
+	VDISK_OPEN_PHDD_ONLY	= 0x4000,	//TODO: Only open successfully if VDISK is Parallels HDD
 
 	//
 	// vdisk_create flags
 	//
 
-	VDISK_CREATE_TEMP	= 0x0100,	// Create a temporary (random) vdisk file
-	VDISK_CREATE_DYN	= 0x1000,	// Create a dynamic type VDISK
-	VDISK_CREATE_FIXED	= 0x2000,	// Create a fixed type VDISK
+	VDISK_CREATE_TEMP	= 0x0100,	//TODO: Create a temporary (random) vdisk file
+	VDISK_CLONE_META	= 0x0400,	//TODO: Clone disk but only copy metadata. Not applicate on fixed vdisks
+	VDISK_CLONE_DATA	= 0x0800,	//TODO: Clone disk with metadata and data
+	VDISK_CREATE_DYN	= 0x1000,	//TODO: Create a dynamic type VDISK
+	VDISK_CREATE_FIXED	= 0x2000,	//TODO: Create a fixed type VDISK
+	VDISK_CREATE_PARENT	= 0x3000,	//TODO: Create a parent of the VDISK
+	VDISK_CREATE_SNAPSHOT	= 0x4000,	//TODO: Create a parent of the VDISK
 };
 
 enum {	// VDISK error codes
@@ -93,13 +99,13 @@ typedef struct VDISK {
 	int errline;	// Error line
 	const char *errfunc;	// Function name
 	// Function pointer: Read a sector with a LBA index
-	//int (*read_lba)(struct VDISK*, void*, uint64_t);
+	int (*read_lba)(struct VDISK*, void*, uint64_t);
 	// Function pointer: Read a dynamic block with a block index
-	//int (*read_block)(struct VDISK*, void*, uint64_t);
+	int (*read_block)(struct VDISK*, void*, uint64_t);
 	// Function pointer: Read a sector with a LBA index
-	//int (*write_lba)(struct VDISK*, void*, uint64_t);
+	int (*write_lba)(struct VDISK*, void*, uint64_t);
 	// Function pointer: Read a sector with a LBA index
-	//int (*write_block)(struct VDISK*, void*, uint64_t);
+	int (*write_block)(struct VDISK*, void*, uint64_t);
 	union {
 		// Allocation table using 64-bit indexes
 		uint64_t *u64block;
@@ -112,14 +118,12 @@ typedef struct VDISK {
 		// Total amount of allocated blocks
 		uint32_t u32blockcount;
 	};
-	// To avoid wasting memory space, and since a VDISK can only hold one
-	// format at a time, all structures are unionized. Version translation
-	// and header/format validity are done in vdisk_open.
 	//TODO: Consider making these pointers and only allocate required structures
 	union {
 		struct {
-			VDI_HDR vdihdr;
-			VDIHEADER1 vdi;
+			VDI_HDR vdihdr; // pre-header
+			VDIHEADER0 vdiv0;
+			VDIHEADER1 vdiv1;
 			// Dynamic disk block mask for remaining offset to LBA.
 			uint32_t vdi_blockmask;
 			// Dynamic disk block index shift number. Populated by fpow2.

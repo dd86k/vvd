@@ -30,6 +30,7 @@ int vdisk_open(VDISK *vd, const oschar *path, uint32_t flags) {
 			return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
 		vd->format = VDISK_FORMAT_RAW;
 		vd->offset = 0;
+		vd->read_lba = vdisk_raw_read_lba;
 		return 0;
 	}
 
@@ -49,30 +50,41 @@ int vdisk_open(VDISK *vd, const oschar *path, uint32_t flags) {
 	// Disk detection and loading
 	//
 
-	int (*vdopen)(VDISK*,uint32_t,uint32_t); // vd open function pointer
 	uint32_t internal = 0; // Internal flags
+
+	// Until all implementations are done, this allows to catch
+	// non-implemented functions during operation
+	vd->read_lba = vd->write_lba =
+		vd->read_block = vd->write_block = NULL;
 
 	switch (vd->format) {
 	case VDISK_FORMAT_VDI:
-		vdopen = vdisk_vdi_open;
+		if (vdisk_vdi_open(vd, flags, internal))
+			return vd->errcode;
 		break;
 	case VDISK_FORMAT_VMDK:
-		vdopen = vdisk_vmdk_open;
+		if (vdisk_vmdk_open(vd, flags, internal))
+			return vd->errcode;
 		break;
-	case VDISK_FORMAT_VHD:
-		vdopen = vdisk_vhd_open;
+	case VDISK_FORMAT_VHD: L_FORMAT_CASE_VHD:
+		if (vdisk_vhd_open(vd, flags, internal))
+			return vd->errcode;
 		break;
 	case VDISK_FORMAT_VHDX:
-		vdopen = vdisk_vhdx_open;
+		if (vdisk_vhdx_open(vd, flags, internal))
+			return vd->errcode;
 		break;
 	case VDISK_FORMAT_QED:
-		vdopen = vdisk_qed_open;
+		if (vdisk_qed_open(vd, flags, internal))
+			return vd->errcode;
 		break;
 	case VDISK_FORMAT_QCOW:
-		vdopen = vdisk_qcow_open;
+		if (vdisk_qcow_open(vd, flags, internal))
+			return vd->errcode;
 		break;
 	case VDISK_FORMAT_PHDD:
-		vdopen = vdisk_phdd_open;
+		if (vdisk_phdd_open(vd, flags, internal))
+			return vd->errcode;
 		break;
 	default: // Attempt at different offsets
 
@@ -83,20 +95,12 @@ int vdisk_open(VDISK *vd, const oschar *path, uint32_t flags) {
 			return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
 		if (vd->vhd.magic == VHD_MAGIC) {
 			vd->format = VDISK_FORMAT_VHD;
-			vdopen = vdisk_vhd_open;
 			internal = 2;
-			break;
+			goto L_FORMAT_CASE_VHD;
 		}
 
 		return vdisk_i_err(vd, VVD_EVDFORMAT, __LINE_BEFORE__);
 	}
-
-	//
-	// Open
-	//
-
-	if (vdopen(vd, flags, internal))
-		return vd->errcode;
 
 	return 0;
 }
@@ -110,11 +114,7 @@ int vdisk_create(VDISK *vd, const oschar *path, int format, uint64_t capacity, u
 
 	if (flags & VDISK_CREATE_TEMP) {
 		//TODO: Attach random number
-#ifdef _WIN32
-		path = L"vdisk.tmp";
-#else
-		path = "vdisk.tmp";
-#endif
+		path = osstr("vdisk.tmp");
 	}
 
 	if (path == NULL)
@@ -140,57 +140,57 @@ int vdisk_create(VDISK *vd, const oschar *path, int format, uint64_t capacity, u
 	switch (format) {
 	case VDISK_FORMAT_VDI:
 		vd->format = VDISK_FORMAT_VDI;
-		vd->vdi.type = vdisk_fixed ? VDI_DISK_FIXED : VDI_DISK_DYN;
+		vd->vdiv1.type = vdisk_fixed ? VDI_DISK_FIXED : VDI_DISK_DYN;
 		// Default values
 		// hdr
 		vd->vdihdr.magic = VDI_HEADER_MAGIC;
 		vd->vdihdr.majorv = 1;
 		vd->vdihdr.minorv = 1;
 		// struct
-		vd->vdi.blocksalloc = 0;
-		vd->vdi.blocksextra = 0;
-		vd->vdi.blocksize = VDI_BLOCKSIZE;
-		vd->vdi.cbSector = vd->vdi.LegacyGeometry.cbSector = 512;
-		vd->vdi.cCylinders =
-			vd->vdi.cHeads =
-			vd->vdi.cSectors =
-			vd->vdi.LegacyGeometry.cCylinders =
-			vd->vdi.LegacyGeometry.cHeads =
-			vd->vdi.LegacyGeometry.cSectors = 0;
-		vd->vdi.disksize = 0;
-		vd->vdi.fFlags = 0;
-		vd->vdi.hdrsize = (uint32_t)sizeof(VDIHEADER1);
-		vd->vdi.offBlocks = VDI_BLOCKSIZE;
-		vd->vdi.offData = 2 * VDI_BLOCKSIZE;
-		vd->vdi.totalblocks = 0;
-		vd->vdi.type = VDI_DISK_DYN;
-		vd->vdi.u32Dummy = 0; // Always
-		memset(vd->vdi.szComment, 0, VDI_COMMENT_SIZE);
-		memset(&vd->vdi.uuidCreate, 0, 16);
-		memset(&vd->vdi.uuidLinkage, 0, 16);
-		memset(&vd->vdi.uuidModify, 0, 16);
-		memset(&vd->vdi.uuidParentModify, 0, 16);
+		vd->vdiv1.blocksalloc = 0;
+		vd->vdiv1.blocksextra = 0;
+		vd->vdiv1.blocksize = VDI_BLOCKSIZE;
+		vd->vdiv1.cbSector = vd->vdiv1.LegacyGeometry.cbSector = 512;
+		vd->vdiv1.cCylinders =
+			vd->vdiv1.cHeads =
+			vd->vdiv1.cSectors =
+			vd->vdiv1.LegacyGeometry.cCylinders =
+			vd->vdiv1.LegacyGeometry.cHeads =
+			vd->vdiv1.LegacyGeometry.cSectors = 0;
+		vd->vdiv1.disksize = 0;
+		vd->vdiv1.fFlags = 0;
+		vd->vdiv1.hdrsize = (uint32_t)sizeof(VDIHEADER1);
+		vd->vdiv1.offBlocks = VDI_BLOCKSIZE;
+		vd->vdiv1.offData = 2 * VDI_BLOCKSIZE;
+		vd->vdiv1.totalblocks = 0;
+		vd->vdiv1.type = VDI_DISK_DYN;
+		vd->vdiv1.u32Dummy = 0; // Always
+		memset(vd->vdiv1.szComment, 0, VDI_COMMENT_SIZE);
+		memset(&vd->vdiv1.uuidCreate, 0, 16);
+		memset(&vd->vdiv1.uuidLinkage, 0, 16);
+		memset(&vd->vdiv1.uuidModify, 0, 16);
+		memset(&vd->vdiv1.uuidParentModify, 0, 16);
 		// Data
-		vd->u32blockcount = capacity / vd->vdi.blocksize;
+		vd->u32blockcount = capacity / vd->vdiv1.blocksize;
 		if (vd->u32blockcount == 0)
 			vd->u32blockcount = 1;
 		uint32_t bsize = vd->u32blockcount << 2;
 		if ((vd->u32block = malloc(bsize)) == NULL)
 			return vdisk_i_err(vd, VVD_EALLOC, __LINE_BEFORE__);
-		vd->vdi.totalblocks = vd->u32blockcount;
-		vd->vdi.disksize = capacity;
-		switch (vd->vdi.type) {
+		vd->vdiv1.totalblocks = vd->u32blockcount;
+		vd->vdiv1.disksize = capacity;
+		switch (vd->vdiv1.type) {
 		case VDI_DISK_DYN:
-			for (size_t i = 0; i < vd->vdi.totalblocks; ++i)
+			for (size_t i = 0; i < vd->vdiv1.totalblocks; ++i)
 				vd->u32block[i] = VDI_BLOCK_ZERO;
 			break;
 		case VDI_DISK_FIXED:
-			if ((buffer = malloc(vd->vdi.blocksize)) == NULL)
+			if ((buffer = malloc(vd->vdiv1.blocksize)) == NULL)
 				return vdisk_i_err(vd, VVD_EALLOC, __LINE_BEFORE__);
-			os_fseek(vd->fd, vd->vdi.offData, SEEK_SET);
-			for (size_t i = 0; i < vd->vdi.totalblocks; ++i) {
+			os_fseek(vd->fd, vd->vdiv1.offData, SEEK_SET);
+			for (size_t i = 0; i < vd->vdiv1.totalblocks; ++i) {
 				vd->u32block[i] = VDI_BLOCK_FREE;
-				os_fwrite(vd->fd, buffer, vd->vdi.blocksize);
+				os_fwrite(vd->fd, buffer, vd->vdiv1.blocksize);
 			}
 			break;
 		default:
@@ -241,10 +241,10 @@ int vdisk_update(VDISK *vd) {
 			return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
 		if (os_fwrite(vd->fd, &vd->vdihdr, sizeof(VDI_HDR)))
 			return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
-		if (os_fwrite(vd->fd, &vd->vdi, sizeof(VDIHEADER1)))
+		if (os_fwrite(vd->fd, &vd->vdiv1, sizeof(VDIHEADER1)))
 			return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
 		// blocks
-		if (os_fseek(vd->fd, vd->vdi.offBlocks, SEEK_SET))
+		if (os_fseek(vd->fd, vd->vdiv1.offBlocks, SEEK_SET))
 			return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
 		if (os_fwrite(vd->fd, vd->u32block, vd->u32blockcount * 4))
 			return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
@@ -262,6 +262,8 @@ int vdisk_update(VDISK *vd) {
 	return 0;
 }
 
+//TODO: (internal) vdisk_*_seek(lba): updates internal fields
+
 //
 //TODO: vdisk_flush(VDISK *vd)
 //
@@ -273,78 +275,11 @@ int vdisk_update(VDISK *vd) {
 int vdisk_read_sector(VDISK *vd, void *buffer, uint64_t lba) {
 	vd->errfunc = __func__;
 
-	uint64_t offset = SECTOR_TO_BYTE(lba); // Byte offset
-	uint64_t base; // Base offset with dealing with blocks
-	size_t bi; // Block index
+	//TODO: Consider an assert
+	if (vd->read_lba == NULL)
+		return vdisk_i_err(vd, VVD_EVDTODO, __LINE_BEFORE__);
 
-	switch (vd->format) {
-	case VDISK_FORMAT_VDI:
-		bi = offset >> vd->vdi_blockshift;
-		if (bi >= vd->vdi.totalblocks) // out of bounds
-			return vdisk_i_err(vd, VVD_EVDBOUND, __LINE_BEFORE__);
-		switch (vd->u32block[bi]) {
-		case VDI_BLOCK_ZERO:
-			return vdisk_i_err(vd, VVD_EVDUNALLOC, __LINE_BEFORE__);
-		case VDI_BLOCK_FREE:
-			memset(buffer, 0, 512);
-			return 0;
-		}
-		if (vd->u32block[bi] == VDI_BLOCK_ZERO)
-			return vdisk_i_err(vd, VVD_EVDUNALLOC, __LINE_BEFORE__);
-		base = vd->u32block[bi] * vd->vdi.blocksize;
-		offset = vd->offset + base + (offset & vd->vdi_blockmask);
-#if TRACE
-		printf("* %s: lba=%" PRId64 " -> offset=0x%" PRIX64 "\n", __func__, lba, offset);
-#endif
-		break;
-	case VDISK_FORMAT_VMDK:
-		if (offset >= vd->vmdk.capacity)
-			return vdisk_i_err(vd, VVD_EVDMISC, __LINE_BEFORE__);
-		//bi = offset / SECTOR_TO_BYTE(vd->vmdk.grainSize);
-		//TODO: Work with the grainSize
-		offset += vd->offset;
-		break;
-	case VDISK_FORMAT_VHD:
-		switch (vd->vhd.type) {
-		case VHD_DISK_FIXED: break;
-		case VHD_DISK_DYN:
-			bi = lba / vd->vhddyn.blocksize;
-			if (bi >= vd->u32blockcount) // Over
-				return vdisk_i_err(vd, VVD_EVDBOUND, __LINE_BEFORE__);
-			if (vd->u32block[bi] == VHD_BLOCK_UNALLOC) // Unallocated
-				return vdisk_i_err(vd, VVD_EVDUNALLOC, __LINE_BEFORE__);
-			base = SECTOR_TO_BYTE(vd->u32block[bi] * vd->vhddyn.blocksize);
-			offset = vd->offset + base + (offset - base);
-			break;
-		default:
-			return vdisk_i_err(vd, VVD_EVDTYPE, __LINE_BEFORE__);
-		}
-		break;
-//	case VDISK_FORMAT_VHDX:
-	case VDISK_FORMAT_QED: {
-		uint32_t l1 = (offset >> vd->qed_L1_shift) & vd->qed_L1_mask;
-		uint32_t l2 = (offset >> vd->qed_L2_shift) & vd->qed_L2_mask;
-		if (l1 >= vd->qed_L2.entries || l2 >= vd->qed_L2.entries)
-			return vdisk_i_err(vd, VVD_EVDMISC, __LINE_BEFORE__);
-		if (vdisk_qed_L2_load(vd, vd->qed_L1[l1]))
-			return vdisk_i_err(vd, VVD_EVDMISC, __LINE_BEFORE__);
-		offset = vd->qed_L2.offsets[l2] + (offset & vd->qed_offset_mask);
-	}
-		break;
-	case VDISK_FORMAT_RAW:
-		if (offset >= vd->capacity)
-			return vdisk_i_err(vd, VVD_EVDBOUND, __LINE_BEFORE__);
-		break;
-	default:
-		return vdisk_i_err(vd, VVD_EVDFORMAT, __LINE_BEFORE__);
-	}
-
-	if (os_fseek(vd->fd, offset, SEEK_SET))
-		return (vd->errcode = VVD_EOS);
-	if (os_fread(vd->fd, buffer, 512))
-		return (vd->errcode = VVD_EOS);
-
-	return 0;
+	return vd->read_lba(vd, buffer, lba);
 }
 
 //
@@ -368,6 +303,12 @@ int vdisk_write_lba(VDISK *vd, void *buffer, uint64_t lba) {
 // vdisk_read_block
 //
 
+//TODO: vdisk_get_block_ptr(VDISK)
+//TODO: vdisk_get_block_size(VDISK)
+//TODO: vdisk_read_block(VDISK, index)
+//TODO: vdisk_write_block(VDISK, index)
+//TODO: vdisk_write_block_at(VDISK, source_index, target_index)
+
 int vdisk_read_block(VDISK *vd, void *buffer, uint64_t index) {
 	vd->errfunc = __func__;
 
@@ -380,8 +321,8 @@ int vdisk_read_block(VDISK *vd, void *buffer, uint64_t index) {
 			return vdisk_i_err(vd, VVD_EVDBOUND, __LINE_BEFORE__);
 		if (vd->u32block[index] == VDI_BLOCK_ZERO)
 			return vdisk_i_err(vd, VVD_EVDUNALLOC, __LINE_BEFORE__);
-		readsize = vd->vdi.blocksize;
-		pos = vd->offset + (vd->u32block[index] * vd->vdi.blocksize);
+		readsize = vd->vdiv1.blocksize;
+		pos = vd->offset + (vd->u32block[index] * vd->vdiv1.blocksize);
 		break;
 	case VDISK_FORMAT_VMDK:
 		return vdisk_i_err(vd, VVD_EVDTODO, __LINE_BEFORE__);
@@ -419,12 +360,12 @@ int vdisk_write_block(VDISK *vd, void *buffer, uint64_t index) {
 			return vdisk_i_err(vd, VVD_EVDBOUND, __LINE_BEFORE__);
 		if (vd->u32block[index] == VDI_BLOCK_ZERO) {
 			pos = vd->nextblock;
-			vd->u32block[index] = ((pos - vd->offset) / vd->vdi.blocksize);
-			vd->nextblock += vd->vdi.blocksize;
+			vd->u32block[index] = ((pos - vd->offset) / vd->vdiv1.blocksize);
+			vd->nextblock += vd->vdiv1.blocksize;
 		} else {
-			pos = (vd->u32block[index] * vd->vdi.blocksize) + vd->vdi.offData;
+			pos = (vd->u32block[index] * vd->vdiv1.blocksize) + vd->vdiv1.offData;
 		}
-		blocksize = vd->vdi.blocksize;
+		blocksize = vd->vdiv1.blocksize;
 		break;
 	default:
 		return vdisk_i_err(vd, VVD_EVDFORMAT, __LINE_BEFORE__);
@@ -452,8 +393,8 @@ int vdisk_write_block_at(VDISK *vd, void *buffer, uint64_t bindex, uint64_t dind
 	case VDISK_FORMAT_VDI:
 		if (dindex >= vd->u32blockcount)
 			return vdisk_i_err(vd, VVD_EVDBOUND, __LINE_BEFORE__);
-		pos = (dindex * vd->vdi.blocksize) + vd->offset;
-		blocksize = vd->vdi.blocksize;
+		pos = (dindex * vd->vdiv1.blocksize) + vd->offset;
+		blocksize = vd->vdiv1.blocksize;
 		vd->u32block[bindex] = dindex;
 		break;
 	default:

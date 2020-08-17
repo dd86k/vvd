@@ -75,3 +75,7 @@ typedef struct { // v1
 struct VDISK;
 
 int vdisk_vhd_open(struct VDISK *vd, uint32_t flags, uint32_t internal);
+
+int vdisk_vhd_dyn_read_lba(struct VDISK *vd, void *buffer, uint64_t index);
+
+int vdisk_vhd_fixed_read_lba(struct VDISK *vd, void *buffer, uint64_t index);

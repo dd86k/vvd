@@ -27,9 +27,6 @@ enum {
 	VDI_SIGNATURE_SIZE	= 64,
 	VDI_COMMENT_SIZE	= 256,
 
-//	VDI_BLOCK_FREE	= ~0,	// aka ZERO
-//	VDI_BLOCK_ZERO	= ~1,	// "not on disk"
-
 	VDI_DISK_DYN	= 1,
 	VDI_DISK_FIXED	= 2,
 	VDI_DISK_UNDO	= 3,
@@ -93,3 +90,5 @@ typedef struct { // v1.1
 struct VDISK;
 
 int vdisk_vdi_open(struct VDISK *vd, uint32_t flags, uint32_t internal);
+
+int vdisk_vdi_read_sector(struct VDISK *vd, void *buffer, uint64_t index);

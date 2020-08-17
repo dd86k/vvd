@@ -13,5 +13,28 @@ int vdisk_vmdk_open(VDISK *vd, uint32_t flags, uint32_t internal) {
 		return vdisk_i_err(vd, VVD_EVDMISC, __LINE_BEFORE__);
 	vd->offset = SECTOR_TO_BYTE(vd->vmdk.overHead);
 	vd->capacity = SECTOR_TO_BYTE(vd->vmdk.capacity);
+
+	vd->read_lba = vdisk_vmdk_sparse_read_lba;
+
+	return 0;
+}
+
+int vdisk_vmdk_sparse_read_lba(VDISK *vd, void *buffer, uint64_t index) {
+	vd->errfunc = __func__;
+
+	uint64_t offset = SECTOR_TO_BYTE(index); // Byte offset
+
+	if (offset >= vd->vmdk.capacity)
+		return vdisk_i_err(vd, VVD_EVDMISC, __LINE_BEFORE__);
+
+	//bi = offset / SECTOR_TO_BYTE(vd->vmdk.grainSize);
+	//TODO: Work with the grainSize
+	offset += vd->offset;
+
+	if (os_fseek(vd->fd, offset, SEEK_SET))
+		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
+	if (os_fread(vd->fd, buffer, 512))
+		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
+
 	return 0;
 }

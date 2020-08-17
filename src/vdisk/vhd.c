@@ -96,10 +96,46 @@ L_VHD_MAGICOK:
 			vd->u32block[i] = bswap32(vd->u32block[i]);
 #endif
 		vd->offset = SECTOR_TO_BYTE(vd->u32block[0]) + 512;
+		vd->read_lba = vdisk_vhd_dyn_read_lba;
 	} else {
 		vd->offset = 0;
+		vd->read_lba = vdisk_vhd_fixed_read_lba;
 	}
 
 	vd->capacity = vd->vhd.size_original;
+	return 0;
+}
+
+int vdisk_vhd_fixed_read_lba(VDISK *vd, void *buffer, uint64_t index) {
+	vd->errfunc = __func__;
+
+	uint64_t offset = SECTOR_TO_BYTE(index); // Byte offset
+
+	if (os_fseek(vd->fd, offset, SEEK_SET))
+		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
+	if (os_fread(vd->fd, buffer, 512))
+		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
+
+	return 0;
+}
+
+int vdisk_vhd_dyn_read_lba(VDISK *vd, void *buffer, uint64_t index) {
+	vd->errfunc = __func__;
+
+	uint32_t bi = index / vd->vhddyn.blocksize;
+
+	if (bi >= vd->u32blockcount)
+		return vdisk_i_err(vd, VVD_EVDBOUND, __LINE_BEFORE__);
+	if (vd->u32block[bi] == VHD_BLOCK_UNALLOC) // Unallocated
+		return vdisk_i_err(vd, VVD_EVDUNALLOC, __LINE_BEFORE__);
+
+	uint64_t base = SECTOR_TO_BYTE(vd->u32block[bi] * vd->vhddyn.blocksize);
+	uint64_t offset = vd->offset + base + (offset - base);
+
+	if (os_fseek(vd->fd, offset, SEEK_SET))
+		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
+	if (os_fread(vd->fd, buffer, 512))
+		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
+
 	return 0;
 }
