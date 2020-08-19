@@ -15,8 +15,8 @@
 #define oscmp strcmp
 #endif
 
-#ifndef _CHAR16
-#define _CHAR16
+#ifndef DEF_CHAR16
+#define DEF_CHAR16
 typedef uint16_t char16;
 #endif
 
@@ -84,12 +84,29 @@ int extcmp(const oschar *s1, const oschar *s2);
  * 
  * Returns non-zero if number is a power of 2.
  */
-int pow2(int);
+uint32_t pow2(uint32_t);
+
+/**
+ * Checks if 64-bit number is a power of 2.
+ * 
+ * Returns non-zero if number is a power of 2.
+ */
+uint64_t pow264(uint64_t);
 
 /**
  * Find nearest power of 2.
  */
-unsigned int fpow2(unsigned int);
+uint32_t fpow2(uint32_t);
+
+/**
+ * Find nearest power of 2 with a 64-bit number.
+ */
+uint64_t fpow264(uint64_t);
+
+/**
+ * Make a string safer to print
+ */
+void str_s(char *str, int size);
 
 /**
  * Convert an UTF-16 string to an ASCII string and returns number of charaters

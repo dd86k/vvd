@@ -5,8 +5,8 @@ IF /I "%1"=="help" GOTO :HELP
 IF /I "%1"=="--help" GOTO :HELP
 IF /I "%1"=="tips" GOTO :TIPS
 
-IF "%CC%"=="" SET CC=clang-cl
-if "%CF%"=="" SET CF=/Zp -D_CRT_SECURE_NO_WARNINGS -ferror-limit=2 -c
+IF NOT DEFINED CC SET CC=clang-cl
+IF NOT DEFINED CF SET CC=/Zp -D_CRT_SECURE_NO_WARNINGS -ferror-limit=2 -c
 
 IF /I "%1"=="make" (
 	CALL :MAKE %2 %3 %4 %5

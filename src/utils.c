@@ -137,7 +137,15 @@ void putout(const char *s) {
 // pow2
 //
 
-int pow2(int n) {
+uint32_t pow2(uint32_t n) {
+	return (n & (n - 1)) == 0;
+}
+
+//
+// pow264
+//
+
+uint64_t pow264(uint64_t n) {
 	return (n & (n - 1)) == 0;
 }
 
@@ -145,16 +153,43 @@ int pow2(int n) {
 // fpow2
 //
 
-unsigned int fpow2(unsigned int n) {
+uint32_t fpow2(uint32_t n) {
 	// Adapted from VBox/Storage/VDI.cpp getPowerOfTwo
 	if (n == 0)
 		return 0;
-	unsigned int p = 0;
+	uint32_t p = 0;
 	while ((n & 1) == 0) {
 		n >>= 1;
 		++p;
 	}
 	return n == 1 ? p : 0;
+}
+
+//
+// fpow264
+//
+
+uint64_t fpow264(uint64_t n) {
+	if (n == 0)
+		return 0;
+	uint64_t p = 0;
+	while ((n & 1) == 0) {
+		n >>= 1;
+		++p;
+	}
+	return n == 1 ? p : 0;
+}
+
+//
+// str_s
+//
+
+void str_s(char *str, int size) {
+	size_t i = 0;
+	while (--size > 0 && str[i] != 0) {
+		if (str[i] < 0x20 || str[i] > 0x7e)
+			str[i] = ' ';
+	}
 }
 
 //

@@ -14,27 +14,27 @@ int vdisk_vhdx_open(VDISK *vd, uint32_t flags, uint32_t internal) {
 	//
 
 	if (os_fread(vd->fd, &vd->vhdx, sizeof(VHDX_HDR)))
-		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
+		return vdisk_i_err(vd, VVD_EOS, LINE_BEFORE);
 	if (vd->vhdx.magic != VHDX_MAGIC)
-		return vdisk_i_err(vd, VVD_EVDMAGIC, __LINE_BEFORE__);
+		return vdisk_i_err(vd, VVD_EVDMAGIC, LINE_BEFORE);
 
 	if (os_fseek(vd->fd, VHDX_HEADER1_LOC, SEEK_SET))
-		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
+		return vdisk_i_err(vd, VVD_EOS, LINE_BEFORE);
 	if (os_fread(vd->fd, &vd->vhdxhdr, sizeof(VHDX_HEADER1)))
-		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
+		return vdisk_i_err(vd, VVD_EOS, LINE_BEFORE);
 	if (vd->vhdxhdr.magic != VHDX_HDR1_MAGIC)
-		return vdisk_i_err(vd, VVD_EVDMAGIC, __LINE_BEFORE__);
+		return vdisk_i_err(vd, VVD_EVDMAGIC, LINE_BEFORE);
 
 	//
 	// Regions
 	//
 
 	if (os_fseek(vd->fd, VHDX_REGION1_LOC, SEEK_SET))
-		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
+		return vdisk_i_err(vd, VVD_EOS, LINE_BEFORE);
 	if (os_fread(vd->fd, &vd->vhdxreg, sizeof(VHDX_REGION_HDR)))
-		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
+		return vdisk_i_err(vd, VVD_EOS, LINE_BEFORE);
 	if (vd->vhdxreg.magic != VHDX_REGION_MAGIC)
-		return vdisk_i_err(vd, VVD_EVDMAGIC, __LINE_BEFORE__);
+		return vdisk_i_err(vd, VVD_EVDMAGIC, LINE_BEFORE);
 
 	//
 	//TODO: Log

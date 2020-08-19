@@ -2,27 +2,31 @@
 #include "../vdisk.h"
 #include "../utils.h"
 #include "../platform.h"
+#ifdef TRACE
+#include <stdio.h>
+#include <inttypes.h>
+#endif
 
 int vdisk_vdi_open(VDISK *vd, uint32_t flags, uint32_t internal) {
 	vd->errfunc = __func__;
 
 	if (os_fseek(vd->fd, 64, SEEK_SET))
-		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
+		return vdisk_i_err(vd, VVD_EOS, LINE_BEFORE);
 	if (os_fread(vd->fd, &vd->vdihdr, sizeof(VDI_HDR)))
-		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
+		return vdisk_i_err(vd, VVD_EOS, LINE_BEFORE);
 	if (vd->vdihdr.magic != VDI_HEADER_MAGIC)
-		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
+		return vdisk_i_err(vd, VVD_EOS, LINE_BEFORE);
 
 	switch (vd->vdihdr.majorv) { // Use latest major version natively
 	case 1: // Includes all minor releases
 		if (os_fread(vd->fd, &vd->vdiv1, sizeof(VDIHEADER1)))
-			return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
+			return vdisk_i_err(vd, VVD_EOS, LINE_BEFORE);
 		break;
 	case 0: { // Or else, translate header
 		//TODO: Don't tranlate header in case of in-file ops
 		VDIHEADER0 vd0;
 		if (os_fread(vd->fd, &vd0, sizeof(VDIHEADER0)))
-			return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
+			return vdisk_i_err(vd, VVD_EOS, LINE_BEFORE);
 		vd->vdiv1.disksize = vd0.disksize;
 		vd->vdiv1.type = vd0.type;
 		vd->vdiv1.offBlocks = sizeof(VDI_HDR) + sizeof(VDIHEADER0);
@@ -35,14 +39,14 @@ int vdisk_vdi_open(VDISK *vd, uint32_t flags, uint32_t internal) {
 		break;
 	}
 	default:
-		return vdisk_i_err(vd, VVD_EVDVERSION, __LINE_BEFORE__);
+		return vdisk_i_err(vd, VVD_EVDVERSION, LINE_BEFORE);
 	}
 
 	switch (vd->vdiv1.type) {
 	case VDI_DISK_DYN:
 	case VDI_DISK_FIXED: break;
 	default:
-		return vdisk_i_err(vd, VVD_EVDTYPE, __LINE_BEFORE__);
+		return vdisk_i_err(vd, VVD_EVDTYPE, LINE_BEFORE);
 	}
 
 	vd->read_lba = vdisk_vdi_read_sector;
@@ -52,12 +56,12 @@ int vdisk_vdi_open(VDISK *vd, uint32_t flags, uint32_t internal) {
 	if (vd->vdiv1.blocksize == 0)
 		vd->vdiv1.blocksize = VDI_BLOCKSIZE;
 	if (os_fseek(vd->fd, vd->vdiv1.offBlocks, SEEK_SET))
-		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
+		return vdisk_i_err(vd, VVD_EOS, LINE_BEFORE);
 	int bsize = vd->vdiv1.totalblocks << 2; // * sizeof(u32)
 	if ((vd->u32block = malloc(bsize)) == NULL)
-		return vdisk_i_err(vd, VVD_EALLOC, __LINE_BEFORE__);
+		return vdisk_i_err(vd, VVD_EALLOC, LINE_BEFORE);
 	if (os_fread(vd->fd, vd->u32block, bsize))
-		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
+		return vdisk_i_err(vd, VVD_EOS, LINE_BEFORE);
 
 	vd->offset = vd->vdiv1.offData;
 	vd->u32blockcount = vd->vdiv1.totalblocks;
@@ -75,12 +79,12 @@ int vdisk_vdi_read_sector(VDISK *vd, void *buffer, uint64_t index) {
 	size_t bi = offset >> vd->vdi_blockshift;
 
 	if (bi >= vd->vdiv1.totalblocks) // out of bounds
-		return vdisk_i_err(vd, VVD_EVDBOUND, __LINE_BEFORE__);
+		return vdisk_i_err(vd, VVD_EVDBOUND, LINE_BEFORE);
 
 	uint32_t block = vd->u32block[bi];
 	switch (block) {
 	case VDI_BLOCK_ZERO: //TODO: Should this be zero'd too?
-		return vdisk_i_err(vd, VVD_EVDUNALLOC, __LINE_BEFORE__);
+		return vdisk_i_err(vd, VVD_EVDUNALLOC, LINE_BEFORE);
 	case VDI_BLOCK_FREE:
 		memset(buffer, 0, 512);
 		return 0;
@@ -90,14 +94,14 @@ int vdisk_vdi_read_sector(VDISK *vd, void *buffer, uint64_t index) {
 		((uint64_t)block * vd->vdiv1.blocksize) +
 		(offset & vd->vdi_blockmask);
 
-#if TRACE
-	printf("* %s: lba=%" PRId64 " -> offset=0x%" PRIX64 "\n", __func__, index, offset);
+#ifdef TRACE
+	printf("%s: lba=%" PRId64 " -> offset=0x%" PRIX64 "\n", __func__, index, offset);
 #endif
 
 	if (os_fseek(vd->fd, offset, SEEK_SET))
-		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
+		return vdisk_i_err(vd, VVD_EOS, LINE_BEFORE);
 	if (os_fread(vd->fd, buffer, 512))
-		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
+		return vdisk_i_err(vd, VVD_EOS, LINE_BEFORE);
 
 	return 0;
 }

@@ -11,10 +11,10 @@
 #include "vdisk/qcow.h"
 #include "vdisk/phdd.h"
 
-#define __LINE_BEFORE__ (__LINE__ - 1)
+#define LINE_BEFORE (__LINE__ - 1)
 
 //
-// Enumerations
+// Constants
 //
 
 enum {	// DISKFORMAT magical hints (LSB), used for VDISK.format
@@ -87,7 +87,7 @@ typedef struct VDISK {
 	// Flags. See VDISK_FLAG enumeration.
 	uint32_t flags;
 	// Calculated absolute offset to data.
-	uint32_t offset;
+	uint64_t offset;
 	// (Internal) Location of new allocation block
 	uint64_t nextblock;
 	// Virtual disk capacity in bytes. For RAW files, it's the file size. For
@@ -133,6 +133,8 @@ typedef struct VDISK {
 		struct {
 			VHD_HDR vhd;
 			VHD_DYN_HDR vhddyn;
+			uint32_t vhd_blockmask;
+			uint32_t vhd_blockshift;
 		};
 		struct {
 			VHDX_HDR vhdx;

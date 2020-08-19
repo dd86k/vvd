@@ -117,10 +117,11 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 		uid_str(uid1, &vd->vhd.uuid, UID_ASIS);
 		bintostr(sizecur, vd->vhd.size_current);
 		bintostr(disksize, vd->vhd.size_original);
+		str_s(vd->vhd.creator_app, 4);
 
 		printf(
-		"Conectix/Microsoft VHD %s disk v%u.%u, %s/%s\n"
-		"Created by %.4s v%u.%u on %s\n"
+		"Connectix/Microsoft VHD %s disk v%u.%u, %s/%s\n"
+		"Created by \"%.4s\" v%u.%u on %s\n"
 		"Cylinders: %u, Heads: %u, Sectors: %u\n"
 		"CRC32: %08X, UUID: %s\n",
 		type, vd->vhd.major, vd->vhd.minor, sizecur, disksize,
@@ -137,12 +138,12 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 			"Dynamic header v%u.%u, data: %" PRIu64 ", table: %" PRIu64 "\n"
 			"Blocksize: %u, checksum: %08X\n"
 			"Parent UUID: %s, timestamp: %u\n"
-			"%u BAT Entries, %u maximum BAT entries\n",
+			"BAT: %u entries\n",
 			vd->vhddyn.minor, vd->vhddyn.major,
 			vd->vhddyn.data_offset, vd->vhddyn.table_offset,
 			vd->vhddyn.blocksize, vd->vhddyn.checksum,
 			paruuid, vd->vhddyn.parent_timestamp,
-			vd->u32blockcount, vd->vhddyn.max_entries
+			vd->vhddyn.max_entries
 			);
 		}
 

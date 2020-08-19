@@ -61,8 +61,8 @@ typedef struct { // v1
 	uint64_t table_offset;
 	uint16_t minor;
 	uint16_t major;
-	uint32_t max_entries;	// For table
-	uint32_t blocksize;	// In sectors
+	uint32_t max_entries;	// For BAT
+	uint32_t blocksize;	// In bytes
 	uint32_t checksum;
 	UID      parent_uuid;	// UUID
 	uint32_t parent_timestamp;

@@ -2,7 +2,7 @@
 #include "vdisk.h"
 
 #ifdef _WIN32
-#include <windows.h>
+#include <Windows.h>
 typedef HANDLE __OSFILE;
 #else // Posix
 #include <unistd.h>

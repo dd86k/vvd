@@ -1,6 +1,15 @@
 #include "../vdisk.h"
 #include "../utils.h"
 #include "../platform.h"
+#include "../utils.h"
+#ifdef TRACE
+#include <stdio.h>
+#include <inttypes.h>
+#endif
+
+//
+// vdisk_vhd_open
+//
 
 int vdisk_vhd_open(VDISK *vd, uint32_t flags, uint32_t internal) {
 	vd->errfunc = __func__;
@@ -9,16 +18,16 @@ int vdisk_vhd_open(VDISK *vd, uint32_t flags, uint32_t internal) {
 		goto L_VHD_MAGICOK;
 
 	if (os_fread(vd->fd, &vd->vhd, sizeof(VHD_HDR)))
-		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
+		return vdisk_i_err(vd, VVD_EOS, LINE_BEFORE);
 	if (vd->vhd.magic != VHD_MAGIC)
-		return vdisk_i_err(vd, VVD_EVDMAGIC, __LINE_BEFORE__);
+		return vdisk_i_err(vd, VVD_EVDMAGIC, LINE_BEFORE);
 
 L_VHD_MAGICOK:
 #if ENDIAN_LITTLE
 	vd->vhd.major = bswap16(vd->vhd.major);
 #endif
 	if (vd->vhd.major != 1)
-		return vdisk_i_err(vd, VVD_EVDVERSION, __LINE_BEFORE__);
+		return vdisk_i_err(vd, VVD_EVDVERSION, LINE_BEFORE);
 		
 #if ENDIAN_LITTLE
 	vd->vhd.type = bswap32(vd->vhd.type);
@@ -28,7 +37,7 @@ L_VHD_MAGICOK:
 	case VHD_DISK_DYN:
 	case VHD_DISK_FIXED: break;
 	default:
-		return vdisk_i_err(vd, VVD_EVDTYPE, __LINE_BEFORE__);
+		return vdisk_i_err(vd, VVD_EVDTYPE, LINE_BEFORE);
 	}
 
 #if ENDIAN_LITTLE
@@ -48,11 +57,11 @@ L_VHD_MAGICOK:
 
 	if (vd->vhd.type != VHD_DISK_FIXED) {
 		if (os_fseek(vd->fd, vd->vhd.offset, SEEK_SET))
-			return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
+			return vdisk_i_err(vd, VVD_EOS, LINE_BEFORE);
 		if (os_fread(vd->fd, &vd->vhddyn, sizeof(VHD_DYN_HDR)))
-			return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
+			return vdisk_i_err(vd, VVD_EOS, LINE_BEFORE);
 		if (vd->vhddyn.magic != VHD_DYN_MAGIC)
-			return vdisk_i_err(vd, VVD_EVDMAGIC, __LINE_BEFORE__);
+			return vdisk_i_err(vd, VVD_EVDMAGIC, LINE_BEFORE);
 
 #if ENDIAN_LITTLE
 		vd->vhddyn.data_offset = bswap64(vd->vhddyn.data_offset);
@@ -77,34 +86,41 @@ L_VHD_MAGICOK:
 		}
 #endif
 
-		vd->u32blockcount = vd->vhd.size_original / vd->vhddyn.blocksize;
-//		vd->blockmask = vd->vhddyn.blocksize - 1;
-//		vd->blockshift = fpow2(vd->vhddyn.blocksize);
+		if (pow2(vd->vhddyn.blocksize) == 0 ||
+			vd->vhddyn.max_entries != vd->vhd.size_original / vd->vhddyn.blocksize)
+			return vdisk_i_err(vd, VVD_EVDMISC, LINE_BEFORE);
 
-		if (vd->u32blockcount <= 0)
-			return vdisk_i_err(vd, VVD_EVDMAGIC, __LINE_BEFORE__);
+		vd->u32blockcount = vd->vhddyn.max_entries;
+		vd->vhd_blockmask = vd->vhddyn.blocksize - 1;
+		vd->vhd_blockshift = fpow2(vd->vhddyn.blocksize);
+
+		if (vd->u32blockcount == 0)
+			return vdisk_i_err(vd, VVD_EVDMAGIC, LINE_BEFORE);
 		if (os_fseek(vd->fd, vd->vhddyn.table_offset, SEEK_SET))
-			return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
+			return vdisk_i_err(vd, VVD_EOS, LINE_BEFORE);
 
-		int batsize = vd->u32blockcount << 2; // "* sizeof(u32)"
+		int batsize = vd->u32blockcount << 2; // "* 4"
 		if ((vd->u32block = malloc(batsize)) == NULL)
-			return vdisk_i_err(vd, VVD_EALLOC, __LINE_BEFORE__);
+			return vdisk_i_err(vd, VVD_EALLOC, LINE_BEFORE);
 		if (os_fread(vd->fd, vd->u32block, batsize))
-			return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
+			return vdisk_i_err(vd, VVD_EOS, LINE_BEFORE);
 #if ENDIAN_LITTLE
 		for (size_t i = 0; i < vd->u32blockcount; ++i)
 			vd->u32block[i] = bswap32(vd->u32block[i]);
 #endif
-		vd->offset = SECTOR_TO_BYTE(vd->u32block[0]) + 512;
 		vd->read_lba = vdisk_vhd_dyn_read_lba;
-	} else {
-		vd->offset = 0;
+	} else { // Fixed
 		vd->read_lba = vdisk_vhd_fixed_read_lba;
 	}
+	vd->offset = 0;
 
 	vd->capacity = vd->vhd.size_original;
 	return 0;
 }
+
+//
+// vdisk_vhd_fixed_read_lba
+//
 
 int vdisk_vhd_fixed_read_lba(VDISK *vd, void *buffer, uint64_t index) {
 	vd->errfunc = __func__;
@@ -112,30 +128,41 @@ int vdisk_vhd_fixed_read_lba(VDISK *vd, void *buffer, uint64_t index) {
 	uint64_t offset = SECTOR_TO_BYTE(index); // Byte offset
 
 	if (os_fseek(vd->fd, offset, SEEK_SET))
-		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
+		return vdisk_i_err(vd, VVD_EOS, LINE_BEFORE);
 	if (os_fread(vd->fd, buffer, 512))
-		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
+		return vdisk_i_err(vd, VVD_EOS, LINE_BEFORE);
 
 	return 0;
 }
 
+//
+// vdisk_vhd_dyn_read_lba
+//
+
 int vdisk_vhd_dyn_read_lba(VDISK *vd, void *buffer, uint64_t index) {
 	vd->errfunc = __func__;
 
-	uint32_t bi = index / vd->vhddyn.blocksize;
-
+	uint64_t offset = SECTOR_TO_BYTE(index);
+	uint32_t bi = (uint32_t)(offset >> vd->vhd_blockshift);
+#ifdef TRACE
+	printf("%s: bi=%u\n", __func__, bi);
+#endif
 	if (bi >= vd->u32blockcount)
-		return vdisk_i_err(vd, VVD_EVDBOUND, __LINE_BEFORE__);
-	if (vd->u32block[bi] == VHD_BLOCK_UNALLOC) // Unallocated
-		return vdisk_i_err(vd, VVD_EVDUNALLOC, __LINE_BEFORE__);
+		return vdisk_i_err(vd, VVD_EVDBOUND, LINE_BEFORE);
 
-	uint64_t base = SECTOR_TO_BYTE(vd->u32block[bi] * vd->vhddyn.blocksize);
-	uint64_t offset = vd->offset + base + (offset - base);
+	uint32_t block = vd->u32block[bi];
+	if (block == VHD_BLOCK_UNALLOC) // Unallocated
+		return vdisk_i_err(vd, VVD_EVDUNALLOC, LINE_BEFORE);
 
+	uint64_t base = SECTOR_TO_BYTE(block) + 512;
+	offset = base + (offset & vd->vhd_blockmask);
+#ifdef TRACE
+	printf("%s: block=%u  offset=%" PRIu64 "\n", __func__, block, offset);
+#endif
 	if (os_fseek(vd->fd, offset, SEEK_SET))
-		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
+		return vdisk_i_err(vd, VVD_EOS, LINE_BEFORE);
 	if (os_fread(vd->fd, buffer, 512))
-		return vdisk_i_err(vd, VVD_EOS, __LINE_BEFORE__);
+		return vdisk_i_err(vd, VVD_EOS, LINE_BEFORE);
 
 	return 0;
 }

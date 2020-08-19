@@ -7,7 +7,7 @@
 
 #endif
 
-#define DEBUG	1
+#define __DATETIME__ __DATE__ " " __TIME__
 #define PROJECT_VERSION	"0.0.0"
 
 #include <stdio.h>
@@ -144,12 +144,20 @@ static void help() {
 
 static void version(void) {
 	printf(
-	"vvd-" __PLATFORM__ " " PROJECT_VERSION " (" __DATE__ " " __TIME__ ")\n"
+	"vvd-" __PLATFORM__ " " PROJECT_VERSION " (compiled " __DATETIME__ ")\n"
 #ifdef __VERSION__
 	"Compiler: " __VERSION__ "\n"
 #endif
 	"MIT License: Copyright (c) 2019-2020 dd86k <dd@dax.moe>\n"
-	"Project page: <https://github.com/dd86k/vvd>\n\n"
+	"Project page: <https://github.com/dd86k/vvd>\n"
+	"Defines: "
+#ifdef DEBUG
+	"DEBUG "
+#endif
+#ifdef TRACE
+	"TRACE "
+#endif
+	"\n\n"
 	"FORMAT	OPERATIONS\n"
 	"VDI	info, map, new, compact\n"
 	"VMDK	info\n"
