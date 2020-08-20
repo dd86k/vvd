@@ -11,6 +11,142 @@
 #include "fs/gpt.h"
 
 //
+// vvd_info_mbr
+//
+
+void vvd_info_mbr(MBR *mbr, uint32_t flags) {
+	uint64_t totalsize = SECTOR_TO_BYTE(
+		(uint64_t)mbr->pe[0].sectors + (uint64_t)mbr->pe[1].sectors +
+		(uint64_t)mbr->pe[2].sectors + (uint64_t)mbr->pe[3].sectors
+	);
+	char strsize[BINSTR_LENGTH];
+	bintostr(strsize, totalsize);
+
+	if (flags & VVD_INFO_RAW) {
+		printf(
+		"\nMBR: SERIAL %08X, %s USED, TYPE %04u\n"
+		"   STAT  TYPE        LBA        SIZE    CHS start-end\n",
+		mbr->serial, strsize, mbr->type
+		);
+		for (unsigned int i = 0; i < 4; ++i) {
+			MBR_PARTITION pe = mbr->pe[i];
+			printf(
+			"%u.  %2XH   %2XH %10u  %10u  %4u:%3u:%2u-%4u:%3u:%2u\n",
+			i, pe.status, pe.type, pe.lba, pe.sectors,
+			// CHS start
+			pe.chsfirst.cylinder | ((pe.chsfirst.sector & 0xC0) << 2),
+			pe.chsfirst.head, pe.chsfirst.sector & 0x3F,
+			// CHS end
+			pe.chslast.cylinder | ((pe.chslast.sector & 0xC0) << 2),
+			pe.chslast.head, pe.chslast.sector & 0x3F
+			);
+		}
+	} else {
+		printf(
+		"\nDOS (MBR) disklabel, %s used\n"
+		"   Boot     Start        Size  Type\n", strsize
+		);
+		for (unsigned int i = 0; i < 4; ++i) {
+			MBR_PARTITION pe = mbr->pe[i];
+			bintostr(strsize, SECTOR_TO_BYTE(pe.sectors));
+			printf(
+			"%u. %c  %11u  %10s  %s\n",
+			i,
+			pe.status & 0x80 ? '*' : ' ',
+			pe.lba,
+			strsize,
+			mbr_part_type_str(pe.type)
+			);
+		}
+	}
+}
+
+//
+// vvd_info_gpt
+//
+
+void vvd_info_gpt(GPT *gpt, uint32_t flags) {
+	//TODO: Simplified view (and leave this one in "--raw-info")
+	char gptsize[BINSTR_LENGTH];
+	UID_TEXT diskguid;
+	bintostr(gptsize, SECTOR_TO_BYTE(gpt->last.lba - gpt->first.lba));
+	uid_str(diskguid, &gpt->guid, UID_GUID);
+	printf(
+	"\nGPT: v%u.%u (%u B), HDR CRC32 %08X, PT CRC32 %08X\n"
+	"HEADER LBA %" PRIu64 ", BACKUP LBA %" PRIu64 "\n"
+	"LBA %" PRIu64 " to %" PRIu64 " (%s)\n"
+	"DISK GUID: %s\n"
+	"PT LBA %" PRIu64 ", %u MAX ENTRIES, ENTRY SIZE %u\n",
+	gpt->majorver, gpt->minorver, gpt->headersize, gpt->crc32, gpt->pt_crc32,
+	gpt->current.lba, gpt->backup.lba,
+	gpt->first.lba, gpt->last.lba, gptsize,
+	diskguid,
+	gpt->pt_location.lba, gpt->pt_entries, gpt->pt_esize
+	);
+}
+
+//
+// vvd_info_gpt_entries
+//
+
+void vvd_info_gpt_entries(VDISK *vd, GPT *gpt, uint64_t lba, uint32_t flags) {
+	int max = gpt->pt_entries;	// maximum limiter, typically 128
+	char partname[EFI_PART_NAME_LENGTH];
+	char partsize[BINSTR_LENGTH];
+	UID_TEXT partguid, typeguid;
+	GPT_ENTRY entry; // GPT entry
+
+START:
+	if (vdisk_read_sector(vd, &entry, lba)) {
+		fputs("vvd_info_gpt_entries: Could not read GPT_ENTRY", stderr);
+		return;
+	}
+
+	if (uid_nil(&entry.type))
+		return;
+
+	uid_str(typeguid, &entry.type, UID_GUID);
+	uid_str(partguid, &entry.part, UID_GUID);
+	wstra(partname, entry.partname, EFI_PART_NAME_LENGTH);
+
+	bintostr(partsize, SECTOR_TO_BYTE(entry.last.lba - entry.first.lba));
+	printf(
+	"%" PRIu64 ". %-36s\n"
+	"  LBA %" PRIu64 " TO %" PRIu64 " (%s)\n"
+	"  PART GUID: %s\n"
+	"  TYPE GUID: %s\n"
+	"  FLAGS: %XH, PART FLAGS: %XH\n",
+	lba - 1, partname,
+	entry.first.lba, entry.last.lba, partsize,
+	partguid, typeguid,
+	entry.flags, entry.partflags
+	);
+
+	// GPT flags
+	if (entry.flags & EFI_PE_PLATFORM_REQUIRED)
+		puts("+ Platform required");
+	if (entry.flags & EFI_PE_PLATFORM_REQUIRED)
+		puts("+ Firmware ignore");
+	if (entry.flags & EFI_PE_PLATFORM_REQUIRED)
+		puts("+ Legacy BIOS bootable");
+
+	// Partition flags
+	if (entry.partflags & EFI_PE_SUCCESSFUL_BOOT)
+		puts("+ (Google) Successful boot");
+	if (entry.partflags & EFI_PE_READ_ONLY)
+		puts("+ (Microsoft) Read-only");
+	if (entry.partflags & EFI_PE_SHADOW_COPY)
+		puts("+ (Microsoft) Shadow copy");
+	if (entry.partflags & EFI_PE_HIDDEN)
+		puts("+ (Microsoft) Hidden");
+
+	if (max <= 0)
+		return;
+	++lba; --max;
+	goto START;
+}
+
+//
 // vvd_info
 //
 
@@ -184,6 +320,9 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 		return VVD_EVDFORMAT;
 	}
 
+	//TODO: BSD disklabel detection
+	//TODO: SGI disklabel detection
+
 	//
 	// MBR detection
 	//
@@ -191,7 +330,7 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 	MBR mbr;
 	if (vdisk_read_sector(vd, &mbr, 0)) return EXIT_SUCCESS;
 	if (mbr.sig != MBR_SIG) return EXIT_SUCCESS;
-	mbr_info_stdout(&mbr, 0);
+	vvd_info_mbr(&mbr, flags);
 
 	//
 	// Extended MBR detection (EBR)
@@ -200,7 +339,7 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 	int ebrtype = 0;
 	for (int i = 0; i < 4; ++i) {
 		// EFI GPT Protective or EFI System Partition
-		if (mbr.pe[i].parttype == 0xEE || mbr.pe[i].parttype == 0xEF) {
+		if (mbr.pe[i].type == 0xEE || mbr.pe[i].type == 0xEF) {
 			ebrtype = 1;
 			break;
 		}
@@ -227,8 +366,8 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 		}
 		break;
 L_GPT_RDY:
-		gpt_info_stdout((GPT *)&mbr, 0);
-		gpt_info_entries_stdout(vd, (GPT *)&mbr, ebrlba, 0);
+		vvd_info_gpt((GPT *)&mbr, 0);
+		vvd_info_gpt_entries(vd, (GPT *)&mbr, ebrlba, 0);
 		break;
 	}
 

@@ -6,7 +6,7 @@ IF /I "%1"=="--help" GOTO :HELP
 IF /I "%1"=="tips" GOTO :TIPS
 
 IF NOT DEFINED CC SET CC=clang-cl
-IF NOT DEFINED CF SET CC=/Zp -D_CRT_SECURE_NO_WARNINGS -ferror-limit=2 -c
+IF NOT DEFINED CF SET CF=/Zp -D_CRT_SECURE_NO_WARNINGS -ferror-limit=2 -c
 
 IF /I "%1"=="make" (
 	CALL :MAKE %2 %3 %4 %5
@@ -83,7 +83,7 @@ IF NOT EXIST "bin" mkdir bin
 FOR /R src %%F IN (*.c) DO (
 	ECHO %CC%: %%~nxF
 	%CC% %CF% %%F %1 %2 %3 %4 -o bin\%%~nF.o
-	IF ERRORLEVEL 1 EXIT 1
+	IF ERRORLEVEL 1 EXIT /B 1
 )
 GOTO :EOF
 

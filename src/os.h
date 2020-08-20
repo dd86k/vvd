@@ -70,6 +70,7 @@ enum {
 	PROG_MODE_CUR_MAX	= 1,
 	PROG_MODE_CUR_ONLY	= 2,
 	PROG_MODE_POURCENT	= 3,
+	//TODO: PROG_MODE_INDETERMINATE
 
 	PROG_FLAG_REMOVE	= 0x100, // Remove progress bar when done
 };

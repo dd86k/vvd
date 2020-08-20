@@ -11,8 +11,12 @@ int vdisk_vmdk_open(VDISK *vd, uint32_t flags, uint32_t internal) {
 		return vdisk_i_err(vd, VVD_EVDVERSION, LINE_BEFORE);
 	if (vd->vmdk.grainSize < 1 || vd->vmdk.grainSize > 128 || pow2(vd->vmdk.grainSize) == 0)
 		return vdisk_i_err(vd, VVD_EVDMISC, LINE_BEFORE);
+
 	vd->offset = SECTOR_TO_BYTE(vd->vmdk.overHead);
 	vd->capacity = SECTOR_TO_BYTE(vd->vmdk.capacity);
+
+	vd->vmdk_blockmask = vd->vmdk.grainSize - 1;
+	vd->vmdk_blockshift = fpow2((uint32_t)vd->vmdk.grainSize);
 
 	vd->read_lba = vdisk_vmdk_sparse_read_lba;
 

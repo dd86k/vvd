@@ -129,7 +129,11 @@ typedef struct VDISK {
 			// Dynamic disk block index shift number. Populated by fpow2.
 			uint32_t vdi_blockshift;
 		};
-		VMDK_HDR vmdk;
+		struct {
+			VMDK_HDR vmdk;
+			uint64_t vmdk_blockmask;
+			uint32_t vmdk_blockshift;
+		};
 		struct {
 			VHD_HDR vhd;
 			VHD_DYN_HDR vhddyn;

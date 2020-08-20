@@ -165,7 +165,6 @@ static void version(void) {
 	"VHDX	\n"
 	"QED	info, map\n"
 	"QCOW	\n"
-	"VHD	\n"
 	"PHDD	\n"
 	"RAW	info\n"
 	);
@@ -205,7 +204,7 @@ static void license() {
 /**
  * Match a patch to an exception with the VDISK_FORMAT_* enum.
  * 
- * \returns VDISK_FORMAT enum or 0
+ * \returns VDISK_FORMAT enum
  */
 static int vdextauto(const oschar *path) {
 	if (extcmp(path, osstr("vdi")))	return VDISK_FORMAT_VDI;
@@ -230,25 +229,40 @@ MAIN {
 	uint32_t cflags = 0;	// vdisk_create: file flags
 	VDISK vdin;	// vdisk IN
 	VDISK vdout;	// vdisk OUT
-	uint64_t vsize;	// virtual disk size, used in 'new' and 'resize'
-	// 0=Typically file input path
-	// 1=Typically file output path or binary size
-	const oschar *defopt[2] = { NULL, NULL }; // Default options
+	uint64_t vsize = 0;	// virtual disk size, used in 'new' and 'resize'
+	const oschar *defopt = NULL;	// Default option for input file
 
 	// Additional arguments are processed first, since they're simpler
-	//TODO: --progress: shows progress bar whenever available
 	//TODO: --verbose: prints those extra lines (>v0.10.0)
 	for (size_t argi = 2; argi < argc; ++argi) {
 		const oschar *arg = argv[argi];
 		//
-		// Open flags
+		// Generic
+		//
+		if (oscmp(arg, osstr("--size")) == 0) {
+			if (argi + 1 >= argc) {
+				fputs("main: missing argument for --size\n", stderr);
+				return EXIT_FAILURE;
+			}
+			if (strtobin(&vsize, argv[++argi])) {
+				fputs("main: failed to convert binary number\n", stderr);
+				return EXIT_FAILURE;
+			}
+			continue;
+		}
+		if (oscmp(arg, osstr("--size")) == 0) {
+			mflags |= VVD_PROGRESS;
+			continue;
+		}
+		//
+		// vdisk_open flags
 		//
 		if (oscmp(arg, osstr("--raw")) == 0) {
 			oflags |= VDISK_RAW;
 			continue;
 		}
 		//
-		// Create flags
+		// vdisk_create flags
 		//
 		if (oscmp(arg, osstr("--create-raw")) == 0) {
 			cflags |= VDISK_RAW;
@@ -263,19 +277,20 @@ MAIN {
 			continue;
 		}
 		//
-		// Default arguments
+		// vvd_info flags
 		//
-		if (defopt[0] == NULL) {
-			defopt[0] = arg;
-			continue;
-		}
-		if (defopt[1] == NULL) {
-			defopt[1] = arg;
+		if (oscmp(arg, osstr("--info-raw")) == 0) {
+			mflags |= VVD_INFO_RAW;
 			continue;
 		}
 		//
-		// Unknown argument
+		// Default argument
 		//
+		if (defopt == NULL) {
+			defopt = arg;
+			continue;
+		}
+
 		fprintf(stderr, "main: '" OSCHARFMT "' unknown option\n", arg);
 		return EXIT_FAILURE;
 	}
@@ -287,23 +302,23 @@ MAIN {
 	//
 
 	if (oscmp(action, osstr("info")) == 0) {
-		if (defopt[0] == NULL) {
+		if (defopt == NULL) {
 			fputs("main: missing vdisk\n", stderr);
 			return EXIT_FAILURE;
 		}
-		if (vdisk_open(&vdin, defopt[0], oflags)) {
+		if (vdisk_open(&vdin, defopt, oflags)) {
 			vdisk_perror(&vdin);
 			return vdin.errcode;
 		}
-		return vvd_info(&vdin, 0);
+		return vvd_info(&vdin, mflags);
 	}
 
 	if (oscmp(action, osstr("map")) == 0) {
-		if (defopt[0] == NULL) {
+		if (defopt == NULL) {
 			fputs("main: missing vdisk\n", stderr);
 			return EXIT_FAILURE;
 		}
-		if (vdisk_open(&vdin, defopt[0], oflags)) {
+		if (vdisk_open(&vdin, defopt, oflags)) {
 			vdisk_perror(&vdin);
 			return vdin.errcode;
 		}
@@ -311,11 +326,11 @@ MAIN {
 	}
 
 	if (oscmp(action, osstr("compact")) == 0) {
-		if (defopt[0] == NULL) {
+		if (defopt == NULL) {
 			fputs("main: missing vdisk\n", stderr);
 			return EXIT_FAILURE;
 		}
-		if (vdisk_open(&vdin, defopt[0], 0)) {
+		if (vdisk_open(&vdin, defopt, 0)) {
 			vdisk_perror(&vdin);
 			return vdin.errcode;
 		}
@@ -332,29 +347,23 @@ MAIN {
 	}
 
 	if (oscmp(action, osstr("new")) == 0) {
-		if (defopt[0] == NULL) {
+		if (defopt == NULL) {
 			fputs("main: missing path specifier\n", stderr);
 			return EXIT_FAILURE;
 		}
-		if (defopt[1] == NULL) {
-			fputs("main: missing size specifier\n", stderr);
+		if (vsize == 0) {
+			fputs("main: capacity cannot be zero\n", stderr);
 			return EXIT_FAILURE;
 		}
 
 		// Get vdisk type out of extension name
-		int format = vdextauto(defopt[0]);
+		int format = vdextauto(defopt);
 		if (format == VDISK_FORMAT_NONE) {
-			fputs("main: could not determine vdisk type\n", stderr);
+			fputs("main: unknown extension\n", stderr);
 			return EXIT_FAILURE;
 		}
 
-		// Convert binary text (e.g. "10G") to a 64-bit number
-		if (strtobin(&vsize, defopt[1])) {
-			fputs("main: invalid binary size\n", stderr);
-			return EXIT_FAILURE;
-		}
-
-		return vvd_new(defopt[0], format, vsize, cflags);
+		return vvd_new(defopt, format, vsize, cflags);
 	}
 
 	if (oscmp(action, osstr("resize")) == 0) {

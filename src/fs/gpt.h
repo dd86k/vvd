@@ -115,12 +115,3 @@ const UID GPT_ENTRY_EMPTY = {
 #endif // _GPT_ENTRIES*/
 
 struct VDISK;
-
-/**
- * Prints GPT information to stdout.
- */
-void gpt_info_stdout(GPT *gpt, uint32_t flags);
-/**
- * Run through the list of GPT_ENTRY from a VDISK.
- */
-void gpt_info_entries_stdout(struct VDISK *vd, GPT *gpt, uint64_t lba, uint32_t flags);

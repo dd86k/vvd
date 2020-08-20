@@ -47,7 +47,7 @@
 	#define __PLATFORM__ "unknown"
 #endif
 
-// Works on GCC and Clang
+// Works with GCC and Clang
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 	#define ENDIAN_LITTLE 1
 #else
