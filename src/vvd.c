@@ -352,39 +352,30 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 	// Extended MBR detection (EBR)
 	//
 
-	int ebrtype = 0;
+	uint64_t ebrlba;
 	for (int i = 0; i < 4; ++i) {
-		// EFI GPT Protective or EFI System Partition
-		if (mbr.pe[i].type == 0xEE || mbr.pe[i].type == 0xEF) {
-			ebrtype = 1;
-			break;
+		switch (mbr.pe[i].type) {
+		case 0xEE: // EFI GPT Protective
+		case 0xEF: // EFI System Partition
+			// Start of disk
+			if (vdisk_read_sector(vd, &mbr, 1)) return VVD_EOK;
+			if (((GPT*)&mbr)->sig == EFI_SIG) {
+				ebrlba = 2;
+				goto L_GPT_RDY;
+			}
+			// End of disk
+			ebrlba = BYTE_TO_SECTOR(vd->capacity) - 1;
+			if (vdisk_read_sector(vd, &mbr, ebrlba)) return VVD_EOK;
+			if (((GPT*)&mbr)->sig == EFI_SIG) {
+				ebrlba -= ((GPT*)&mbr)->pt_entries; // typically 128
+				goto L_GPT_RDY;
+			}
+			continue;
+		L_GPT_RDY:
+			vvd_info_gpt((GPT *)&mbr, flags);
+			vvd_info_gpt_entries(vd, (GPT *)&mbr, ebrlba, flags);
+			continue;
 		}
-	}
-
-	uint64_t ebrlba; // Extended MBR LBA
-	switch (ebrtype) {
-	//
-	// GPT detection
-	//
-	case 1:
-		// Start of disk
-		if (vdisk_read_sector(vd, &mbr, 1)) return VVD_EOK;
-		if (((GPT*)&mbr)->sig == EFI_SIG) {
-			ebrlba = 2;
-			goto L_GPT_RDY;
-		}
-		// End of disk
-		ebrlba = BYTE_TO_SECTOR(vd->capacity) - 1;
-		if (vdisk_read_sector(vd, &mbr, ebrlba)) return VVD_EOK;
-		if (((GPT*)&mbr)->sig == EFI_SIG) {
-			ebrlba -= 128;
-			goto L_GPT_RDY;
-		}
-		break;
-L_GPT_RDY:
-		vvd_info_gpt((GPT *)&mbr, flags);
-		vvd_info_gpt_entries(vd, (GPT *)&mbr, ebrlba, flags);
-		break;
 	}
 
 	return VVD_EOK;
