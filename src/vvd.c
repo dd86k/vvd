@@ -66,23 +66,31 @@ void vvd_info_mbr(MBR *mbr, uint32_t flags) {
 //
 
 void vvd_info_gpt(GPT *gpt, uint32_t flags) {
-	//TODO: Simplified view (and leave this one in "--raw-info")
 	char gptsize[BINSTR_LENGTH];
 	UID_TEXT diskguid;
 	bintostr(gptsize, SECTOR_TO_BYTE(gpt->last.lba - gpt->first.lba));
 	uid_str(diskguid, &gpt->guid, UID_GUID);
-	printf(
-	"\nGPT: v%u.%u (%u B), HDR CRC32 %08X, PT CRC32 %08X\n"
-	"HEADER LBA %" PRIu64 ", BACKUP LBA %" PRIu64 "\n"
-	"LBA %" PRIu64 " to %" PRIu64 " (%s)\n"
-	"DISK GUID: %s\n"
-	"PT LBA %" PRIu64 ", %u MAX ENTRIES, ENTRY SIZE %u\n",
-	gpt->majorver, gpt->minorver, gpt->headersize, gpt->crc32, gpt->pt_crc32,
-	gpt->current.lba, gpt->backup.lba,
-	gpt->first.lba, gpt->last.lba, gptsize,
-	diskguid,
-	gpt->pt_location.lba, gpt->pt_entries, gpt->pt_esize
-	);
+	if (flags & VVD_INFO_RAW) {
+		printf(
+		"\nGPT: v%u.%u (%u B), HDR CRC32 %08X, PT CRC32 %08X\n"
+		"HEADER LBA %" PRIu64 ", BACKUP LBA %" PRIu64 "\n"
+		"LBA %" PRIu64 " to %" PRIu64 " (%s)\n"
+		"DISK GUID: %s\n"
+		"PT LBA %" PRIu64 ", %u MAX ENTRIES, ENTRY SIZE %u\n",
+		gpt->majorver, gpt->minorver, gpt->headersize, gpt->crc32, gpt->pt_crc32,
+		gpt->current.lba, gpt->backup.lba,
+		gpt->first.lba, gpt->last.lba, gptsize,
+		diskguid,
+		gpt->pt_location.lba, gpt->pt_entries, gpt->pt_esize
+		);
+	} else {
+		printf(
+		"\nGPT extended disklabel v%u.%u, %s used\n"
+		"Disk GUID: %s\n",
+		gpt->majorver, gpt->minorver, gptsize,
+		diskguid
+		);
+	}
 }
 
 //
@@ -95,6 +103,7 @@ void vvd_info_gpt_entries(VDISK *vd, GPT *gpt, uint64_t lba, uint32_t flags) {
 	char partsize[BINSTR_LENGTH];
 	UID_TEXT partguid, typeguid;
 	GPT_ENTRY entry; // GPT entry
+	uint32_t entrynum = 1;
 
 START:
 	if (vdisk_read_sector(vd, &entry, lba)) {
@@ -110,17 +119,24 @@ START:
 	wstra(partname, entry.partname, EFI_PART_NAME_LENGTH);
 
 	bintostr(partsize, SECTOR_TO_BYTE(entry.last.lba - entry.first.lba));
-	printf(
-	"%" PRIu64 ". %-36s\n"
-	"  LBA %" PRIu64 " TO %" PRIu64 " (%s)\n"
-	"  PART GUID: %s\n"
-	"  TYPE GUID: %s\n"
-	"  FLAGS: %XH, PART FLAGS: %XH\n",
-	lba - 1, partname,
-	entry.first.lba, entry.last.lba, partsize,
-	partguid, typeguid,
-	entry.flags, entry.partflags
-	);
+	if (flags & VVD_INFO_RAW) {
+		printf(
+		"%2u. %-36s\n"
+		"  LBA %" PRIu64 " TO %" PRIu64 " (%s)\n"
+		"  PART GUID: %s\n"
+		"  TYPE GUID: %s\n"
+		"  FLAGS: %XH, PART FLAGS: %XH\n",
+		entrynum, partname,
+		entry.first.lba, entry.last.lba, partsize,
+		partguid, typeguid,
+		entry.flags, entry.partflags
+		);
+	} else {
+		printf(
+		"%2u. %s, %-36s\n",
+		entrynum, partsize, partname
+		);
+	}
 
 	// GPT flags
 	if (entry.flags & EFI_PE_PLATFORM_REQUIRED)
@@ -142,7 +158,7 @@ START:
 
 	if (max <= 0)
 		return;
-	++lba; --max;
+	++lba; --max; ++entrynum;
 	goto START;
 }
 
@@ -366,8 +382,8 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 		}
 		break;
 L_GPT_RDY:
-		vvd_info_gpt((GPT *)&mbr, 0);
-		vvd_info_gpt_entries(vd, (GPT *)&mbr, ebrlba, 0);
+		vvd_info_gpt((GPT *)&mbr, flags);
+		vvd_info_gpt_entries(vd, (GPT *)&mbr, ebrlba, flags);
 		break;
 	}
 
