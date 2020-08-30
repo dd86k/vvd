@@ -92,3 +92,5 @@ struct VDISK;
 int vdisk_vdi_open(struct VDISK *vd, uint32_t flags, uint32_t internal);
 
 int vdisk_vdi_read_sector(struct VDISK *vd, void *buffer, uint64_t index);
+
+int vdisk_vdi_compact(struct VDISK *vd, void(*cb_progress)(uint32_t type, void *data));

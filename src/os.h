@@ -90,7 +90,7 @@ struct progress_t {
 #endif // DEFINITION_OS_PROGRESS
 
 /**
- * Initiate a new progress bar. This function allocates, but manages its own
+ * Initiate a new progress bar. This function allocates, but manages its own 
  * memory.
  * 
  * \param p struct progress_t pointer

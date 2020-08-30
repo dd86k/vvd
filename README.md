@@ -13,6 +13,14 @@ User manual: `docs/vvd.1`
 
 Technical Manual: Coming soon
 
+# Introduction
+
+vvd is an attempt to be a stand-alone and all-in-one tool to manage virtual
+disk images.
+
+Personal goals:
+- [ ] Finally compact my vmdk Windows disk images.
+
 # Compiling
 
 ## Using the build scripts

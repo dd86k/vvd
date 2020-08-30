@@ -7,6 +7,10 @@
 #include <inttypes.h>
 #endif
 
+//
+// vdisk_vdi_open
+//
+
 int vdisk_vdi_open(VDISK *vd, uint32_t flags, uint32_t internal) {
 	vd->errfunc = __func__;
 
@@ -72,6 +76,10 @@ int vdisk_vdi_open(VDISK *vd, uint32_t flags, uint32_t internal) {
 	return 0;
 }
 
+//
+// vdisk_vdi_read_sector
+//
+
 int vdisk_vdi_read_sector(VDISK *vd, void *buffer, uint64_t index) {
 	vd->errfunc = __func__;
 
@@ -102,6 +110,78 @@ int vdisk_vdi_read_sector(VDISK *vd, void *buffer, uint64_t index) {
 		return vdisk_i_err(vd, VVD_EOS, LINE_BEFORE);
 	if (os_fread(vd->fd, buffer, 512))
 		return vdisk_i_err(vd, VVD_EOS, LINE_BEFORE);
+
+	return 0;
+}
+
+//
+// vdisk_vdi_compact
+//
+
+int vdisk_vdi_compact(VDISK *vd, void(*cb)(uint32_t type, void *data)) {
+	if (vd->vdiv1.type != VDI_DISK_DYN)
+		return vdisk_i_err(vd, VVD_EVDTYPE, LINE_BEFORE);
+
+	if (vd->vdiv1.blocksalloc == 0)
+		return 0;
+
+	VDISK vdtmp;
+	if (vdisk_create(&vdtmp, osstr("vdisk.tmp"), VDISK_FORMAT_VDI, vd->capacity, VDISK_CREATE_DYN))
+		return vdtmp.errcode;
+
+	if (cb) {
+		cb(VVD_NOTIF_VDISK_CREATED_TYPE_NAME, (char*)vdisk_str(&vdtmp));
+		cb(VVD_NOTIF_VDISK_TOTAL_BLOCKS, &vdtmp.vdiv1.totalblocks);
+	}
+
+	uint32_t stat_unalloc = 0;	// unallocated blocks
+	uint32_t stat_occupied = 0;	// allocated blocks with data
+	uint32_t stat_zero = 0;	// blocks with no data inside
+	uint32_t stat_alloc = 0;	// allocated blocks
+
+/*	char strbsize[BINSTR_LENGTH];
+	bintostr(strbsize, vd->vdiv1.blocksize);
+	printf("vvd_compact: writing (%s/block, %u checks/%u bytes)...\n",
+		strbsize, (uint32_t)oblocksize, (uint32_t)sizeof(size_t));*/
+
+	uint32_t d = 0;
+	uint32_t i = 0;
+	// check/fix allocation errors before compating
+/*	for (; i < vd->u32blockcount; ++i) {
+		uint32_t bi = vd->u32block[i]; // block index
+		if (bi >= VDI_BLOCK_FREE) {
+			++stat_unalloc;
+			continue;
+		}
+
+		if (cb) cb(VVD_NOTIF_VDISK_CURRENT_BLOCK, &i);
+
+		if (bi < vd->vdiv1.blocksalloc) {
+			if (vdtmp.u32block[bi] == VDI_BLOCK_FREE) {
+				vdtmp.u32block[bi] = i;
+			} else {
+				vd->u32block[bi] = VDI_BLOCK_FREE;
+				//TODO: Update header once manipulating source
+				//rc = vdiUpdateBlockInfo(pImage, i);
+				vdisk_write_block_at(&vdtmp, buffer, i, d++);
+			}
+		} else {
+			vd->u32block[bi] = VDI_BLOCK_FREE;
+			//TODO: Update header once manipulating source
+			//vd->u32block[bi] = VDI_BLOCK_FREE;
+			vdisk_write_block_at(&vdtmp, buffer, i, d++);
+		}
+	}*/
+	// Find redundant information and update the block pointers accordingly
+	for (i = 0; i < vd->u32blockcount; ++i) {
+		uint32_t bi = vd->u32block[i]; // block index
+		if (bi >= VDI_BLOCK_FREE) {
+			++stat_unalloc;
+			continue;
+		}
+	}
+	// Fill bubbles with other data if available
+//		for (i = 0; o < vd->vdi.blocksalloc
 
 	return 0;
 }

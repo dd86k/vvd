@@ -17,6 +17,7 @@
 // Constants
 //
 
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 enum {	// DISKFORMAT magical hints (LSB), used for VDISK.format
 	VDISK_FORMAT_NONE	= 0,	// No formats has been specificied yet
 	VDISK_FORMAT_RAW	= 0xAAAAAAAA,	// Raw files and devices
@@ -27,8 +28,12 @@ enum {	// DISKFORMAT magical hints (LSB), used for VDISK.format
 	VDISK_FORMAT_QED	= 0x00444551,	// "QED\0" QEMU Enhanced Disk
 	VDISK_FORMAT_QCOW	= 0xFB494651,	// "QFI\xFB" QEMU Copy-On-Write, v1/v2
 	VDISK_FORMAT_PHDD	= 0x68746957,	// "With" Parallels HDD
+	VDISK_FORMAT_BOCHS	= 0x68636F68,	// "Boch" Bochs Virtual HD Image
 //	VDISK_FORMAT_DMG	= 0x,	// "" Apple DMG
 };
+#else
+
+#endif
 
 enum {	// VDISK flags, the open/create flags may overlap
 	VDISK_RAW	= 0x1,	// Open or create vdisk as raw
@@ -37,25 +42,24 @@ enum {	// VDISK flags, the open/create flags may overlap
 	// vdisk_open flags
 	//
 
-	VDISK_OPEN_VDI_ONLY	= 0x0100,	//TODO: Only open successfully if VDISK is VDI
-	VDISK_OPEN_VMDK_ONLY	= 0x0200,	//TODO: Only open successfully if VDISK is VMDK
-	VDISK_OPEN_VHD_ONLY	= 0x0400,	//TODO: Only open successfully if VDISK is VHD
-	VDISK_OPEN_VHDX_ONLY	= 0x0800,	//TODO: Only open successfully if VDISK is VHDX
-	VDISK_OPEN_QED_ONLY	= 0x1000,	//TODO: Only open successfully if VDISK is QED
-	VDISK_OPEN_QCOW_ONLY	= 0x2000,	//TODO: Only open successfully if VDISK is QCOW
-	VDISK_OPEN_PHDD_ONLY	= 0x4000,	//TODO: Only open successfully if VDISK is Parallels HDD
+	VDISK_OPEN_VDI_ONLY	= 0x1000,	//TODO: Only open successfully if VDISK is VDI
+	VDISK_OPEN_VMDK_ONLY	= 0x2000,	//TODO: Only open successfully if VDISK is VMDK
+	VDISK_OPEN_VHD_ONLY	= 0x3000,	//TODO: Only open successfully if VDISK is VHD
+	VDISK_OPEN_VHDX_ONLY	= 0x4000,	//TODO: Only open successfully if VDISK is VHDX
+	VDISK_OPEN_QED_ONLY	= 0x5000,	//TODO: Only open successfully if VDISK is QED
+	VDISK_OPEN_QCOW_ONLY	= 0x6000,	//TODO: Only open successfully if VDISK is QCOW
+	VDISK_OPEN_PHDD_ONLY	= 0x7000,	//TODO: Only open successfully if VDISK is Parallels HDD
+	VDISK_OPEN_BOCHS_ONLY	= 0x8000,	//TODO: Only open successfully if VDISK is Parallels HDD
 
 	//
 	// vdisk_create flags
 	//
 
 	VDISK_CREATE_TEMP	= 0x0100,	//TODO: Create a temporary (random) vdisk file
-	VDISK_CLONE_META	= 0x0400,	//TODO: Clone disk but only copy metadata. Not applicate on fixed vdisks
-	VDISK_CLONE_DATA	= 0x0800,	//TODO: Clone disk with metadata and data
 	VDISK_CREATE_DYN	= 0x1000,	//TODO: Create a dynamic type VDISK
 	VDISK_CREATE_FIXED	= 0x2000,	//TODO: Create a fixed type VDISK
 	VDISK_CREATE_PARENT	= 0x3000,	//TODO: Create a parent of the VDISK
-	VDISK_CREATE_SNAPSHOT	= 0x4000,	//TODO: Create a parent of the VDISK
+	VDISK_CREATE_SNAPSHOT	= 0x4000,	//TODO: Create a snapshot of the VDISK
 };
 
 enum {	// VDISK error codes
@@ -72,6 +76,27 @@ enum {	// VDISK error codes
 	VVD_EVDBOUND	= -16,	// Index was out of block index bounds
 	VVD_EVDTODO	= -254,	// Currently unimplemented
 	VVD_EVDMISC	= -255,	// Unknown
+};
+
+enum {
+	// Operation has completed successfully.
+	// Parameter: NULL
+	VVD_NOTIF_DONE,
+	// VDISK was created with type
+	// Parameter: const char*
+	VVD_NOTIF_VDISK_CREATED_TYPE_NAME,
+	// Total amount of blocks before processing
+	// Parameter: uint32_t
+	VVD_NOTIF_VDISK_TOTAL_BLOCKS,
+	// Total amount of blocks before processing (64-bit indexes)
+	// Parameter: uint64_t
+	VVD_NOTIF_VDISK_TOTAL_BLOCKS64,
+	// 
+	// Parameter: uint32_t
+	VVD_NOTIF_VDISK_CURRENT_BLOCK,
+	// 
+	// Parameter: uint64_t
+	VVD_NOTIF_VDISK_CURRENT_BLOCK64,
 };
 
 //
@@ -118,7 +143,12 @@ typedef struct VDISK {
 		// Total amount of allocated blocks
 		uint32_t u32blockcount;
 	};
-	//TODO: Consider making these pointers and only allocate required structures
+	union {
+		uint64_t blockmask64;
+		uint32_t blockmask;
+	};
+	uint32_t blockshift;
+	//TODO: Consider allocating on open/create operations
 	union {
 		struct {
 			VDI_HDR vdihdr; // pre-header
@@ -161,7 +191,7 @@ typedef struct VDISK {
 } VDISK;
 
 //
-// Functions
+// SECTION Internal functions
 //
 
 /**
@@ -170,6 +200,10 @@ typedef struct VDISK {
  * \returns errcode
  */
 int vdisk_i_err(VDISK *vd, int e, int l);
+
+//
+// SECTION Functions
+//
 
 /**
  * Open a VDISK.
@@ -247,11 +281,26 @@ int vdisk_write_block(VDISK *vd, void *buffer, uint64_t index);
 int vdisk_write_block_at(VDISK *vd, void *buffer, uint64_t bindex, uint64_t dindex);
 
 //
-// Error handling
+// SECTION
 //
 
 /**
- * Returns an error message depending on the last value of vdisk_errno.
+ * 
+ */
+int vdisk_op_compact(VDISK *vd, void(*cb)(uint32_t, void*));
+
+/**
+ * 
+ */
+//int vdisk_op_resize(VDISK *vd, void(*cb_progress)(uint64_t block));
+
+//
+// SECTION Error handling
+//
+
+/**
+ * Returns an error message depending on the last value of vdisk_errno. If the
+ * error is set to VVD_EOS, the error message will come from the OS (or CRT).
  */
 const char* vdisk_error(VDISK *vd);
 

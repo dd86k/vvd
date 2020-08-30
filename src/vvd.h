@@ -4,7 +4,7 @@
 // The lower 16 bits is for "generic" flags and the higher
 // 16 bits is for function-specific flags:
 //
-// bits 31                16                0
+// bits 31               16                 0
 //      +--------+--------+--------+--------+
 //      | Func.  specific |  Generic flags  |
 //      +--------+--------+--------+--------+

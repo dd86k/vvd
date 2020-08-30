@@ -15,6 +15,13 @@ int vdisk_i_err(VDISK *vd, int e, int l) {
 	return (vd->errcode = e);
 }
 
+void vdisk_i_pre_init(VDISK *vd) {
+	// Until all implementations are done, this allows to catch
+	// non-implemented functions during operation
+	vd->read_lba = vd->write_lba =
+		vd->read_block = vd->write_block = NULL;
+}
+
 //
 // vdisk_open
 //
@@ -25,10 +32,7 @@ int vdisk_open(VDISK *vd, const oschar *path, uint32_t flags) {
 	if ((vd->fd = os_fopen(path)) == 0)
 		return vdisk_i_err(vd, VVD_EOS, LINE_BEFORE);
 
-	// Until all implementations are done, this allows to catch
-	// non-implemented functions during operation
-	vd->read_lba = vd->write_lba =
-		vd->read_block = vd->write_block = NULL;
+	vdisk_i_pre_init(vd);
 
 	if (flags & VDISK_RAW) {
 		if (os_fsize(vd->fd, &vd->capacity))
@@ -115,10 +119,9 @@ int vdisk_create(VDISK *vd, const oschar *path, int format, uint64_t capacity, u
 	if (flags & VDISK_CREATE_TEMP) {
 		//TODO: Attach random number
 		path = osstr("vdisk.tmp");
-	}
-
-	if (path == NULL)
+	} else if (path == NULL)
 		return vdisk_i_err(vd, VVD_ENULL, LINE_BEFORE);
+
 	if (capacity == 0)
 		return vdisk_i_err(vd, VVD_EVDBOUND, LINE_BEFORE);
 
@@ -203,6 +206,12 @@ int vdisk_create(VDISK *vd, const oschar *path, int format, uint64_t capacity, u
 
 	return vdisk_update(vd);
 }
+
+//
+//TODO: vdisk_close(VDISK *vd)
+//
+
+
 
 //
 // vdisk_str
@@ -405,6 +414,19 @@ int vdisk_write_block_at(VDISK *vd, void *buffer, uint64_t bindex, uint64_t dind
 		return vdisk_i_err(vd, VVD_EOS, LINE_BEFORE);
 
 	return (vd->errcode = VVD_EOK);
+}
+
+//
+// vdisk_op_compact
+//
+
+int vdisk_op_compact(VDISK *vd, void(*cb)(uint32_t, void*)) {
+	switch (vd->format) {
+	case VDISK_FORMAT_VDI:
+		return vdisk_vdi_compact(vd, cb);
+	default:
+		return vdisk_i_err(vd, VVD_EVDFORMAT, __LINE__);
+	}
 }
 
 //

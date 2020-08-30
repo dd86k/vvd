@@ -234,6 +234,7 @@ MAIN {
 
 	// Additional arguments are processed first, since they're simpler
 	//TODO: --verbose: prints those extra lines (>v0.10.0)
+	//TODO: --verify-repair
 	for (size_t argi = 2; argi < argc; ++argi) {
 		const oschar *arg = argv[argi];
 		//
@@ -371,7 +372,7 @@ MAIN {
 		return EXIT_FAILURE;
 	}
 
-	if (oscmp(action, osstr("repair")) == 0) {
+	if (oscmp(action, osstr("verify")) == 0) {
 		fputs("main: not implemented\n", stderr);
 		return EXIT_FAILURE;
 	}

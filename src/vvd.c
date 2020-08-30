@@ -11,6 +11,54 @@
 #include "fs/gpt.h"
 
 //
+// Global variables
+//
+// Since only one instance of any vvd_* is running at a time (seeing that
+// they're directly invoked from main()), these variables are useful for
+// callbacks to avoid over-implementing the vdisk back-end.
+//
+
+// CLI progress bar var
+struct progress_t g_progress;
+//
+uint32_t g_flags;
+
+//
+// vvd_cb_progress
+//
+
+void vvd_cb_progress(uint32_t type, void *data) {
+	switch (type) {
+	case VVD_NOTIF_DONE:
+		if (g_flags & VVD_PROGRESS)
+		if (os_pfinish(&g_progress)) {
+			fputs("os_pfinish: Could not finish progress bar", stderr);
+			exit(1);
+		}
+		return;
+	case VVD_NOTIF_VDISK_CREATED_TYPE_NAME:
+		printf("%s\n", data);
+		return;
+	case VVD_NOTIF_VDISK_TOTAL_BLOCKS:
+	case VVD_NOTIF_VDISK_TOTAL_BLOCKS64:
+		if (g_flags & VVD_PROGRESS)
+		if (os_pinit(&g_progress, PROG_MODE_POURCENT, 0)) {
+			fputs("os_pinit: Could not init progress bar\n", stderr);
+			exit(1);
+		}
+		return;
+	case VVD_NOTIF_VDISK_CURRENT_BLOCK:
+	case VVD_NOTIF_VDISK_CURRENT_BLOCK64:
+		if (g_flags & VVD_PROGRESS)
+		if (os_pupdate(&g_progress, 0)) {
+			fputs("os_pinit: Could not update progress bar\n", stderr);
+			exit(1);
+		}
+		return;
+	}
+}
+
+//
 // vvd_info_mbr
 //
 
@@ -25,13 +73,13 @@ void vvd_info_mbr(MBR *mbr, uint32_t flags) {
 	if (flags & VVD_INFO_RAW) {
 		printf(
 		"\nMBR: SERIAL %08X, %s USED, TYPE %04u\n"
-		"   STAT  TYPE        LBA        SIZE    CHS start-end\n",
+		"   STAT  TYPE        LBA        SIZE    CHS start/end\n",
 		mbr->serial, strsize, mbr->type
 		);
 		for (unsigned int i = 0; i < 4; ++i) {
 			MBR_PARTITION pe = mbr->pe[i];
 			printf(
-			"%u.  %2XH   %2XH %10u  %10u  %4u:%3u:%2u-%4u:%3u:%2u\n",
+			"%u.  %2XH   %2XH %10u  %10u  %4u,%3u,%2u/%4u,%3u,%2u\n",
 			i, pe.status, pe.type, pe.lba, pe.sectors,
 			// CHS start
 			pe.chsfirst.cylinder | ((pe.chsfirst.sector & 0xC0) << 2),
@@ -156,8 +204,9 @@ START:
 	if (entry.partflags & EFI_PE_HIDDEN)
 		puts("+ (Microsoft) Hidden");
 
-	if (max <= 0)
+	if (entrynum > gpt->pt_entries)
 		return;
+
 	++lba; --max; ++entrynum;
 	goto START;
 }
@@ -196,12 +245,10 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 
 		printf(
 		"VirtualBox VDI %s disk v%u.%u, %s\n"
-		"Header size: %u, Flags: %XH, Dummy: %u\n"
-		"Blocks: %u (allocated: %u, extra: %u), %s size\n"
-		"Offset to data: %Xh, to allocation table: %Xh\n"
-		"Cylinders: %u (legacy: %u)\n"
-		"Heads: %u (legacy: %u)\n"
-		"Sectors: %u (legacy: %u)\n"
+		"Header size: %u, Flags: 0x%X, Dummy: %u\n"
+		"Blocks: %u (allocated: %u, extra: %u), %s\n"
+		"Offset to table: 0x%X, to data: 0x%X\n"
+		"CHS: %u,%u,%u (legacy: %u,%u,%u)\n"
 		"Sector size: %u (legacy: %u)\n"
 		"Create UUID: %s\n"
 		"Modify UUID: %s\n"
@@ -210,10 +257,11 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 		type, vd->vdihdr.majorv, vd->vdihdr.minorv, disksize,
 		vd->vdiv1.hdrsize, vd->vdiv1.fFlags, vd->vdiv1.u32Dummy,
 		vd->vdiv1.totalblocks, vd->vdiv1.blocksalloc, vd->vdiv1.blocksextra, blocksize,
-		vd->vdiv1.offData, vd->vdiv1.offBlocks,
-		vd->vdiv1.cCylinders, vd->vdiv1.LegacyGeometry.cCylinders,
-		vd->vdiv1.cHeads, vd->vdiv1.LegacyGeometry.cHeads,
-		vd->vdiv1.cSectors, vd->vdiv1.LegacyGeometry.cSectors,
+		vd->vdiv1.offBlocks, vd->vdiv1.offData,
+		vd->vdiv1.cCylinders, vd->vdiv1.cHeads, vd->vdiv1.cSectors,
+		vd->vdiv1.LegacyGeometry.cCylinders,
+		vd->vdiv1.LegacyGeometry.cHeads,
+		vd->vdiv1.LegacyGeometry.cSectors,
 		vd->vdiv1.cbSector, vd->vdiv1.LegacyGeometry.cbSector,
 		uid1, uid2, uid3, uid4
 		);
@@ -372,13 +420,13 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 			}
 			continue;
 		L_GPT_RDY:
-			vvd_info_gpt((GPT *)&mbr, flags);
-			vvd_info_gpt_entries(vd, (GPT *)&mbr, ebrlba, flags);
+			vvd_info_gpt((GPT*)&mbr, flags);
+			vvd_info_gpt_entries(vd, (GPT*)&mbr, ebrlba, flags);
 			continue;
 		}
 	}
 
-	return VVD_EOK;
+	return EXIT_SUCCESS;
 }
 
 //
@@ -468,7 +516,7 @@ int vvd_map(VDISK *vd, uint32_t flags) {
 			putchar('\n');
 		}
 	}
-	return VVD_EOK;
+	return EXIT_SUCCESS;
 }
 
 //
@@ -482,7 +530,7 @@ int vvd_new(const oschar *path, uint32_t format, uint64_t capacity, uint32_t fla
 		return vd.errcode;
 	}
 	printf("vvd_new: %s disk created successfully\n", vdisk_str(&vd));
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 //
@@ -490,138 +538,11 @@ int vvd_new(const oschar *path, uint32_t format, uint64_t capacity, uint32_t fla
 //
 
 int vvd_compact(VDISK *vd, uint32_t flags) {
-	if (vd->u32blockcount == 0) {
-		fputs("vvd_compact: no allocated blocks\n", stderr);
-		return VVD_EVDMISC;
+	puts("vvd_compact: [warning] This function is still work in progress");
+	g_flags = flags;
+	if (vdisk_op_compact(vd, vvd_cb_progress)) {
+		vdisk_perror(vd);
+		return vd->errcode;
 	}
-
-	puts("vvd_compact: [warning] This function is still being developed");
-
-	struct progress_t progress;
-	switch (vd->format) {
-	//
-	// VDI
-	//
-	case VDISK_FORMAT_VDI: {
-		//TODO: Continue vvd_compact::vdi
-
-		if (vd->vdiv1.type != VDI_DISK_DYN) {
-			fputs("vvd_compact: vdisk not dynamic\n", stderr);
-			return VVD_EVDTYPE;
-		}
-
-		if (vd->vdiv1.blocksalloc == 0)
-			return EXIT_SUCCESS;
-
-		//
-		// Block buffer for transfer
-		//
-
-		uint8_t *buffer;	// Block buffer
-		if ((buffer = malloc(vd->vdiv1.blocksize)) == NULL)
-			return VVD_EALLOC;
-
-		//
-		// Temporary VDISK
-		// Also assigns the same attributes from the source vdisk
-		//
-
-		VDISK vdtmp;
-		memcpy(&vdtmp.vdihdr, &vd->vdihdr, sizeof(VDI_HDR));
-		memcpy(&vdtmp.vdiv1, &vd->vdiv1, sizeof(VDIHEADER1));
-		/*if (vdisk_create(&vdtmp, NULL, VDISK_FORMAT_VDI, vd->capacity, VDISK_CREATE_TEMP)) {
-			vdisk_perror(&vdtmp);
-			return vd->errcode;
-		}*/
-		if ((vdtmp.u32block = malloc(vd->vdiv1.blocksalloc * 4)) == NULL)
-			return VVD_EALLOC;
-		vdtmp.offset = vd->offset;
-		vdtmp.format = vd->format;
-		vdtmp.u32blockcount = vd->u32blockcount;
-
-		for (size_t i = 0; i < vd->vdiv1.blocksalloc; ++i)
-			vdtmp.u32block[i] = VDI_BLOCK_FREE;
-
-		printf("vvd_compact: %s temporary disk created\n", vdisk_str(&vdtmp));
-
-		//
-		// Main housework
-		//
-
-		// "Optimized" buffer size
-		size_t oblocksize = vd->vdiv1.blocksize / sizeof(size_t);
-		// "Optimized" buffer pointer
-		size_t *obuffer = (size_t*)buffer;
-
-		uint32_t stat_unalloc = 0;	// unallocated blocks
-		uint32_t stat_occupied = 0;	// allocated blocks with data
-		uint32_t stat_zero = 0;	// blocks with no data inside
-		uint32_t stat_alloc = 0;	// allocated blocks
-
-		char strbsize[BINSTR_LENGTH];
-		bintostr(strbsize, vd->vdiv1.blocksize);
-		printf("vvd_compact: writing (%s/block, %u checks/%u bytes)...\n",
-			strbsize, (uint32_t)oblocksize, (uint32_t)sizeof(size_t));
-		os_pinit(&progress, PROG_MODE_POURCENT, vd->u32blockcount - 1);
-
-		uint32_t d = 0;
-		uint32_t i = 0;
-		// check/fix allocation errors before compating
-		for (; i < vd->u32blockcount; ++i) {
-			uint32_t bi = vd->u32block[i]; // block index
-			if (bi >= VDI_BLOCK_FREE) {
-				++stat_unalloc;
-				continue;
-			}
-			os_pupdate(&progress, (uint32_t)i);
-			if (bi < vd->vdiv1.blocksalloc) {
-				if (vdtmp.u32block[bi] == VDI_BLOCK_FREE) {
-					vdtmp.u32block[bi] = i;
-				} else {
-					vd->u32block[bi] = VDI_BLOCK_FREE;
-					//TODO: Update header once manipulating source
-					//rc = vdiUpdateBlockInfo(pImage, i);
-					vdisk_write_block_at(&vdtmp, buffer, i, d++);
-				}
-			} else {
-				vd->u32block[bi] = VDI_BLOCK_FREE;
-				//TODO: Update header once manipulating source
-				//vd->u32block[bi] = VDI_BLOCK_FREE;
-				vdisk_write_block_at(&vdtmp, buffer, i, d++);
-			}
-		}
-		// Find redundant information and update the block pointers accordingly
-		for (i = 0; i < vd->u32blockcount; ++i) {
-			uint32_t bi = vd->u32block[i]; // block index
-			if (bi >= VDI_BLOCK_FREE) {
-				++stat_unalloc;
-				continue;
-			}
-		}
-		// Fill bubbles with other data if available
-//		for (i = 0; o < vd->vdi.blocksalloc
-		
-		vdtmp.vdiv1.blocksalloc = stat_occupied;
-		if (vdisk_update(&vdtmp)) {
-			vdisk_perror(&vdtmp);
-			return vdtmp.errcode;
-		}
-		os_pfinish(&progress);
-		printf("vvd_compact: %u/%u blocks written, %u unallocated, %u zero, %u total\n",
-			stat_occupied, stat_alloc, stat_unalloc, stat_zero, vd->u32blockcount
-		);
-		return 0;
-	}
-	//
-	// RAW
-	//
-	case VDISK_FORMAT_RAW:
-		fputs("vvd_compact: RAW files/devices are not supported\n", stderr);
-		return VVD_EVDFORMAT;
-	default:
-		fputs("vvd_compact: VDISK format not supported\n", stderr);
-		return VVD_EVDFORMAT;
-	}
-
-	return 0;
+	return EXIT_SUCCESS;
 }
