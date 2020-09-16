@@ -459,7 +459,8 @@ const char* vdisk_error(VDISK *vd) {
 		return "unknown error happened";
 	case VVD_EOS:
 #if _WIN32
-		// We're using the Win32 API, not the CRT functions
+		// We're using the Win32 API, not the CRT functions, which may
+		// yield different and probably unrelated messages
 		static char _errmsgbuf[512];
 		vd->errcode = GetLastError();
 		int l = GetLocaleInfoEx( // Recommended over MAKELANGID
@@ -468,7 +469,7 @@ const char* vdisk_error(VDISK *vd) {
 			0,
 			0);
 		FormatMessageA(
-			FORMAT_MESSAGE_FROM_SYSTEM,
+			FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_MAX_WIDTH_MASK,
 			NULL,
 			vd->errcode,
 			l,
