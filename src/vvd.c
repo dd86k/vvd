@@ -72,15 +72,28 @@ void vvd_info_mbr(MBR *mbr, uint32_t flags) {
 
 	if (flags & VVD_INFO_RAW) {
 		printf(
-		"\nMBR: SERIAL %08X, %s USED, TYPE %04u\n"
-		"   STAT  TYPE        LBA        SIZE    CHS start/end\n",
-		mbr->serial, strsize, mbr->type
+		"\n"
+		"disklabel          : DOS\n"
+		"serial             : 0x%08X\n"
+		"type               : 0x%04X\n",
+		mbr->serial, mbr->type
 		);
 		for (unsigned int i = 0; i < 4; ++i) {
 			MBR_PARTITION pe = mbr->pe[i];
 			printf(
-			"%u.  %2XH   %2XH %10u  %10u  %4u,%3u,%2u/%4u,%3u,%2u\n",
-			i, pe.status, pe.type, pe.lba, pe.sectors,
+			"\n"
+			"partition          : %u\n"
+			"status             : 0x%02X\n"
+			"type               : 0x%02X\n"
+			"lba                : %u\n"
+			"length             : %u sectors\n"
+			"chs start          : %u/%u/%u\n"
+			"chs end            : %u/%u/%u\n",
+			i,
+			pe.status,
+			pe.type,
+			pe.lba,
+			pe.sectors,
 			// CHS start
 			pe.chsfirst.cylinder | ((pe.chsfirst.sector & 0xC0) << 2),
 			pe.chsfirst.head, pe.chsfirst.sector & 0x3F,
@@ -91,7 +104,8 @@ void vvd_info_mbr(MBR *mbr, uint32_t flags) {
 		}
 	} else {
 		printf(
-		"\nDOS (MBR) disklabel, %s used\n"
+		"\n"
+		"DOS (MBR) disklabel, %s used\n"
 		"   Boot     Start        Size  Type\n", strsize
 		);
 		for (unsigned int i = 0; i < 4; ++i) {
@@ -100,7 +114,7 @@ void vvd_info_mbr(MBR *mbr, uint32_t flags) {
 			printf(
 			"%u. %c  %11u  %10s  %s\n",
 			i,
-			pe.status & 0x80 ? '*' : ' ',
+			pe.status >= 0x80 ? '*' : ' ',
 			pe.lba,
 			strsize,
 			mbr_part_type_str(pe.type)
@@ -116,24 +130,39 @@ void vvd_info_mbr(MBR *mbr, uint32_t flags) {
 void vvd_info_gpt(GPT *gpt, uint32_t flags) {
 	char gptsize[BINSTR_LENGTH];
 	UID_TEXT diskguid;
-	bintostr(gptsize, SECTOR_TO_BYTE(gpt->last.lba - gpt->first.lba));
+
 	uid_str(diskguid, &gpt->guid, UID_GUID);
+
 	if (flags & VVD_INFO_RAW) {
 		printf(
-		"\nGPT: v%u.%u (%u B), HDR CRC32 %08X, PT CRC32 %08X\n"
-		"HEADER LBA %" PRIu64 ", BACKUP LBA %" PRIu64 "\n"
-		"LBA %" PRIu64 " to %" PRIu64 " (%s)\n"
-		"DISK GUID: %s\n"
-		"PT LBA %" PRIu64 ", %u MAX ENTRIES, ENTRY SIZE %u\n",
-		gpt->majorver, gpt->minorver, gpt->headersize, gpt->crc32, gpt->pt_crc32,
+		"\n"
+		"disklabel          : GPT\n"
+		"version            : %u.%u\n"
+		"header size        : %u\n"
+		"header crc32       : 0x%08X\n"
+		"part. table crc32  : 0x%08X\n"
+		"header lba         : %" PRIu64 "\n"
+		"backup lba         : %" PRIu64 "\n"
+		"lba start          : %" PRIu64 "\n"
+		"lba end            : %" PRIu64 "\n"
+		"disk guid          : %s\n"
+		"part. table lba    : %" PRIu64 "\n"
+		"maximum entries    : %u\n"
+		"entry size         : %u\n",
+		gpt->majorver, gpt->minorver,
+		gpt->headersize, gpt->headercrc32,
+		gpt->pt_crc32,
 		gpt->current.lba, gpt->backup.lba,
-		gpt->first.lba, gpt->last.lba, gptsize,
+		gpt->first.lba, gpt->last.lba,
 		diskguid,
 		gpt->pt_location.lba, gpt->pt_entries, gpt->pt_esize
 		);
 	} else {
+		bintostr(gptsize, SECTOR_TO_BYTE(gpt->last.lba - gpt->first.lba));
+
 		printf(
-		"\nGPT extended disklabel v%u.%u, %s used\n"
+		"\n"
+		"GPT extended disklabel v%u.%u, %s used\n"
 		"Disk GUID: %s\n",
 		gpt->majorver, gpt->minorver, gptsize,
 		diskguid
@@ -153,6 +182,9 @@ void vvd_info_gpt_entries(VDISK *vd, GPT *gpt, uint64_t lba, uint32_t flags) {
 	GPT_ENTRY entry; // GPT entry
 	uint32_t entrynum = 1;
 
+	if ((flags & VVD_INFO_RAW) == 0)
+		puts("Part         Start        Size  Type");
+
 START:
 	if (vdisk_read_sector(vd, &entry, lba)) {
 		fputs("vvd_info_gpt_entries: Could not read GPT_ENTRY", stderr);
@@ -164,45 +196,57 @@ START:
 
 	uid_str(typeguid, &entry.type, UID_GUID);
 	uid_str(partguid, &entry.part, UID_GUID);
-	wstra(partname, entry.partname, EFI_PART_NAME_LENGTH);
+	int wr = wstra(partname, entry.partname, EFI_PART_NAME_LENGTH);
 
-	bintostr(partsize, SECTOR_TO_BYTE(entry.last.lba - entry.first.lba));
 	if (flags & VVD_INFO_RAW) {
 		printf(
-		"%2u. %-36s\n"
-		"  LBA %" PRIu64 " TO %" PRIu64 " (%s)\n"
-		"  PART GUID: %s\n"
-		"  TYPE GUID: %s\n"
-		"  FLAGS: %XH, PART FLAGS: %XH\n",
-		entrynum, partname,
-		entry.first.lba, entry.last.lba, partsize,
-		partguid, typeguid,
-		entry.flags, entry.partflags
+		"\n"
+		"partition          : %u\n"
+		"name               : %-36s\n"
+		"part guid          : %s\n"
+		"type guid          : %s\n"
+		"lba start          : %" PRIu64 "\n"
+		"lba end            : %" PRIu64 "\n"
+		"flags              : 0x%08X\n"
+		"partition flags    : 0x%08X\n",
+		entrynum,
+		partname,
+		partguid,
+		typeguid,
+		entry.first.lba,
+		entry.last.lba,
+		entry.flags,
+		entry.partflags
 		);
 	} else {
+		bintostr(partsize, SECTOR_TO_BYTE(entry.last.lba - entry.first.lba));
+		//TODO: GPT partition type (after name)
 		printf(
-		"%2u. %s, %-36s\n",
-		entrynum, partsize, partname
+		"%4u. %12" PRIu64 "%12s  s\n",
+		entrynum, entry.first.lba, partsize
 		);
+
+		if (wr > 0)
+			printf("      Name: %-36s", partname);
+
+		// GPT flags
+		if (entry.flags & EFI_PE_PLATFORM_REQUIRED)
+			puts("      + Platform required");
+		if (entry.flags & EFI_PE_EFI_FIRMWARE_IGNORE)
+			puts("      + Firmware ignore");
+		if (entry.flags & EFI_PE_LEGACY_BIOS_BOOTABLE)
+			puts("      + Legacy BIOS bootable");
+
+		// Partition flags
+		if (entry.partflags & EFI_PE_SUCCESSFUL_BOOT)
+			puts("      + (Google) Successful boot");
+		if (entry.partflags & EFI_PE_READ_ONLY)
+			puts("      + (Microsoft) Read-only");
+		if (entry.partflags & EFI_PE_SHADOW_COPY)
+			puts("      + (Microsoft) Shadow copy");
+		if (entry.partflags & EFI_PE_HIDDEN)
+			puts("      + (Microsoft) Hidden");
 	}
-
-	// GPT flags
-	if (entry.flags & EFI_PE_PLATFORM_REQUIRED)
-		puts("+ Platform required");
-	if (entry.flags & EFI_PE_PLATFORM_REQUIRED)
-		puts("+ Firmware ignore");
-	if (entry.flags & EFI_PE_PLATFORM_REQUIRED)
-		puts("+ Legacy BIOS bootable");
-
-	// Partition flags
-	if (entry.partflags & EFI_PE_SUCCESSFUL_BOOT)
-		puts("+ (Google) Successful boot");
-	if (entry.partflags & EFI_PE_READ_ONLY)
-		puts("+ (Microsoft) Read-only");
-	if (entry.partflags & EFI_PE_SHADOW_COPY)
-		puts("+ (Microsoft) Shadow copy");
-	if (entry.partflags & EFI_PE_HIDDEN)
-		puts("+ (Microsoft) Hidden");
 
 	if (entrynum > gpt->pt_entries)
 		return;
@@ -233,38 +277,63 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 		default:	type = "type?";
 		}
 
-		char create_uuid[UID_LENGTH], modify_uuid[UID_LENGTH],
-			link_uuid[UID_LENGTH], parent_uuid[UID_LENGTH];
-
 		bintostr(disksize, vd->vdiv1.disksize);
-		bintostr(blocksize, vd->vdiv1.blocksize);
-		uid_str(uid1, &vd->vdiv1.uuidCreate, UID_UUID);
-		uid_str(uid2, &vd->vdiv1.uuidModify, UID_UUID);
-		uid_str(uid3, &vd->vdiv1.uuidLinkage, UID_UUID);
-		uid_str(uid4, &vd->vdiv1.uuidParentModify, UID_UUID);
 
-		printf(
-		"VirtualBox VDI %s disk v%u.%u, %s\n"
-		"Header size: %u, Flags: 0x%X, Dummy: %u\n"
-		"Blocks: %u (allocated: %u, extra: %u), %s\n"
-		"Offset to table: 0x%X, to data: 0x%X\n"
-		"CHS: %u,%u,%u (legacy: %u,%u,%u)\n"
-		"Sector size: %u (legacy: %u)\n"
-		"Create UUID: %s\n"
-		"Modify UUID: %s\n"
-		"Link   UUID: %s\n"
-		"Parent UUID: %s\n",
-		type, vd->vdihdr.majorv, vd->vdihdr.minorv, disksize,
-		vd->vdiv1.hdrsize, vd->vdiv1.fFlags, vd->vdiv1.u32Dummy,
-		vd->vdiv1.totalblocks, vd->vdiv1.blocksalloc, vd->vdiv1.blocksextra, blocksize,
-		vd->vdiv1.offBlocks, vd->vdiv1.offData,
-		vd->vdiv1.cCylinders, vd->vdiv1.cHeads, vd->vdiv1.cSectors,
-		vd->vdiv1.LegacyGeometry.cCylinders,
-		vd->vdiv1.LegacyGeometry.cHeads,
-		vd->vdiv1.LegacyGeometry.cSectors,
-		vd->vdiv1.cbSector, vd->vdiv1.LegacyGeometry.cbSector,
-		uid1, uid2, uid3, uid4
-		);
+		if (flags & VVD_INFO_RAW) {
+			char create_uuid[UID_LENGTH], modify_uuid[UID_LENGTH],
+				link_uuid[UID_LENGTH], parent_uuid[UID_LENGTH];
+
+			bintostr(blocksize, vd->vdiv1.blocksize);
+			uid_str(uid1, &vd->vdiv1.uuidCreate, UID_UUID);
+			uid_str(uid2, &vd->vdiv1.uuidModify, UID_UUID);
+			uid_str(uid3, &vd->vdiv1.uuidLinkage, UID_UUID);
+			uid_str(uid4, &vd->vdiv1.uuidParentModify, UID_UUID);
+
+			printf(
+			"disk format        : VDI\n"
+			"version            : %u.%u\n"
+			"type               : %s\n"
+			"capacity           : %s (%"PRIu64")\n"
+			"header size        : %u\n"
+			"flags              : 0x%08X\n"
+			"dummy              : 0x%08X\n"
+			"block size         : %s (%u)\n"
+			"blocks total       : %u\n"
+			"blocks alloc       : %u\n"
+			"blocks extra       : %u\n"
+			"offset table       : %u\n"
+			"offset data        : %u\n"
+			"chs                : %u/%u/%u\n"
+			"chs legacy         : %u/%u/%u\n"
+			"sector size        : %u\n"
+			"sector size legacy : %u\n"
+			"create uuid        : %s\n"
+			"modify uuid        : %s\n"
+			"link uuid          : %s\n"
+			"parent uuid        : %s\n",
+			vd->vdihdr.majorv, vd->vdihdr.minorv,
+			type,
+			disksize, vd->vdiv1.disksize,
+			vd->vdiv1.hdrsize,
+			vd->vdiv1.fFlags,
+			vd->vdiv1.u32Dummy,
+			blocksize, vd->vdiv1.blocksize,
+			vd->vdiv1.blockstotal, vd->vdiv1.blocksalloc, vd->vdiv1.blocksextra,
+			vd->vdiv1.offBlocks, vd->vdiv1.offData,
+			vd->vdiv1.cCylinders, vd->vdiv1.cHeads, vd->vdiv1.cSectors,
+			vd->vdiv1.LegacyGeometry.cCylinders,
+			vd->vdiv1.LegacyGeometry.cHeads,
+			vd->vdiv1.LegacyGeometry.cSectors,
+			vd->vdiv1.cbSector, vd->vdiv1.LegacyGeometry.cbSector,
+			uid1, uid2, uid3, uid4
+			);
+		} else {
+			printf(
+			"VirtualBox VDI %s disk v%u.%u, %s\n",
+			type, vd->vdihdr.majorv, vd->vdihdr.minorv, disksize
+			);
+			//TODO: Interpret flags
+		}
 	}
 		break;
 	//
@@ -279,15 +348,26 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 		default: comp = "?";
 		}
 
-		bintostr(disksize, vd->capacity);
-		printf(
-		"VMware VMDK disk v%u, %s compression, %s\n"
-		"Capacity: %"PRIu64" Sectors\n"
-		"Overhead: %"PRIu64" Sectors\n"
-		"Grain size (Raw): %"PRIu64" Sectors\n",
-		vd->vmdk.version, comp, disksize,
-		vd->vmdk.capacity, vd->vmdk.overHead, vd->vmdk.grainSize
-		);
+		if (flags & VVD_INFO_RAW) {
+			printf(
+			"disk format        : VMDK\n"
+			"version            : %u\n"
+			"capacity           : %" PRIu64 " sectors\n"
+			"overhead           : %" PRIu64 " sectors\n"
+			"grain size         : %" PRIu64 " sectors\n",
+			vd->vmdk.version,
+			vd->vmdk.capacity,
+			vd->vmdk.overHead,
+			vd->vmdk.grainSize
+			);
+			
+		} else {
+			bintostr(disksize, vd->capacity);
+			printf(
+			"VMware VMDK disk v%u, %s compression, %s\n",
+			vd->vmdk.version, comp, disksize
+			);
+		}
 
 		if (vd->vmdk.uncleanShutdown)
 			puts("+ Unclean shutdown");
@@ -298,7 +378,7 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 	//
 	case VDISK_FORMAT_VHD: {
 		char sizecur[BINSTR_LENGTH];
-		const char *os;
+		const char *byos;
 
 		switch (vd->vhd.type) {
 		case VHD_DISK_FIXED:	type = "fixed"; break;
@@ -309,41 +389,68 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 		}
 
 		switch (vd->vhd.creator_os) {
-		case VHD_OS_WIN:	os = "Windows"; break;
-		case VHD_OS_MAC:	os = "macOS"; break;
-		default:	os = "unknown"; break;
+		case VHD_OS_WIN:	byos = "Windows"; break;
+		case VHD_OS_MAC:	byos = "macOS"; break;
+		default:	byos = "unknown"; break;
 		}
 
 		uid_str(uid1, &vd->vhd.uuid, UID_ASIS);
-		bintostr(sizecur, vd->vhd.size_current);
-		bintostr(disksize, vd->vhd.size_original);
 		str_s(vd->vhd.creator_app, 4);
 
-		printf(
-		"Connectix/Microsoft VHD %s disk v%u.%u, %s/%s\n"
-		"Created by \"%.4s\" v%u.%u on %s\n"
-		"Cylinders: %u, Heads: %u, Sectors: %u\n"
-		"CRC32: %08X, UUID: %s\n",
-		type, vd->vhd.major, vd->vhd.minor, sizecur, disksize,
-		vd->vhd.creator_app, vd->vhd.creator_major, vd->vhd.creator_minor, os,
-		vd->vhd.cylinders, vd->vhd.heads, vd->vhd.sectors,
-		vd->vhd.checksum,
-		uid1
-		);
-
-		if (vd->vhd.type != VHD_DISK_FIXED) {
-			char paruuid[UID_LENGTH];
-			uid_str(paruuid, &vd->vhddyn.parent_uuid, UID_ASIS);
+		if (flags & VVD_INFO_RAW) {
 			printf(
-			"Dynamic header v%u.%u, data: %" PRIu64 ", table: %" PRIu64 "\n"
-			"Blocksize: %u, checksum: %08X\n"
-			"Parent UUID: %s, timestamp: %u\n"
-			"BAT: %u entries\n",
-			vd->vhddyn.minor, vd->vhddyn.major,
-			vd->vhddyn.data_offset, vd->vhddyn.table_offset,
-			vd->vhddyn.blocksize, vd->vhddyn.checksum,
-			paruuid, vd->vhddyn.parent_timestamp,
-			vd->vhddyn.max_entries
+			"disk format        : VHD\n"
+			"version            : %u.%u\n"
+			"type               : %s\n"
+			"current size       : %" PRIu64 "\n"
+			"capacity           : %" PRIu64 "\n"
+			"created by         : %.4s\n"
+			"created by ver.    : %u.%u\n"
+			"created on os      : %s\n"
+			"chs                : %u/%u/%u\n"
+			"checksum           : 0x%08X\n"
+			"uuid               : %s\n",
+			vd->vhd.major, vd->vhd.minor,
+			type,
+			vd->vhd.size_current,
+			vd->vhd.size_original,
+			vd->vhd.creator_app,
+			vd->vhd.creator_major, vd->vhd.creator_minor,
+			byos,
+			vd->vhd.cylinders, vd->vhd.heads, vd->vhd.sectors,
+			vd->vhd.checksum,
+			uid1
+			);
+			if (vd->vhd.type != VHD_DISK_FIXED) {
+				char paruuid[UID_LENGTH];
+				uid_str(paruuid, &vd->vhddyn.parent_uuid, UID_ASIS);
+				printf(
+				"dyn. header ver.   : %u.%u\n"
+				"offset table       : %" PRIu64 "\n"
+				"offset data        : %" PRIu64 "\n"
+				"block size         : %u\n"
+				"dyn. checksum      : 0x%08X\n"
+				"parent uuid        : %s\n"
+				"parent timestamp   : %u\n"
+				"bat entries        : %u\n"
+				,
+				vd->vhddyn.minor, vd->vhddyn.major,
+				vd->vhddyn.table_offset,
+				vd->vhddyn.data_offset,
+				vd->vhddyn.blocksize,
+				vd->vhddyn.checksum,
+				paruuid,
+				vd->vhddyn.parent_timestamp,
+				vd->vhddyn.max_entries
+				);
+			}
+		} else {
+			bintostr(sizecur, vd->vhd.size_current);
+			bintostr(disksize, vd->vhd.size_original);
+
+			printf(
+			"Connectix/Microsoft VHD %s disk v%u.%u, %s/%s\n",
+			type, vd->vhd.major, vd->vhd.minor, sizecur, disksize
 			);
 		}
 
@@ -353,29 +460,35 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 		break;
 //	case VDISK_FORMAT_VHDX:
 	case VDISK_FORMAT_QED:
-		bintostr(disksize, vd->capacity);
-		printf(
-		"QEMU Enhanced Disk\n"
-		"Cluster size: %u, table size: %u, header size: %u\n"
-		"Features: %" PRIx64 "\n"
-		"Compat features: %" PRIx64 "\n"
-		"Autoclear features: %" PRIx64 "\n"
-		"L1 offset: %" PRIu64 "\n",
-		vd->qed.cluster_size,
-		vd->qed.table_size,
-		vd->qed.header_size,
-		vd->qed.features,
-		vd->qed.compat_features,
-		vd->qed.autoclear_features,
-		vd->qed.l1_offset
-		);
-		if (vd->qed.features & QED_F_BACKING_FILE) {
+		if (flags & VVD_INFO_RAW) {
 			printf(
-			"Backing name offset: %u\n"
-			"Backing name size: %u\n",
-			vd->qed.backup_name_offset,
-			vd->qed.backup_name_size
+			"disk format        : QED\n"
+			"cluster size       : %u\n"
+			"table size         : %u\n"
+			"header size        : %u\n"
+			"features           : 0x%" PRIX64 "\n"
+			"compact features   : 0x%" PRIX64 "\n"
+			"autoclear features : 0x%" PRIX64 "\n"
+			"L1 offset          : 0x%" PRIX64 "\n",
+			vd->qed.cluster_size,
+			vd->qed.table_size,
+			vd->qed.header_size,
+			vd->qed.features,
+			vd->qed.compat_features,
+			vd->qed.autoclear_features,
+			vd->qed.l1_offset
 			);
+			if (vd->qed.features & QED_F_BACKING_FILE) {
+				printf(
+				"back. name offset  : %u\n"
+				"back. name size    : %u\n",
+				vd->qed.backup_name_offset,
+				vd->qed.backup_name_size
+				);
+			}
+		} else {
+			bintostr(disksize, vd->capacity);
+			printf("QEMU Enhanced Disk, %s\n", disksize);
 		}
 		break;
 	case VDISK_FORMAT_RAW: break; // No header info
@@ -441,7 +554,7 @@ int vvd_map(VDISK *vd, uint32_t flags) {
 
 	switch (vd->format) {
 	case VDISK_FORMAT_VDI:
-		bcount = vd->vdiv1.totalblocks;
+		bcount = vd->vdiv1.blockstotal;
 		bsize = vd->vdiv1.blocksize;
 		break;
 	case VDISK_FORMAT_VHD:

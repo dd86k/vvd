@@ -165,7 +165,7 @@ int vdisk_create(VDISK *vd, const oschar *path, int format, uint64_t capacity, u
 		vd->vdiv1.hdrsize = (uint32_t)sizeof(VDIHEADER1);
 		vd->vdiv1.offBlocks = VDI_BLOCKSIZE;
 		vd->vdiv1.offData = 2 * VDI_BLOCKSIZE;
-		vd->vdiv1.totalblocks = 0;
+		vd->vdiv1.blockstotal = 0;
 		vd->vdiv1.type = VDI_DISK_DYN;
 		vd->vdiv1.u32Dummy = 0; // Always
 		memset(vd->vdiv1.szComment, 0, VDI_COMMENT_SIZE);
@@ -180,18 +180,18 @@ int vdisk_create(VDISK *vd, const oschar *path, int format, uint64_t capacity, u
 		uint32_t bsize = vd->u32blockcount << 2;
 		if ((vd->u32block = malloc(bsize)) == NULL)
 			return vdisk_i_err(vd, VVD_EALLOC, LINE_BEFORE);
-		vd->vdiv1.totalblocks = vd->u32blockcount;
+		vd->vdiv1.blockstotal = vd->u32blockcount;
 		vd->vdiv1.disksize = capacity;
 		switch (vd->vdiv1.type) {
 		case VDI_DISK_DYN:
-			for (size_t i = 0; i < vd->vdiv1.totalblocks; ++i)
+			for (size_t i = 0; i < vd->vdiv1.blockstotal; ++i)
 				vd->u32block[i] = VDI_BLOCK_ZERO;
 			break;
 		case VDI_DISK_FIXED:
 			if ((buffer = malloc(vd->vdiv1.blocksize)) == NULL)
 				return vdisk_i_err(vd, VVD_EALLOC, LINE_BEFORE);
 			os_fseek(vd->fd, vd->vdiv1.offData, SEEK_SET);
-			for (size_t i = 0; i < vd->vdiv1.totalblocks; ++i) {
+			for (size_t i = 0; i < vd->vdiv1.blockstotal; ++i) {
 				vd->u32block[i] = VDI_BLOCK_FREE;
 				os_fwrite(vd->fd, buffer, vd->vdiv1.blocksize);
 			}

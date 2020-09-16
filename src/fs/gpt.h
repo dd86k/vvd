@@ -57,7 +57,7 @@ typedef struct { // v1.0
 	uint16_t minorver;
 	uint16_t majorver;
 	uint32_t headersize;	// usually 92 bytes (v1.0)
-	uint32_t crc32;
+	uint32_t headercrc32;
 	uint32_t reserved;	// reserved
 	LBA64    current;
 	LBA64    backup;	// Backup LBA index
@@ -65,7 +65,7 @@ typedef struct { // v1.0
 	LBA64    last;	// Last LBA index
 	UID      guid;	// Unique disk GUID
 	LBA64    pt_location;	// (partition table) location
-	uint32_t pt_entries;	// (partition table) number of entries
+	uint32_t pt_entries;	// (partition table) maximum number of entries
 	uint32_t pt_esize;	// (partition entry) structure size
 	uint32_t pt_crc32;	// (partition table) CRC32
 	uint8_t  pad[420];

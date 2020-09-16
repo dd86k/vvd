@@ -55,7 +55,7 @@ typedef struct { // v0.0
 	VDIDISKGEOMETRY LegacyGeometry;
 	uint64_t disksize;
 	uint32_t blocksize;
-	uint32_t totalblocks;
+	uint32_t blockstotal;
 	uint32_t blocksalloc;
 	UID      uuidCreate;
 	UID      uuidModify;
@@ -74,7 +74,7 @@ typedef struct { // v1.1
 	uint64_t disksize;
 	uint32_t blocksize;	// Block size in bytes
 	uint32_t blocksextra;
-	uint32_t totalblocks;
+	uint32_t blockstotal;	// Total amount of blocks
 	uint32_t blocksalloc;
 	UID      uuidCreate;
 	UID      uuidModify;

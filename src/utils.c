@@ -196,11 +196,11 @@ void str_s(char *str, int size) {
 // wstra
 //
 
-void wstra(char *dest, char16 *src, int nchars) {
+int wstra(char *dest, char16 *src, int nchars) {
 	char c = src[0];
 	if (c == 0) {
 		strcpy(dest, "<NO NAME>");
-		return;
+		return -1;
 	}
 	size_t bi = 0; // buffer index
 	--nchars; // to include null byte later on
@@ -209,4 +209,5 @@ void wstra(char *dest, char16 *src, int nchars) {
 		++bi;
 	}
 	dest[bi] = 0;
+	return (int)bi;
 }

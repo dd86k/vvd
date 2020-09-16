@@ -113,5 +113,7 @@ void str_s(char *str, int size);
  * copied with the destination's maximum buffer size. This function fills up
  * upto dsize-1 characters and inserts a null terminator and is useful when
  * processing GPT entries.
+ * 
+ * \returns Number of characters copied or negative on error
  */
-void wstra(char *dest, char16 *src, int nchars);
+int wstra(char *dest, char16 *src, int nchars);
