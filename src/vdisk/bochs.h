@@ -6,6 +6,7 @@
  * Little-endian
  * 
  * http://bochs.sourceforge.net/cgi-bin/topper.pl?name=New+Bochs+Documentation&url=http://bochs.sourceforge.net/doc/docbook/development/index.html
+ * §2.10
  */
 
 #include <stdint.h>

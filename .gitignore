@@ -1,8 +1,19 @@
-# Binaries and stuff vvd may generate
+# Binaries
 vvd
 vvd.exe
 vdisk.tmp
 bin
+
+# vdidks
+*.vdi
+*.vmdk
+*.vhd
+*.vhdx
+*.qed
+*.qcow
+*.qcow2
+*.hdd
+*.img
 
 # vscode
 .vscode
