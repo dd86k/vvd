@@ -101,7 +101,7 @@ L_VHD_MAGICOK:
 
 		int batsize = vd->u32blockcount << 2; // "* 4"
 		if ((vd->u32block = malloc(batsize)) == NULL)
-			return vdisk_i_err(vd, VVD_EALLOC, LINE_BEFORE);
+			return vdisk_i_err(vd, VVD_ENOMEM, LINE_BEFORE);
 		if (os_fread(vd->fd, vd->u32block, batsize))
 			return vdisk_i_err(vd, VVD_EOS, LINE_BEFORE);
 #if ENDIAN_LITTLE

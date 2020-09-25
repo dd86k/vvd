@@ -179,7 +179,7 @@ int vdisk_create(VDISK *vd, const oschar *path, int format, uint64_t capacity, u
 			vd->u32blockcount = 1;
 		uint32_t bsize = vd->u32blockcount << 2;
 		if ((vd->u32block = malloc(bsize)) == NULL)
-			return vdisk_i_err(vd, VVD_EALLOC, LINE_BEFORE);
+			return vdisk_i_err(vd, VVD_ENOMEM, LINE_BEFORE);
 		vd->vdiv1.blockstotal = vd->u32blockcount;
 		vd->vdiv1.disksize = capacity;
 		switch (vd->vdiv1.type) {
@@ -189,7 +189,7 @@ int vdisk_create(VDISK *vd, const oschar *path, int format, uint64_t capacity, u
 			break;
 		case VDI_DISK_FIXED:
 			if ((buffer = malloc(vd->vdiv1.blocksize)) == NULL)
-				return vdisk_i_err(vd, VVD_EALLOC, LINE_BEFORE);
+				return vdisk_i_err(vd, VVD_ENOMEM, LINE_BEFORE);
 			os_fseek(vd->fd, vd->vdiv1.offData, SEEK_SET);
 			for (size_t i = 0; i < vd->vdiv1.blockstotal; ++i) {
 				vd->u32block[i] = VDI_BLOCK_FREE;

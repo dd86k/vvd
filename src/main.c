@@ -196,7 +196,7 @@ static void license() {
 #define MAIN int main(int argc, char **argv)
 #endif
 
-//TODO: Consider hashing strings for faster lookups
+//TODO: Consider hashing strings for faster lookups when parsing CLI
 //	Either SuperFastHash [1] or xxHash [2]
 //	[1] http://www.azillionmonkeys.com/qed/hash.html
 //	[2] https://github.com/Cyan4973/xxHash

@@ -31,9 +31,9 @@ int vdisk_qed_open(VDISK *vd, uint32_t flags, uint32_t internal) {
 	uint32_t tablebits = fpow2(table_entries);
 
 	if ((vd->qed_L1 = malloc(table_size)) == NULL)
-		return vdisk_i_err(vd, VVD_EALLOC, LINE_BEFORE);
+		return vdisk_i_err(vd, VVD_ENOMEM, LINE_BEFORE);
 	if ((vd->qed_L2.offsets = malloc(table_size)) == NULL)
-		return vdisk_i_err(vd, VVD_EALLOC, LINE_BEFORE);
+		return vdisk_i_err(vd, VVD_ENOMEM, LINE_BEFORE);
 	if (os_fseek(vd->fd, vd->qed.cluster_size, SEEK_SET))
 		return vdisk_i_err(vd, VVD_EOS, LINE_BEFORE);
 	if (os_fread(vd->fd, vd->qed_L1, table_size))

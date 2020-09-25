@@ -23,6 +23,7 @@ enum {	// DISKFORMAT magical hints (LSB), used for VDISK.format
 	VDISK_FORMAT_RAW	= 0xAAAAAAAA,	// Raw files and devices
 	VDISK_FORMAT_VDI	= 0x203C3C3C,	// "<<< " VirtualBox
 	VDISK_FORMAT_VMDK	= 0x564D444B,	// "VMDK" VMware
+	VDISK_FORMAT_VMDK_COW	= 0x44574F43,	// "COWD" VMware EXSi COW disk
 	VDISK_FORMAT_VHD	= 0x656E6F63,	// "cone" VirtualPC/Hyper-V
 	VDISK_FORMAT_VHDX	= 0x78646876,	// "vhdx" Hyper-V
 	VDISK_FORMAT_QED	= 0x00444551,	// "QED\0" QEMU Enhanced Disk
@@ -66,7 +67,7 @@ enum {	// VDISK error codes
 	VVD_EOK	= 0,	// VDISK OK
 	VVD_EOS	= -2,	// OS/CRT related error
 	VVD_ENULL	= -3,	// Input pointer is NULL
-	VVD_EALLOC	= -4,	// Could not allocate memory
+	VVD_ENOMEM	= -4,	// Could not allocate memory
 	VVD_EVDFORMAT	= -10,	// Invalid VDISK format
 	VVD_EVDMAGIC	= -11,	// Invalid VDISK magic signature
 	VVD_EVDVERSION	= -12,	// Unsupported VDISK version (major)
@@ -218,7 +219,7 @@ int vdisk_i_err(VDISK *vd, int e, int l);
  * 
  * \param vd VDISK structure
  * \param path OS string path
- * \param flags Flags
+ * \param flags Opening flags
  * 
  * \returns Exit status
  */
@@ -231,7 +232,7 @@ int vdisk_open(VDISK *vd, const oschar *path, uint32_t flags);
  * \param path OS string path
  * \param format Virtual disk format
  * \param capacity Virtual disk capacity
- * \param flags Flags
+ * \param flags Creation flags
  * 
  * \returns Exit status
  */

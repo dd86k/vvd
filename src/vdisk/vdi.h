@@ -14,13 +14,13 @@
  * Block marked as free is not allocated in image file, read from this
  * block may returns any random data.
  */
-static const uint32_t VDI_BLOCK_FREE = ~0;
+static const uint32_t VDI_BLOCK_FREE = 0xffffffff;
 
 /**
  * Block marked as zero is not allocated in image file, read from this
  * block returns zeroes.
  */
-static const uint32_t VDI_BLOCK_ZERO = ~1;
+static const uint32_t VDI_BLOCK_ZERO = 0xfffffffe;
 
 enum {
 	VDI_HEADER_MAGIC	= 0xBEDA107F,
@@ -93,4 +93,4 @@ int vdisk_vdi_open(struct VDISK *vd, uint32_t flags, uint32_t internal);
 
 int vdisk_vdi_read_sector(struct VDISK *vd, void *buffer, uint64_t index);
 
-int vdisk_vdi_compact(struct VDISK *vd, void(*cb_progress)(uint32_t type, void *data));
+int vdisk_vdi_compact(struct VDISK *vd, void(*cb)(uint32_t type, void *data));

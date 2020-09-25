@@ -63,7 +63,7 @@ int vdisk_vdi_open(VDISK *vd, uint32_t flags, uint32_t internal) {
 		return vdisk_i_err(vd, VVD_EOS, LINE_BEFORE);
 	int bsize = vd->vdiv1.blockstotal << 2; // * sizeof(u32)
 	if ((vd->u32block = malloc(bsize)) == NULL)
-		return vdisk_i_err(vd, VVD_EALLOC, LINE_BEFORE);
+		return vdisk_i_err(vd, VVD_ENOMEM, LINE_BEFORE);
 	if (os_fread(vd->fd, vd->u32block, bsize))
 		return vdisk_i_err(vd, VVD_EOS, LINE_BEFORE);
 
@@ -122,37 +122,36 @@ int vdisk_vdi_compact(VDISK *vd, void(*cb)(uint32_t type, void *data)) {
 	if (vd->vdiv1.type != VDI_DISK_DYN)
 		return vdisk_i_err(vd, VVD_EVDTYPE, LINE_BEFORE);
 
-	if (vd->vdiv1.blocksalloc == 0)
+	uint32_t *block2;	// back resolving array
+	uint32_t bk_alloc;	// blocks allocated
+
+	// 1. Allocate block array for back resolving.
+
+	uint64_t fsize;
+	if (os_fsize(vd->fd, &fsize))
+		return vdisk_i_err(vd, VVD_EVDMISC, LINE_BEFORE);
+
+	// This verifies that there are actually data blocks available
+	bk_alloc = (uint32_t)((fsize - vd->vdiv1.offData - vd->vdiv1.offBlocks) >> vd->vdi_blockshift);
+	if (bk_alloc == 0 || vd->vdiv1.blocksalloc == 0)
 		return 0;
 
-	uint32_t stat_unalloc = 0;	// unallocated blocks
-	uint32_t stat_occupied = 0;	// allocated blocks with data
-	uint32_t stat_zero = 0;	// blocks with no data inside
-	uint32_t stat_alloc = 0;	// allocated blocks
-
-	uint32_t *block2 = malloc(vd->vdiv1.blocksalloc << 2); // * 4
-	if (block2)
-		return vdisk_i_err(vd, VVD_EALLOC, LINE_BEFORE);
-	for (uint32_t i; i < vd->vdiv1.blocksalloc; ++i)
+	block2 = malloc(bk_alloc << 2);
+	if (block2 == NULL)
+		return vdisk_i_err(vd, VVD_ENOMEM, LINE_BEFORE);
+	for (uint32_t i; i < n; ++i)
 		block2[i] = VDI_BLOCK_FREE;
-
-/*	char strbsize[BINSTR_LENGTH];
-	bintostr(strbsize, vd->vdiv1.blocksize);
-	printf("vvd_compact: writing (%s/block, %u checks/%u bytes)...\n",
-		strbsize, (uint32_t)oblocksize, (uint32_t)sizeof(size_t));*/
 
 	uint32_t d = 0;
 	uint32_t i = 0;
 
-	// Check and fix allocation errors before compacting
+	// 2. Check and fix allocation errors before compacting
+
 	for (; i < vd->u32blockcount; ++i) {
 		uint32_t bi = vd->u32block[i]; // block index
 		if (bi >= VDI_BLOCK_FREE) {
-			++stat_unalloc;
 			continue;
 		}
-
-		if (cb) cb(VVD_NOTIF_VDISK_CURRENT_BLOCK, &i);
 
 		if (bi < vd->vdiv1.blocksalloc) {
 			if (vd->u32block[bi] == VDI_BLOCK_FREE) {
@@ -170,16 +169,21 @@ int vdisk_vdi_compact(VDISK *vd, void(*cb)(uint32_t type, void *data)) {
 			//vdisk_write_block_at(vd, buffer, i, d++);
 		}
 	}
-	// Find redundant information and update the block pointers accordingly
+
+	// 3. Find redundant information and update the block pointers accordingly
+
 	for (i = 0; i < vd->u32blockcount; ++i) {
 		uint32_t bi = vd->u32block[i]; // block index
 		if (bi >= VDI_BLOCK_FREE) {
-			++stat_unalloc;
 			continue;
 		}
 	}
-	// Fill bubbles with other data if available
-//		for (i = 0; o < vd->vdi.blocksalloc
+
+	// 4. Fill bubbles with other data if available
+
+//	for (i = 0; o < vd->vdi.blocksalloc
+
+	// 5. Update fields in-memory and on-disk
 
 	return 0;
 }
