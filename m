@@ -60,7 +60,7 @@ if [ -z ${CC+x} ]; then
 	CC=clang
 fi
 if [ -z ${CF+x} ]; then
-	CF="-D_FILE_OFFSET_BITS=64 -ferror-limit=2 -std=c99 -fpack-struct=1 -c"
+	CF="-D_FILE_OFFSET_BITS=64 -Isrc -ferror-limit=2 -std=c99 -fpack-struct=1 -c"
 fi
 
 if [ "$1" = "make" ]; then m_make $2 $3 $4 $5; exit; fi
