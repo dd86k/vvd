@@ -1,13 +1,13 @@
 ifeq (@(TUP_PLATFORM),win32)
 CC	= clang-cl
-CF	= /Zp -D_CRT_SECURE_NO_WARNINGS -c
+CF	= /Zp -D_CRT_SECURE_NO_WARNINGS -Isrc -c
 OUTNAME	= vvd.exe
 OBJEXT	= o
 endif
 
 ifneq (@(TUP_PLATFORM),win32)
 CC	= clang
-CF	= -std=c99 -fpack-struct=1 -D_FILE_OFFSET_BITS=64 -c
+CF	= -std=c99 -Isrc -fpack-struct=1 -D_FILE_OFFSET_BITS=64 -c
 OUTNAME	= vvd
 OBJEXT	= obj
 endif
