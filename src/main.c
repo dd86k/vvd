@@ -60,7 +60,7 @@ void test() {
 	"sizeof	wchar_t		%u\n"
 	"Running tests...\n",
 	(int)sizeof(VDISK),
-	(int)sizeof(VDI_HDR), (int)sizeof(VDIHEADER1),
+	(int)sizeof(VDI_HDR), (int)sizeof(VDI_HEADERv1),
 	(int)sizeof(VMDK_HDR),
 	(int)sizeof(VHD_HDR),
 	(int)sizeof(VHDX_HDR), (int)sizeof(VHDX_HEADER1),
@@ -77,9 +77,9 @@ void test() {
 	assert(sizeof(LBA64) == 8);
 	// VDI
 	assert(sizeof(VDI_HDR) == 8);
-	assert(sizeof(VDIDISKGEOMETRY) == 16);
-	assert(sizeof(VDIHEADER0) == 348);
-	assert(sizeof(VDIHEADER1) == 400);
+	assert(sizeof(VDI_DISKGEOMETRY) == 16);
+	assert(sizeof(VDI_HEADERv0) == 348);
+	assert(sizeof(VDI_HEADERv1) == 400);
 	// VMDK
 	assert(sizeof(VMDK_HDR) == 512);
 	assert(sizeof(VMDK_MARKER) == 512);
@@ -270,11 +270,11 @@ MAIN {
 			continue;
 		}
 		if (oscmp(arg, osstr("--create-dynamic")) == 0) {
-			cflags |= VDISK_CREATE_DYN;
+			cflags |= VDISK_CREATE_TYPE_DYNAMIC;
 			continue;
 		}
 		if (oscmp(arg, osstr("--create-fixed")) == 0) {
-			cflags |= VDISK_CREATE_FIXED;
+			cflags |= VDISK_CREATE_TYPE_FIXED;
 			continue;
 		}
 		//
@@ -309,7 +309,7 @@ MAIN {
 		}
 		if (vdisk_open(&vdin, defopt, oflags)) {
 			vdisk_perror(&vdin);
-			return vdin.errcode;
+			return vdin.err.num;
 		}
 		return vvd_info(&vdin, mflags);
 	}
@@ -321,7 +321,7 @@ MAIN {
 		}
 		if (vdisk_open(&vdin, defopt, oflags)) {
 			vdisk_perror(&vdin);
-			return vdin.errcode;
+			return vdin.err.num;
 		}
 		return vvd_map(&vdin, 0);
 	}
@@ -333,11 +333,11 @@ MAIN {
 		}
 		if (vdisk_open(&vdin, defopt, 0)) {
 			vdisk_perror(&vdin);
-			return vdin.errcode;
+			return vdin.err.num;
 		}
 		if (vvd_compact(&vdin, 0)) {
 			vdisk_perror(&vdin);
-			return vdin.errcode;
+			return vdin.err.num;
 		}
 		return EXIT_FAILURE;
 	}

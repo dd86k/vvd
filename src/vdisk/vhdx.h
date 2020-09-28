@@ -77,17 +77,9 @@ typedef struct {
 
 typedef struct {
 	uint32_t magic;
-	uint32_t res;
-	uint64_t length;	// Multiple of 4 KiB
+	uint32_t trail;	// resolution
+	uint64_t leading;	// Multiple of 4 KiB, length
 	uint64_t offset;	// Multiple of 4 KiB
-	uint64_t sequence;
-} VHDX_LOG_ZERO;
-
-typedef struct {
-	uint32_t magic;
-	uint32_t trail;
-	uint64_t leading;
-	uint64_t offset;
 	uint64_t sequence;
 } VDHX_LOG_DESC;
 
@@ -129,6 +121,10 @@ typedef struct {
 	uint32_t length;
 	uint32_t flags; // ...plus 2 bits? what the hell?
 } VHDX_METADATA_ENTRY;
+
+typedef struct {
+	
+} VHDX_INTERNALS;
 
 struct VDISK;
 

@@ -3,42 +3,40 @@
 #include "../platform.h"
 
 int vdisk_vmdk_open(VDISK *vd, uint32_t flags, uint32_t internal) {
-	vd->errfunc = __func__;
+	
+	if (os_fread(vd->fd, &vd->vmdkhdr, sizeof(VMDK_HDR)))
+		return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
+	if (vd->vmdkhdr.version != 1)
+		return vdisk_i_err(vd, VVD_EVDVERSION, __LINE__, __func__);
+	if (vd->vmdkhdr.grainSize < 1 || vd->vmdkhdr.grainSize > 128 || pow2(vd->vmdkhdr.grainSize) == 0)
+		return vdisk_i_err(vd, VVD_EVDMISC, __LINE__, __func__);
 
-	if (os_fread(vd->fd, &vd->vmdk, sizeof(VMDK_HDR)))
-		return vdisk_i_err(vd, VVD_EOS, LINE_BEFORE);
-	if (vd->vmdk.version != 1)
-		return vdisk_i_err(vd, VVD_EVDVERSION, LINE_BEFORE);
-	if (vd->vmdk.grainSize < 1 || vd->vmdk.grainSize > 128 || pow2(vd->vmdk.grainSize) == 0)
-		return vdisk_i_err(vd, VVD_EVDMISC, LINE_BEFORE);
+	vd->offset = SECTOR_TO_BYTE(vd->vmdkhdr.overHead);
+	vd->capacity = SECTOR_TO_BYTE(vd->vmdkhdr.capacity);
 
-	vd->offset = SECTOR_TO_BYTE(vd->vmdk.overHead);
-	vd->capacity = SECTOR_TO_BYTE(vd->vmdk.capacity);
+	vd->vmdk_blockmask = vd->vmdkhdr.grainSize - 1;
+	vd->vmdk_blockshift = fpow2((uint32_t)vd->vmdkhdr.grainSize);
 
-	vd->vmdk_blockmask = vd->vmdk.grainSize - 1;
-	vd->vmdk_blockshift = fpow2((uint32_t)vd->vmdk.grainSize);
-
-	vd->read_lba = vdisk_vmdk_sparse_read_lba;
+	vd->cb.lba_read = vdisk_vmdk_sparse_read_lba;
 
 	return 0;
 }
 
 int vdisk_vmdk_sparse_read_lba(VDISK *vd, void *buffer, uint64_t index) {
-	vd->errfunc = __func__;
-
+	
 	uint64_t offset = SECTOR_TO_BYTE(index); // Byte offset
 
-	if (offset >= vd->vmdk.capacity)
-		return vdisk_i_err(vd, VVD_EVDMISC, LINE_BEFORE);
+	if (offset >= vd->vmdkhdr.capacity)
+		return vdisk_i_err(vd, VVD_EVDMISC, __LINE__, __func__);
 
 	//bi = offset / SECTOR_TO_BYTE(vd->vmdk.grainSize);
 	//TODO: Work with the grainSize
 	offset += vd->offset;
 
 	if (os_fseek(vd->fd, offset, SEEK_SET))
-		return vdisk_i_err(vd, VVD_EOS, LINE_BEFORE);
+		return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
 	if (os_fread(vd->fd, buffer, 512))
-		return vdisk_i_err(vd, VVD_EOS, LINE_BEFORE);
+		return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
 
 	return 0;
 }

@@ -51,6 +51,10 @@ typedef struct {
 	uint8_t  pad[496];
 } VMDK_MARKER;
 
+typedef struct {
+	
+} VMDK_INTERNALS;
+
 //TODO: grain list
 
 struct VDISK;

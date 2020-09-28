@@ -79,12 +79,30 @@ typedef struct {
 	uint32_t backup_name_size;
 } QED_HDR;
 
+// Deprecated
 typedef struct {
 	uint64_t *offsets;	// L2 table offsets to data clusters
 	uint64_t offset;	// Last loaded offset
 	uint32_t tablesize;	// table_size
 	uint32_t entries;	/// number of entries
 } QED_L2CACHE;
+
+typedef struct {
+	// L1 table
+	struct {
+		uint64_t *offsets;
+		uint64_t mask;
+		uint32_t shift;
+	} L1;
+	// L2 table
+	struct {
+		uint64_t *offsets;
+		uint64_t mask;
+		uint32_t shift;
+		uint64_t current;	// Last L2 offset loaded
+	} L2;
+	uint64_t mask;	// Offset mask after L1/L2 calculations
+} QED_INTERNALS;
 
 struct VDISK;
 

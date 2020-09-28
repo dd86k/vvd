@@ -4,8 +4,7 @@
 #include <assert.h>
 
 int vdisk_qcow_open(VDISK *vd, uint32_t flags, uint32_t internal) {
-	vd->errfunc = __func__;
-
+	
 	assert(0);
 
 	return 0;

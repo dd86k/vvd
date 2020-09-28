@@ -11,8 +11,6 @@
 #include "vdisk/qcow.h"
 #include "vdisk/phdd.h"
 
-#define LINE_BEFORE (__LINE__ - 1)
-
 //
 // Constants
 //
@@ -57,10 +55,12 @@ enum {	// VDISK flags, the open/create flags may overlap
 	//
 
 	VDISK_CREATE_TEMP	= 0x0100,	//TODO: Create a temporary (random) vdisk file
-	VDISK_CREATE_DYN	= 0x1000,	//TODO: Create a dynamic type VDISK
-	VDISK_CREATE_FIXED	= 0x2000,	//TODO: Create a fixed type VDISK
-	VDISK_CREATE_PARENT	= 0x3000,	//TODO: Create a parent of the VDISK
-	VDISK_CREATE_SNAPSHOT	= 0x4000,	//TODO: Create a snapshot of the VDISK
+
+	VDISK_CREATE_TYPE_DYNAMIC	= 0x1000,	//TODO: Create a dynamic type VDISK
+	VDISK_CREATE_TYPE_FIXED	= 0x2000,	//TODO: Create a fixed type VDISK
+	VDISK_CREATE_TYPE_PARENT	= 0x3000,	//TODO: Create a parent of the VDISK
+	VDISK_CREATE_TYPE_SNAPSHOT	= 0x4000,	//TODO: Create a snapshot of the VDISK
+	VDISK_CREATE_TYPE_MASK	= 0x7000,	// Type mask used internally
 };
 
 enum {	// VDISK error codes
@@ -112,72 +112,115 @@ typedef struct VDISK {
 	uint32_t format;
 	// Flags. See VDISK_FLAG enumeration.
 	uint32_t flags;
+	// 
+	uint32_t cookie;
 	// Calculated absolute offset to data.
+	// deprecated
 	uint64_t offset;
-	// (Internal) Location of new allocation block
-	uint64_t nextblock;
 	// Virtual disk capacity in bytes. For RAW files, it's the file size. For
-	// RAW devices, it's the disk size.
+	// RAW devices, it's the disk size. This is populated automatically.
 	uint64_t capacity;
 	// (Posix) File descriptor (Windows) File HANDLE
 	__OSFILE fd;
-	int errcode;	// Error number
-	int errline;	// Error line
-	const char *errfunc;	// Function name
-	// Function pointer: Read a sector with a LBA index
-	int (*read_lba)(struct VDISK*, void*, uint64_t);
-	// Function pointer: Read a dynamic block with a block index
-	int (*read_block)(struct VDISK*, void*, uint64_t);
-	// Function pointer: Read a sector with a LBA index
-	int (*write_lba)(struct VDISK*, void*, uint64_t);
-	// Function pointer: Read a sector with a LBA index
-	int (*write_block)(struct VDISK*, void*, uint64_t);
+	struct {
+		int num;	// Error number
+		int line;	// Source file line number
+		const char *func;	// Function name
+	} err;
+	struct {
+		// Read from a disk sector with a LBA index
+		int (*lba_read)(struct VDISK*, void*, uint64_t);
+		// Write to a disk sector with a LBA index
+		int (*lba_write)(struct VDISK*, void*, uint64_t);
+		// Read a dynamic block with a block index
+		int (*blk_read)(struct VDISK*, void*, uint64_t);
+		// Read a sector with a LBA index
+		int (*blk_write)(struct VDISK*, void*, uint64_t);
+	} cb;
 	union {
-		// Allocation table using 64-bit indexes
+		// deprecated
 		uint64_t *u64block;
-		// Allocation table using 32-bit indexes
+		// deprecated
 		uint32_t *u32block;
 	};
 	union {
-		// Total amount of allocated blocks
+		// deprecated
 		uint64_t u64blockcount;
-		// Total amount of allocated blocks
+		// deprecated
 		uint32_t u32blockcount;
 	};
 	union {
+		// deprecated
 		uint64_t blockmask64;
+		// deprecated
 		uint32_t blockmask;
 	};
+	// deprecated
 	uint32_t blockshift;
-	//TODO: Consider allocating on open/create operations
 	union {
 		struct {
+			VDI_HDR *hdr; // pre-header
+			VDI_HEADERv0 *v0;
+			VDI_HEADERv1 *v1;
+			VDI_INTERNALS *in;
+		} vdi;
+		struct {
+			VMDK_HDR *hdr;
+			VMDK_INTERNALS *in;
+		} vmdk;
+		struct {
+			VHD_HDR *hdr;
+			VHD_DYN_HDR *dynhdr;
+			VHD_INTERNALS *in;
+		} vhd;
+		struct {
+			VHDX_HDR *hdr;
+			VHDX_HEADER1 *v1;
+			VHDX_REGION_HDR *region_hdr;
+			VHDX_LOG_HDR *log_hdr;
+			VHDX_METADATA_HDR *meta_hdr;
+			VHDX_INTERNALS *in;
+		} vhdx;
+		struct {
+			QED_HDR *hdr;
+			QED_L2CACHE *l2;
+			QED_INTERNALS *in;
+		} qed;
+	};
+	// (Internal) Heap buffer for containing header information. This is
+	// done in order to reduce the number of seperate allocations. The
+	// back-end also has freedom on the size and layout it wishes to
+	// allocate.
+	void *buffer_headers;
+	// Deprecated:
+	union {
+		/*struct {
 			VDI_HDR vdihdr; // pre-header
-			VDIHEADER0 vdiv0;
-			VDIHEADER1 vdiv1;
+			VDI_HEADERv0 vdiv0;
+			VDI_HEADERv1 vdiv1;
 			// Dynamic disk block mask for remaining offset to LBA.
 			uint32_t vdi_blockmask;
 			// Dynamic disk block index shift number. Populated by fpow2.
 			uint32_t vdi_blockshift;
-		};
+		};*/
 		struct {
-			VMDK_HDR vmdk;
+			VMDK_HDR vmdkhdr;
 			uint64_t vmdk_blockmask;
 			uint32_t vmdk_blockshift;
 		};
 		struct {
-			VHD_HDR vhd;
+			VHD_HDR vhdhdr;
 			VHD_DYN_HDR vhddyn;
 			uint32_t vhd_blockmask;
 			uint32_t vhd_blockshift;
 		};
 		struct {
-			VHDX_HDR vhdx;
-			VHDX_HEADER1 vhdxhdr;
+			VHDX_HDR vhdxhdr;
+			VHDX_HEADER1 vhdxhdrv1;
 			VHDX_REGION_HDR vhdxreg;
 		};
 		struct {
-			QED_HDR qed;
+			QED_HDR qedhdr;
 			uint64_t *qed_L1; // L1 table
 			QED_L2CACHE qed_L2;
 			uint64_t qed_offset_mask;
@@ -200,7 +243,7 @@ typedef struct VDISK {
  * 
  * \returns errcode
  */
-int vdisk_i_err(VDISK *vd, int e, int l);
+int vdisk_i_err(VDISK *vd, int e, int l, const char *f);
 
 //
 // SECTION Functions

@@ -72,6 +72,10 @@ typedef struct { // v1
 	uint8_t  res1[256];
 } VHD_DYN_HDR;
 
+typedef struct {
+	
+} VHD_INTERNALS;
+
 struct VDISK;
 
 int vdisk_vhd_open(struct VDISK *vd, uint32_t flags, uint32_t internal);
