@@ -100,7 +100,7 @@ typedef struct {
 	uint32_t bshift;	// Block shift positions
 } VDI_INTERNALS;
 
-static const uint32_t VDI_HDR_ALLOC = 8192; // 8 KiB
+static const uint32_t VDI_HDR_ALLOC = 8192;	// 8 KiB
 
 struct VDISK;
 

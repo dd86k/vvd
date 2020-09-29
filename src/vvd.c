@@ -349,7 +349,7 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 	case VDISK_FORMAT_VMDK: {
 		const char *comp; // compression
 		//if (h.flags & COMPRESSED)
-		switch (vd->vmdkhdr.compressAlgorithm) {
+		switch (vd->vmdk.hdr->compressAlgorithm) {
 		case 0:  comp = "no"; break;
 		case 1:  comp = "DEFLATE"; break;
 		default: comp = "?";
@@ -359,24 +359,60 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 			printf(
 			"disk format        : VMDK\n"
 			"version            : %u\n"
+			"flags              : 0x%08X\n"
 			"capacity           : %" PRIu64 " sectors\n"
 			"overhead           : %" PRIu64 " sectors\n"
-			"grain size         : %" PRIu64 " sectors\n",
-			vd->vmdkhdr.version,
-			vd->vmdkhdr.capacity,
-			vd->vmdkhdr.overHead,
-			vd->vmdkhdr.grainSize
+			"grain size         : %" PRIu64 " sectors\n"
+			"descriptor offset  : %" PRIu64 " sectors\n"
+			"descriptor size    : %" PRIu64 " sectors\n"
+			"table entries      : %u\n"
+			"backup l0 offset   : %" PRIu64 " sectors\n"
+			"l0 offset          : %" PRIu64 " sectors\n"
+			"overhead           : %" PRIu64 " sectors\n"
+			"unclean shutdown   : %u\n"
+			"single nl char     : 0x%02X\n"
+			"non-end line char  : 0x%02X\n"
+			"double nl char 1   : 0x%02X\n"
+			"double nl char 2   : 0x%02X\n"
+			"compression        : 0x%02X\n",
+			vd->vmdk.hdr->version,
+			vd->vmdk.hdr->flags,
+			vd->vmdk.hdr->capacity,
+			vd->vmdk.hdr->overHead,
+			vd->vmdk.hdr->grainSize,
+			vd->vmdk.hdr->descriptorOffset,
+			vd->vmdk.hdr->descriptorSize,
+			vd->vmdk.hdr->numGTEsPerGT,
+			vd->vmdk.hdr->rgdOffset,
+			vd->vmdk.hdr->gdOffset,
+			vd->vmdk.hdr->overHead,
+			vd->vmdk.hdr->uncleanShutdown,
+			vd->vmdk.hdr->singleEndLineChar,
+			vd->vmdk.hdr->nonEndLineChar,
+			vd->vmdk.hdr->doubleEndLineChar1,
+			vd->vmdk.hdr->doubleEndLineChar2,
+			vd->vmdk.hdr->compressAlgorithm
 			);
 		} else {
 			bintostr(disksize, vd->capacity);
 			printf(
 			"VMware VMDK disk v%u, %s compression, %s\n",
-			vd->vmdkhdr.version, comp, disksize
+			vd->vmdk.hdr->version, comp, disksize
 			);
-		}
 
-		if (vd->vmdkhdr.uncleanShutdown)
-			puts("+ Unclean shutdown");
+			if (vd->vmdk.hdr->flags & VMDK_F_VALID_NL)
+				puts("+ Valid newline detection");
+			if (vd->vmdk.hdr->flags & VMDK_F_REDUNDANT_TABLE)
+				puts("+ Redundant grain table used");
+			if (vd->vmdk.hdr->flags & VMDK_F_ZEROED_GTE)
+				puts("+ Zeroed-grain GTE used");
+			if (vd->vmdk.hdr->flags & VDMK_F_COMPRESSED)
+				puts("+ Grains are compressed");
+			if (vd->vmdk.hdr->flags & VMDK_F_MARKERS)
+				puts("+ Markers used");
+			if (vd->vmdk.hdr->uncleanShutdown)
+				puts("+ Unclean shutdown");
+		}
 	}
 		break;
 	//

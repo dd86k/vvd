@@ -112,7 +112,7 @@ typedef struct VDISK {
 	uint32_t format;
 	// Flags. See VDISK_FLAG enumeration.
 	uint32_t flags;
-	// 
+	// Reserved.
 	uint32_t cookie;
 	// Calculated absolute offset to data.
 	// deprecated
@@ -159,10 +159,10 @@ typedef struct VDISK {
 	uint32_t blockshift;
 	union {
 		struct {
-			VDI_HDR *hdr; // pre-header
-			VDI_HEADERv0 *v0;
-			VDI_HEADERv1 *v1;
-			VDI_INTERNALS *in;
+			VDI_HDR *hdr;	// Pre-header
+			VDI_HEADERv0 *v0;	// Header v0
+			VDI_HEADERv1 *v1;	// Header v1
+			VDI_INTERNALS *in;	// VDI internals
 		} vdi;
 		struct {
 			VMDK_HDR *hdr;

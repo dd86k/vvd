@@ -1,21 +1,29 @@
-#include "../vdisk.h"
-#include "../utils.h"
-#include "../platform.h"
+#include "vdisk.h"
+#include "utils.h"
+#include "platform.h"
 
 int vdisk_vmdk_open(VDISK *vd, uint32_t flags, uint32_t internal) {
-	
-	if (os_fread(vd->fd, &vd->vmdkhdr, sizeof(VMDK_HDR)))
+
+	if ((vd->buffer_headers = malloc(VMDK_HDR_ALLOC)) == NULL)
+		return vdisk_i_err(vd, VVD_ENOMEM, __LINE__, __func__);
+
+	vd->vmdk.hdr = vd->buffer_headers;
+	vd->vmdk.in = (void*)vd->vmdk.hdr + sizeof(VMDK_HDR);
+
+	if (os_fread(vd->fd, vd->vmdk.hdr, sizeof(VMDK_HDR)))
 		return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
-	if (vd->vmdkhdr.version != 1)
+	if (vd->vmdk.hdr->version != 1)
 		return vdisk_i_err(vd, VVD_EVDVERSION, __LINE__, __func__);
-	if (vd->vmdkhdr.grainSize < 1 || vd->vmdkhdr.grainSize > 128 || pow2(vd->vmdkhdr.grainSize) == 0)
+	if (vd->vmdk.hdr->grainSize < 8 || // < 4KiB
+		vd->vmdk.hdr->grainSize > 128 || // > 64KiB
+		pow2(vd->vmdk.hdr->grainSize) == 0)
 		return vdisk_i_err(vd, VVD_EVDMISC, __LINE__, __func__);
 
-	vd->offset = SECTOR_TO_BYTE(vd->vmdkhdr.overHead);
-	vd->capacity = SECTOR_TO_BYTE(vd->vmdkhdr.capacity);
+	vd->capacity = SECTOR_TO_BYTE(vd->vmdk.hdr->capacity);
 
-	vd->vmdk_blockmask = vd->vmdkhdr.grainSize - 1;
-	vd->vmdk_blockshift = fpow2((uint32_t)vd->vmdkhdr.grainSize);
+	vd->vmdk.in->bmask = vd->vmdk.hdr->grainSize - 1;
+	vd->vmdk.in->bshift = fpow2((uint32_t)vd->vmdk.hdr->grainSize);
+	vd->vmdk.in->overhead = SECTOR_TO_BYTE(vd->vmdk.hdr->overHead);
 
 	vd->cb.lba_read = vdisk_vmdk_sparse_read_lba;
 
@@ -26,12 +34,12 @@ int vdisk_vmdk_sparse_read_lba(VDISK *vd, void *buffer, uint64_t index) {
 	
 	uint64_t offset = SECTOR_TO_BYTE(index); // Byte offset
 
-	if (offset >= vd->vmdkhdr.capacity)
+	if (offset >= vd->capacity)
 		return vdisk_i_err(vd, VVD_EVDMISC, __LINE__, __func__);
 
 	//bi = offset / SECTOR_TO_BYTE(vd->vmdk.grainSize);
 	//TODO: Work with the grainSize
-	offset += vd->offset;
+	offset += vd->vmdk.in->overhead;
 
 	if (os_fseek(vd->fd, offset, SEEK_SET))
 		return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);

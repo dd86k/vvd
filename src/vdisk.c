@@ -332,7 +332,7 @@ const char* vdisk_error(VDISK *vd) {
 			NULL);
 		return _errmsgbuf;
 #else
-		return strerror(vd->errcode = errno);
+		return strerror(vd->err.num = errno);
 #endif
 	default:
 		assert(0); return NULL;
