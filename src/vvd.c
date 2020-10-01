@@ -74,7 +74,7 @@ void vvd_info_mbr(MBR *mbr, uint32_t flags) {
 	if (flags & VVD_INFO_RAW) {
 		printf(
 		"\n"
-		"disklabel          : DOS\n"
+		"disklabel          : MBR\n"
 		"serial             : 0x%08X\n"
 		"type               : 0x%04X\n",
 		mbr->serial, mbr->type
@@ -106,7 +106,7 @@ void vvd_info_mbr(MBR *mbr, uint32_t flags) {
 	} else {
 		printf(
 		"\n"
-		"DOS (MBR) disklabel, %s used\n"
+		"MBR (DOS) disklabel, %s used\n"
 		"   Boot     Start        Size  Type\n", strsize
 		);
 		for (unsigned int i = 0; i < 4; ++i) {
