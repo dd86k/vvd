@@ -1,6 +1,6 @@
-#include "../vdisk.h"
-#include "../utils.h"
-#include "../platform.h"
+#include "vdisk.h"
+#include "utils.h"
+#include "platform.h"
 
 int vdisk_raw_open(VDISK *vd, uint32_t flags, uint32_t internal) {
 	if (os_fsize(vd->fd, &vd->capacity))

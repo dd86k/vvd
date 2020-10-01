@@ -1,7 +1,7 @@
 #include <string.h> // memcpy
-#include "../vdisk.h"
-#include "../utils.h"
-#include "../platform.h"
+#include "vdisk.h"
+#include "utils.h"
+#include "platform.h"
 #ifdef TRACE
 #include <stdio.h>
 #include <inttypes.h>

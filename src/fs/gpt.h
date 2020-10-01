@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#include "../uid.h"
+#include "uid.h"
 
 // GNU GRUB "Hah!IdontNeedEFI"
 

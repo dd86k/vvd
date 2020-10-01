@@ -2,8 +2,8 @@
 
 #include <stdio.h>
 #include <stdint.h>
-#include "../vdisk.h"
-#include "../platform.h"
+#include "vdisk.h"
+#include "platform.h"
 
 #ifdef ENDIAN_LITTLE
 enum {

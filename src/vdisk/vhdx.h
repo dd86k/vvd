@@ -7,7 +7,7 @@
  */
 
 #include <stdint.h>
-#include "../uid.h"
+#include "uid.h"
 
 #define VHDX_MAGIC 0x656C696678646876	// "vhdxfile"
 #define VHDX_HDR1_MAGIC 0x64616568	// "head"
