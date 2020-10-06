@@ -72,12 +72,17 @@ typedef struct {
 typedef struct {
 	uint32_t *l0_offsets;	// Grain Directory offsets
 	uint32_t *l1_offsets;	// Grain Table offsets
-	uint32_t bmask;	// Bit offset mask
-	uint32_t bshift;	// Bit offset shift
+	uint32_t mask;	// Bit offset mask
+	uint32_t shift;	// Bit offset shift
 	uint64_t overhead;	// data overhead in bytes
 } VMDK_INTERNALS;
 
-static const uint32_t VMDK_HDR_ALLOC = 4096;	// 4 KiB
+typedef struct {
+	VMDK_HDR hdr;
+	VMDK_INTERNALS in;
+} VMDK_META;
+
+static const uint32_t VMDK_META_ALLOC = sizeof(VMDK_META);
 
 struct VDISK;
 

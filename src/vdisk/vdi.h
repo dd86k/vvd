@@ -96,11 +96,21 @@ typedef struct { // v1.1
 
 typedef struct {
 	uint32_t *offsets;	// Offset table
-	uint32_t bmask;	// Block bit mask
-	uint32_t bshift;	// Block shift positions
+	uint32_t mask;	// Block bit mask
+	uint32_t shift;	// Block shift positions
+	uint16_t majorver;
 } VDI_INTERNALS;
 
-static const uint32_t VDI_HDR_ALLOC = 8192;	// 8 KiB
+typedef struct {
+	VDI_HDR hdr;
+	union {
+		VDI_HEADERv0 v0;
+		VDI_HEADERv1 v1;
+	};
+	VDI_INTERNALS in;
+} VDI_META;
+
+static const uint32_t VDI_META_ALLOC = sizeof(VDI_META);
 
 struct VDISK;
 

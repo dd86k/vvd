@@ -9,6 +9,7 @@
 #define VHD_DYN_MAGIC	0x6573726170737863	// "cxsparse"
 #define VHD_OS_WIN	0x6B326957	// "Wi2k"
 #define VHD_OS_MAC	0x2063614D	// "Mac "
+
 enum {
 	VHD_DISK_NONE	= 0,
 	VHD_DISK_RES1	= 1,
@@ -18,6 +19,7 @@ enum {
 	VHD_DISK_RES2	= 5,
 	VHD_DISK_RES3	= 6
 };
+
 enum {
 	VHD_BLOCK_UNALLOC	= -1,	// Block not allocated on disk
 	VHD_FEAT_TEMP	= 1,
@@ -73,8 +75,18 @@ typedef struct { // v1
 } VHD_DYN_HDR;
 
 typedef struct {
-	
+	uint32_t *offsets;
+	uint32_t mask;
+	uint32_t shift;
 } VHD_INTERNALS;
+
+typedef struct {
+	VHD_HDR hdr;
+	VHD_DYN_HDR dyn;
+	VHD_INTERNALS in;
+} VHD_META;
+
+static const uint32_t VHD_META_ALLOC = sizeof(VHD_META);
 
 struct VDISK;
 

@@ -11,6 +11,8 @@
 #include "vdisk/qcow.h"
 #include "vdisk/phdd.h"
 
+#define VDISK_M_ERR(vd,ERR)	vdisk_i_err(vd,ERR,__LINE__,__func__)
+
 //
 // Constants
 //
@@ -122,11 +124,13 @@ typedef struct VDISK {
 	uint64_t capacity;
 	// (Posix) File descriptor (Windows) File HANDLE
 	__OSFILE fd;
+	// Error structure
 	struct {
 		int num;	// Error number
 		int line;	// Source file line number
 		const char *func;	// Function name
 	} err;
+	// Callback structure
 	struct {
 		// Read from a disk sector with a LBA index
 		int (*lba_read)(struct VDISK*, void*, uint64_t);
@@ -137,100 +141,14 @@ typedef struct VDISK {
 		// Read a sector with a LBA index
 		int (*blk_write)(struct VDISK*, void*, uint64_t);
 	} cb;
+	// Meta union
 	union {
-		// deprecated
-		uint64_t *u64block;
-		// deprecated
-		uint32_t *u32block;
-	};
-	union {
-		// deprecated
-		uint64_t u64blockcount;
-		// deprecated
-		uint32_t u32blockcount;
-	};
-	union {
-		// deprecated
-		uint64_t blockmask64;
-		// deprecated
-		uint32_t blockmask;
-	};
-	// deprecated
-	uint32_t blockshift;
-	union {
-		struct {
-			VDI_HDR *hdr;	// Pre-header
-			VDI_HEADERv0 *v0;	// Header v0
-			VDI_HEADERv1 *v1;	// Header v1
-			VDI_INTERNALS *in;	// VDI internals
-		} vdi;
-		struct {
-			VMDK_HDR *hdr;
-			VMDK_INTERNALS *in;
-		} vmdk;
-		struct {
-			VHD_HDR *hdr;
-			VHD_DYN_HDR *dynhdr;
-			VHD_INTERNALS *in;
-		} vhd;
-		struct {
-			VHDX_HDR *hdr;
-			VHDX_HEADER1 *v1;
-			VHDX_REGION_HDR *region_hdr;
-			VHDX_LOG_HDR *log_hdr;
-			VHDX_METADATA_HDR *meta_hdr;
-			VHDX_INTERNALS *in;
-		} vhdx;
-		struct {
-			QED_HDR *hdr;
-			QED_L2CACHE *l2;
-			QED_INTERNALS *in;
-		} qed;
-	};
-	// (Internal) Heap buffer for containing header information. This is
-	// done in order to reduce the number of seperate allocations. The
-	// back-end also has freedom on the size and layout it wishes to
-	// allocate.
-	void *buffer_headers;
-	// Deprecated:
-	union {
-		/*struct {
-			VDI_HDR vdihdr; // pre-header
-			VDI_HEADERv0 vdiv0;
-			VDI_HEADERv1 vdiv1;
-			// Dynamic disk block mask for remaining offset to LBA.
-			uint32_t vdi_blockmask;
-			// Dynamic disk block index shift number. Populated by fpow2.
-			uint32_t vdi_blockshift;
-		};*/
-		struct {
-			VMDK_HDR vmdkhdr;
-			uint64_t vmdk_blockmask;
-			uint32_t vmdk_blockshift;
-		};
-		struct {
-			VHD_HDR vhdhdr;
-			VHD_DYN_HDR vhddyn;
-			uint32_t vhd_blockmask;
-			uint32_t vhd_blockshift;
-		};
-		struct {
-			VHDX_HDR vhdxhdr;
-			VHDX_HEADER1 vhdxhdrv1;
-			VHDX_REGION_HDR vhdxreg;
-		};
-		struct {
-			QED_HDR qedhdr;
-			uint64_t *qed_L1; // L1 table
-			QED_L2CACHE qed_L2;
-			uint64_t qed_offset_mask;
-			uint64_t qed_L2_mask;
-			uint32_t qed_L2_shift;
-			uint64_t qed_L1_mask;
-			uint32_t qed_L1_shift;
-		};
-		QCOW_HDR qcow;
-		PHDD_HDR phdd;
+		void *meta;
+		VDI_META *vdi;
+		VMDK_META *vmdk;
+		VHD_META *vhd;
+		QED_META *qed;
+		VHDX_META *vhdx;
 	};
 } VDISK;
 

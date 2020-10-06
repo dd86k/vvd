@@ -52,6 +52,8 @@ int vdisk_open(VDISK *vd, const oschar *path, uint32_t flags) {
 	//
 
 	uint32_t internal = 0; // Internal flags
+	uint32_t sign32;
+	uint64_t sign64;
 
 	switch (vd->format) {
 	case VDISK_FORMAT_VDI:
@@ -84,12 +86,12 @@ int vdisk_open(VDISK *vd, const oschar *path, uint32_t flags) {
 		break;
 	default: // Attempt at different offsets
 
-		// Fixed VHD: 512 bytes before EOF
+		// VHD: (Fixed) 512 bytes before EOF
 		if (os_fseek(vd->fd, -512, SEEK_END))
 			return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
-		if (os_fread(vd->fd, &vd->vhdhdr, sizeof(VHD_HDR)))
+		if (os_fread(vd->fd, &sign64, 8))
 			return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
-		if (vd->vhdhdr.magic == VHD_MAGIC) {
+		if (sign64 == VHD_MAGIC) {
 			vd->format = VDISK_FORMAT_VHD;
 			internal = 2;
 			goto L_FORMAT_CASE_VHD;
@@ -104,6 +106,9 @@ int vdisk_open(VDISK *vd, const oschar *path, uint32_t flags) {
 //
 // vdisk_create
 //
+
+//TODO: VDISK *vd, void *meta, uint64_t capacity, uint32_t flags
+//	The meta pointer serves for cloning/copying
 
 int vdisk_create(VDISK *vd, const oschar *path, int format, uint64_t capacity, uint16_t flags) {
 	
@@ -135,10 +140,7 @@ int vdisk_create(VDISK *vd, const oschar *path, int format, uint64_t capacity, u
 		return vdisk_i_err(vd, VVD_EVDFORMAT, __LINE__, __func__);
 	}
 
-	if (e)
-		return vd->err.num;
-
-	return vdisk_update(vd);
+	return e ? e : vdisk_update(vd);
 }
 
 //
@@ -170,7 +172,6 @@ const char* vdisk_str(VDISK *vd) {
 //
 
 int vdisk_update(VDISK *vd) {
-	
 	switch (vd->format) {
 	case VDISK_FORMAT_VDI:
 		//TODO: Move pre-header signature in creation function
@@ -181,14 +182,14 @@ int vdisk_update(VDISK *vd) {
 		// skip signature
 		if (os_fseek(vd->fd, VDI_SIGNATURE_SIZE, SEEK_SET))
 			return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
-		if (os_fwrite(vd->fd, vd->vdi.hdr, sizeof(VDI_HDR)))
+		if (os_fwrite(vd->fd, &vd->vdi->hdr, sizeof(VDI_HDR)))
 			return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
-		if (os_fwrite(vd->fd, vd->vdi.v1, sizeof(VDI_HEADERv1)))
+		if (os_fwrite(vd->fd, &vd->vdi->v1, sizeof(VDI_HEADERv1)))
 			return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
 		// blocks
-		if (os_fseek(vd->fd, vd->vdi.v1->offBlocks, SEEK_SET))
+		if (os_fseek(vd->fd, vd->vdi->v1.offBlocks, SEEK_SET))
 			return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
-		if (os_fwrite(vd->fd, vd->vdi.in->offsets, vd->vdi.v1->blk_total * 4))
+		if (os_fwrite(vd->fd, vd->vdi->in.offsets, vd->vdi->v1.blk_total << 2))
 			return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
 		break;
 	/*case VDISK_FORMAT_VMDK:

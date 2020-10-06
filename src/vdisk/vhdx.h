@@ -1,22 +1,22 @@
 /**
  * VHDX: (Microsoft) Virtual Hard Disk eXtended
  * 
- * MS-VHDX v20160714
+ * Little Endian
  * 
- * BAT entry 8-Byte
+ * Source: MS-VHDX v20160714
  */
 
 #include <stdint.h>
 #include "uid.h"
 
-#define VHDX_MAGIC 0x656C696678646876	// "vhdxfile"
-#define VHDX_HDR1_MAGIC 0x64616568	// "head"
-#define VHDX_REGION_MAGIC 0x69676572	// "regi"
-#define VHDX_LOG_HDR_MAGIC 0x65676F6C	// "loge"
-#define VHDX_LOG_ZERO_MAGIC 0x6F72657A	// "zero"
-#define VHDX_LOG_DESC_MAGIC 0x63736564	// "desc"
-#define VHDX_LOG_DATA_MAGIC 0x61746164	// "data"
-#define VHDX_METADATA_MAGIC 0x617461646174656D	// "metadata"
+static const uint64_t VHDX_MAGIC = 0x656C696678646876;	// "vhdxfile"
+static const uint32_t VHDX_HDR1_MAGIC = 0x64616568;	// "head"
+static const uint32_t VHDX_REGION_MAGIC = 0x69676572;	// "regi"
+static const uint32_t VHDX_LOG_HDR_MAGIC = 0x65676F6C;	// "loge"
+static const uint32_t VHDX_LOG_ZERO_MAGIC = 0x6F72657A;	// "zero"
+static const uint32_t VHDX_LOG_DESC_MAGIC = 0x63736564;	// "desc"
+static const uint32_t VHDX_LOG_DATA_MAGIC = 0x61746164;	// "data"
+static const uint64_t VHDX_METADATA_MAGIC = 0x617461646174656D;	// "metadata"
 
 enum {
 	VHDX_HEADER1_LOC = 64 * 1024,	// 64 KiB
@@ -28,7 +28,10 @@ enum {
 
 typedef struct {
 	uint64_t magic;
-	uint16_t creator[256];
+	union {
+		uint8_t  u8creator[512];
+		uint16_t u16creator[256];
+	};
 } VHDX_HDR;
 
 typedef struct {
@@ -42,8 +45,6 @@ typedef struct {
 	uint16_t version;
 	uint32_t logsize;
 	uint64_t logoffset;
-	// Rest is reserved (4016 Bytes)
-	// It is not defined to avoid reading what we don't need
 } VHDX_HEADER1;
 
 typedef struct {
@@ -116,15 +117,28 @@ typedef struct {
 	// Logical Sector Size	8141BF1D-A96F-4709-BA47-F233A8FAAB5F
 	// Logical Sector Size	CDA348C7-445D-4471-9CC9-E9885251C556
 	// Parent Locator	A8D35F2D-B30B-454D-ABF7-D3D84834AB0C
-	UID      type; // itemID GUID
+	UID      type;	// itemID GUID
 	uint32_t offset;
 	uint32_t length;
-	uint32_t flags; // ...plus 2 bits? what the hell?
+	uint32_t flags;	// ...plus 2 bits? what the hell?
 } VHDX_METADATA_ENTRY;
 
 typedef struct {
 	
 } VHDX_INTERNALS;
+
+typedef struct {
+	VHDX_HDR hdr;
+	VHDX_HEADER1 v1;
+	VHDX_HEADER1 v1_2;
+	VHDX_REGION_HDR reg;
+	VHDX_REGION_HDR reg2;
+	VHDX_LOG_HDR log;
+	VHDX_METADATA_HDR meta;
+	VHDX_INTERNALS in;
+} VHDX_META;
+
+static const uint32_t VHDX_META_ALLOC = sizeof(VHDX_META);
 
 struct VDISK;
 

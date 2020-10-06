@@ -270,7 +270,7 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 	// VDI
 	//
 	case VDISK_FORMAT_VDI: {
-		switch (vd->vdi.v1->type) {
+		switch (vd->vdi->v1.type) {
 		case VDI_DISK_DYN:	type = "dynamic"; break;
 		case VDI_DISK_FIXED:	type = "fixed"; break;
 		case VDI_DISK_UNDO:	type = "undo"; break;
@@ -278,17 +278,17 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 		default:	type = "type?";
 		}
 
-		bintostr(disksize, vd->vdi.v1->capacity);
+		bintostr(disksize, vd->vdi->v1.capacity);
 
 		if (flags & VVD_INFO_RAW) {
 			char create_uuid[UID_LENGTH], modify_uuid[UID_LENGTH],
 				link_uuid[UID_LENGTH], parent_uuid[UID_LENGTH];
 
-			bintostr(blocksize, vd->vdi.v1->blk_size);
-			uid_str(uid1, &vd->vdi.v1->uuidCreate, UID_UUID);
-			uid_str(uid2, &vd->vdi.v1->uuidModify, UID_UUID);
-			uid_str(uid3, &vd->vdi.v1->uuidLinkage, UID_UUID);
-			uid_str(uid4, &vd->vdi.v1->uuidParentModify, UID_UUID);
+			bintostr(blocksize, vd->vdi->v1.blk_size);
+			uid_str(uid1, &vd->vdi->v1.uuidCreate, UID_UUID);
+			uid_str(uid2, &vd->vdi->v1.uuidModify, UID_UUID);
+			uid_str(uid3, &vd->vdi->v1.uuidLinkage, UID_UUID);
+			uid_str(uid4, &vd->vdi->v1.uuidParentModify, UID_UUID);
 
 			printf(
 			"disk format        : VDI\n"
@@ -312,32 +312,32 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 			"modify uuid        : %s\n"
 			"link uuid          : %s\n"
 			"parent uuid        : %s\n",
-			vd->vdi.hdr->majorver, vd->vdi.hdr->minorver,
+			vd->vdi->hdr.majorver, vd->vdi->hdr.minorver,
 			type,
-			disksize, vd->vdi.v1->capacity,
-			vd->vdi.v1->hdrsize,
-			vd->vdi.v1->fFlags,
-			vd->vdi.v1->u32Dummy,
-			blocksize, vd->vdi.v1->blk_size,
-			vd->vdi.v1->blk_total,
-			vd->vdi.v1->blk_alloc,
-			vd->vdi.v1->blk_extra,
-			vd->vdi.v1->offBlocks,
-			vd->vdi.v1->offData,
-			vd->vdi.v1->cCylinders,
-			vd->vdi.v1->cHeads,
-			vd->vdi.v1->cSectors,
-			vd->vdi.v1->LegacyGeometry.cCylinders,
-			vd->vdi.v1->LegacyGeometry.cHeads,
-			vd->vdi.v1->LegacyGeometry.cSectors,
-			vd->vdi.v1->cbSector,
-			vd->vdi.v1->LegacyGeometry.cbSector,
+			disksize, vd->vdi->v1.capacity,
+			vd->vdi->v1.hdrsize,
+			vd->vdi->v1.fFlags,
+			vd->vdi->v1.u32Dummy,
+			blocksize, vd->vdi->v1.blk_size,
+			vd->vdi->v1.blk_total,
+			vd->vdi->v1.blk_alloc,
+			vd->vdi->v1.blk_extra,
+			vd->vdi->v1.offBlocks,
+			vd->vdi->v1.offData,
+			vd->vdi->v1.cCylinders,
+			vd->vdi->v1.cHeads,
+			vd->vdi->v1.cSectors,
+			vd->vdi->v1.LegacyGeometry.cCylinders,
+			vd->vdi->v1.LegacyGeometry.cHeads,
+			vd->vdi->v1.LegacyGeometry.cSectors,
+			vd->vdi->v1.cbSector,
+			vd->vdi->v1.LegacyGeometry.cbSector,
 			uid1, uid2, uid3, uid4
 			);
 		} else {
 			printf(
 			"VirtualBox VDI %s disk v%u.%u, %s\n",
-			type, vd->vdi.hdr->majorver, vd->vdi.hdr->minorver, disksize
+			type, vd->vdi->hdr.majorver, vd->vdi->hdr.minorver, disksize
 			);
 			//TODO: Interpret flags
 		}
@@ -349,7 +349,7 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 	case VDISK_FORMAT_VMDK: {
 		const char *comp; // compression
 		//if (h.flags & COMPRESSED)
-		switch (vd->vmdk.hdr->compressAlgorithm) {
+		switch (vd->vmdk->hdr.compressAlgorithm) {
 		case 0:  comp = "no"; break;
 		case 1:  comp = "DEFLATE"; break;
 		default: comp = "?";
@@ -375,42 +375,42 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 			"double nl char 1   : 0x%02X\n"
 			"double nl char 2   : 0x%02X\n"
 			"compression        : 0x%02X\n",
-			vd->vmdk.hdr->version,
-			vd->vmdk.hdr->flags,
-			vd->vmdk.hdr->capacity,
-			vd->vmdk.hdr->overHead,
-			vd->vmdk.hdr->grainSize,
-			vd->vmdk.hdr->descriptorOffset,
-			vd->vmdk.hdr->descriptorSize,
-			vd->vmdk.hdr->numGTEsPerGT,
-			vd->vmdk.hdr->rgdOffset,
-			vd->vmdk.hdr->gdOffset,
-			vd->vmdk.hdr->overHead,
-			vd->vmdk.hdr->uncleanShutdown,
-			vd->vmdk.hdr->singleEndLineChar,
-			vd->vmdk.hdr->nonEndLineChar,
-			vd->vmdk.hdr->doubleEndLineChar1,
-			vd->vmdk.hdr->doubleEndLineChar2,
-			vd->vmdk.hdr->compressAlgorithm
+			vd->vmdk->hdr.version,
+			vd->vmdk->hdr.flags,
+			vd->vmdk->hdr.capacity,
+			vd->vmdk->hdr.overHead,
+			vd->vmdk->hdr.grainSize,
+			vd->vmdk->hdr.descriptorOffset,
+			vd->vmdk->hdr.descriptorSize,
+			vd->vmdk->hdr.numGTEsPerGT,
+			vd->vmdk->hdr.rgdOffset,
+			vd->vmdk->hdr.gdOffset,
+			vd->vmdk->hdr.overHead,
+			vd->vmdk->hdr.uncleanShutdown,
+			vd->vmdk->hdr.singleEndLineChar,
+			vd->vmdk->hdr.nonEndLineChar,
+			vd->vmdk->hdr.doubleEndLineChar1,
+			vd->vmdk->hdr.doubleEndLineChar2,
+			vd->vmdk->hdr.compressAlgorithm
 			);
 		} else {
 			bintostr(disksize, vd->capacity);
 			printf(
 			"VMware VMDK disk v%u, %s compression, %s\n",
-			vd->vmdk.hdr->version, comp, disksize
+			vd->vmdk->hdr.version, comp, disksize
 			);
 
-			if (vd->vmdk.hdr->flags & VMDK_F_VALID_NL)
+			if (vd->vmdk->hdr.flags & VMDK_F_VALID_NL)
 				puts("+ Valid newline detection");
-			if (vd->vmdk.hdr->flags & VMDK_F_REDUNDANT_TABLE)
+			if (vd->vmdk->hdr.flags & VMDK_F_REDUNDANT_TABLE)
 				puts("+ Redundant grain table used");
-			if (vd->vmdk.hdr->flags & VMDK_F_ZEROED_GTE)
+			if (vd->vmdk->hdr.flags & VMDK_F_ZEROED_GTE)
 				puts("+ Zeroed-grain GTE used");
-			if (vd->vmdk.hdr->flags & VDMK_F_COMPRESSED)
+			if (vd->vmdk->hdr.flags & VDMK_F_COMPRESSED)
 				puts("+ Grains are compressed");
-			if (vd->vmdk.hdr->flags & VMDK_F_MARKERS)
+			if (vd->vmdk->hdr.flags & VMDK_F_MARKERS)
 				puts("+ Markers used");
-			if (vd->vmdk.hdr->uncleanShutdown)
+			if (vd->vmdk->hdr.uncleanShutdown)
 				puts("+ Unclean shutdown");
 		}
 	}
@@ -422,22 +422,22 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 		char sizecur[BINSTR_LENGTH];
 		const char *byos;
 
-		switch (vd->vhdhdr.type) {
+		switch (vd->vhd->hdr.type) {
 		case VHD_DISK_FIXED:	type = "fixed"; break;
 		case VHD_DISK_DYN:	type = "dynamic"; break;
 		case VHD_DISK_DIFF:	type = "differencing"; break;
 		default:
-			type = vd->vhdhdr.type <= 6 ? "reserved (deprecated)" : "unknown";
+			type = vd->vhd->hdr.type <= 6 ? "reserved (deprecated)" : "unknown";
 		}
 
-		switch (vd->vhdhdr.creator_os) {
+		switch (vd->vhd->hdr.creator_os) {
 		case VHD_OS_WIN:	byos = "Windows"; break;
 		case VHD_OS_MAC:	byos = "macOS"; break;
 		default:	byos = "unknown"; break;
 		}
 
-		uid_str(uid1, &vd->vhdhdr.uuid, UID_ASIS);
-		str_s(vd->vhdhdr.creator_app, 4);
+		uid_str(uid1, &vd->vhd->hdr.uuid, UID_ASIS);
+		str_s(vd->vhd->hdr.creator_app, 4);
 
 		if (flags & VVD_INFO_RAW) {
 			printf(
@@ -452,20 +452,20 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 			"chs                : %u/%u/%u\n"
 			"checksum           : 0x%08X\n"
 			"uuid               : %s\n",
-			vd->vhdhdr.major, vd->vhdhdr.minor,
+			vd->vhd->hdr.major, vd->vhd->hdr.minor,
 			type,
-			vd->vhdhdr.size_current,
-			vd->vhdhdr.size_original,
-			vd->vhdhdr.creator_app,
-			vd->vhdhdr.creator_major, vd->vhdhdr.creator_minor,
+			vd->vhd->hdr.size_current,
+			vd->vhd->hdr.size_original,
+			vd->vhd->hdr.creator_app,
+			vd->vhd->hdr.creator_major, vd->vhd->hdr.creator_minor,
 			byos,
-			vd->vhdhdr.cylinders, vd->vhdhdr.heads, vd->vhdhdr.sectors,
-			vd->vhdhdr.checksum,
+			vd->vhd->hdr.cylinders, vd->vhd->hdr.heads, vd->vhd->hdr.sectors,
+			vd->vhd->hdr.checksum,
 			uid1
 			);
-			if (vd->vhdhdr.type != VHD_DISK_FIXED) {
+			if (vd->vhd->hdr.type != VHD_DISK_FIXED) {
 				char paruuid[UID_LENGTH];
-				uid_str(paruuid, &vd->vhddyn.parent_uuid, UID_ASIS);
+				uid_str(paruuid, &vd->vhd->dyn.parent_uuid, UID_ASIS);
 				printf(
 				"dyn. header ver.   : %u.%u\n"
 				"offset table       : %" PRIu64 "\n"
@@ -474,29 +474,28 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 				"dyn. checksum      : 0x%08X\n"
 				"parent uuid        : %s\n"
 				"parent timestamp   : %u\n"
-				"bat entries        : %u\n"
-				,
-				vd->vhddyn.minor, vd->vhddyn.major,
-				vd->vhddyn.table_offset,
-				vd->vhddyn.data_offset,
-				vd->vhddyn.blocksize,
-				vd->vhddyn.checksum,
+				"bat entries        : %u\n",
+				vd->vhd->dyn.minor, vd->vhd->dyn.major,
+				vd->vhd->dyn.table_offset,
+				vd->vhd->dyn.data_offset,
+				vd->vhd->dyn.blocksize,
+				vd->vhd->dyn.checksum,
 				paruuid,
-				vd->vhddyn.parent_timestamp,
-				vd->vhddyn.max_entries
+				vd->vhd->dyn.parent_timestamp,
+				vd->vhd->dyn.max_entries
 				);
 			}
 		} else {
-			bintostr(sizecur, vd->vhdhdr.size_current);
-			bintostr(disksize, vd->vhdhdr.size_original);
+			bintostr(sizecur, vd->vhd->hdr.size_current);
+			bintostr(disksize, vd->vhd->hdr.size_original);
 
 			printf(
 			"Connectix/Microsoft VHD %s disk v%u.%u, %s/%s\n",
-			type, vd->vhdhdr.major, vd->vhdhdr.minor, sizecur, disksize
+			type, vd->vhd->hdr.major, vd->vhd->hdr.minor, sizecur, disksize
 			);
 		}
 
-		if (vd->vhdhdr.savedState)
+		if (vd->vhd->hdr.savedState)
 			puts("+ Saved state");
 	}
 		break;
@@ -512,20 +511,20 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 			"compact features   : 0x%" PRIX64 "\n"
 			"autoclear features : 0x%" PRIX64 "\n"
 			"L1 offset          : 0x%" PRIX64 "\n",
-			vd->qedhdr.cluster_size,
-			vd->qedhdr.table_size,
-			vd->qedhdr.header_size,
-			vd->qedhdr.features,
-			vd->qedhdr.compat_features,
-			vd->qedhdr.autoclear_features,
-			vd->qedhdr.l1_offset
+			vd->qed->hdr.cluster_size,
+			vd->qed->hdr.table_size,
+			vd->qed->hdr.header_size,
+			vd->qed->hdr.features,
+			vd->qed->hdr.compat_features,
+			vd->qed->hdr.autoclear_features,
+			vd->qed->hdr.l1_offset
 			);
-			if (vd->qedhdr.features & QED_F_BACKING_FILE) {
+			if (vd->qed->hdr.features & QED_F_BACKING_FILE) {
 				printf(
 				"back. name offset  : %u\n"
 				"back. name size    : %u\n",
-				vd->qedhdr.backup_name_offset,
-				vd->qedhdr.backup_name_size
+				vd->qed->hdr.backup_name_offset,
+				vd->qed->hdr.backup_name_size
 				);
 			}
 		} else {

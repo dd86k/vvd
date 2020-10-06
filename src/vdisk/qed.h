@@ -88,21 +88,28 @@ typedef struct {
 } QED_L2CACHE;
 
 typedef struct {
-	// L1 table
+	uint32_t tablesize;	// Calculated table size in bytes (table_size * cluster_size)
+	uint32_t entries;	// Number of entries
+	uint64_t mask;	// Offset mask after L1/L2 calculations
 	struct {
 		uint64_t *offsets;
 		uint64_t mask;
 		uint32_t shift;
-	} L1;
-	// L2 table
+	} L1;	// L1 table
 	struct {
 		uint64_t *offsets;
 		uint64_t mask;
 		uint32_t shift;
 		uint64_t current;	// Last L2 offset loaded
-	} L2;
-	uint64_t mask;	// Offset mask after L1/L2 calculations
+	} L2;	// L2 table
 } QED_INTERNALS;
+
+typedef struct {
+	QED_HDR hdr;
+	QED_INTERNALS in;
+} QED_META;
+
+static const uint32_t QED_META_ALLOC = sizeof(QED_META);
 
 struct VDISK;
 
