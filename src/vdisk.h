@@ -129,9 +129,6 @@ typedef struct VDISK {
 	uint32_t flags;
 	// Reserved.
 	uint32_t cookie;
-	// Calculated absolute offset to data.
-	// deprecated
-	uint64_t offset;
 	// Virtual disk capacity in bytes. For RAW files, it's the file size. For
 	// RAW devices, it's the disk size. This is populated automatically.
 	uint64_t capacity;
