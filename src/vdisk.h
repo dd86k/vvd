@@ -20,7 +20,7 @@
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 enum {	// DISKFORMAT magical hints (LSB), used for VDISK.format
 	VDISK_FORMAT_NONE	= 0,	// No formats has been specificied yet
-	VDISK_FORMAT_RAW	= 0xAAAAAAAA,	// Raw files and devices
+	VDISK_FORMAT_RAW	= 0xAAAAAAAA,	// Raw files and storage devices
 	VDISK_FORMAT_VDI	= 0x203C3C3C,	// "<<< " VirtualBox
 	VDISK_FORMAT_VMDK	= 0x564D444B,	// "VMDK" VMware
 	VDISK_FORMAT_VMDK_COW	= 0x44574F43,	// "COWD" VMware EXSi COW disk
@@ -29,11 +29,24 @@ enum {	// DISKFORMAT magical hints (LSB), used for VDISK.format
 	VDISK_FORMAT_QED	= 0x00444551,	// "QED\0" QEMU Enhanced Disk
 	VDISK_FORMAT_QCOW	= 0xFB494651,	// "QFI\xFB" QEMU Copy-On-Write, v1/v2
 	VDISK_FORMAT_PHDD	= 0x68746957,	// "With" Parallels HDD
-	VDISK_FORMAT_BOCHS	= 0x68636F68,	// "Boch" Bochs Virtual HD Image
+	VDISK_FORMAT_BOCHS	= 0x68636F42,	// "Boch" Bochs Virtual HD Image
 //	VDISK_FORMAT_DMG	= 0x,	// "" Apple DMG
 };
-#else
-
+#else	// Big-endian
+enum {	// DISKFORMAT magical hints (MSB), used for VDISK.format
+	VDISK_FORMAT_NONE	= 0,	// No formats has been specificied yet
+	VDISK_FORMAT_RAW	= 0xAAAAAAAA,	// Raw files and storage devices
+	VDISK_FORMAT_VDI	= 0x3C3C3C20,	// "<<< " VirtualBox
+	VDISK_FORMAT_VMDK	= 0x4B444D56,	// "VMDK" VMware
+	VDISK_FORMAT_VMDK_COW	= 0x434F5744,	// "COWD" VMware EXSi COW disk
+	VDISK_FORMAT_VHD	= 0x636F6E65,	// "cone" VirtualPC/Hyper-V
+	VDISK_FORMAT_VHDX	= 0x76686478,	// "vhdx" Hyper-V
+	VDISK_FORMAT_QED	= 0x51454400,	// "QED\0" QEMU Enhanced Disk
+	VDISK_FORMAT_QCOW	= 0x514649FB,	// "QFI\xFB" QEMU Copy-On-Write, v1/v2
+	VDISK_FORMAT_PHDD	= 0x57697468,	// "With" Parallels HDD
+	VDISK_FORMAT_BOCHS	= 0x426F6368,	// "Boch" Bochs Virtual HD Image
+//	VDISK_FORMAT_DMG	= 0x,	// "" Apple DMG
+};
 #endif
 
 enum {	// VDISK flags, the open/create flags may overlap
