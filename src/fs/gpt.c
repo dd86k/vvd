@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stddef.h>
 #include "gpt.h"	// includes uid.h
 #include "hash.h"
 
