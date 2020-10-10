@@ -90,7 +90,7 @@ void vvd_info_mbr(MBR *mbr, uint32_t flags) {
 			"length             : %u sectors\n"
 			"chs start          : %u/%u/%u\n"
 			"chs end            : %u/%u/%u\n",
-			i,
+			i + 1,
 			pe.status,
 			pe.type,
 			pe.lba,
@@ -107,17 +107,18 @@ void vvd_info_mbr(MBR *mbr, uint32_t flags) {
 		printf(
 		"\n"
 		"MBR (DOS) disklabel, %s used\n"
-		"   Boot     Start        Size  Type\n", strsize
+		"   Boot     Start        Size  Id  Type\n", strsize
 		);
 		for (unsigned int i = 0; i < 4; ++i) {
 			MBR_PARTITION pe = mbr->pe[i];
 			bintostr(strsize, SECTOR_TO_BYTE(pe.sectors));
 			printf(
-			"%u. %c  %11u  %10s  %s\n",
-			i,
+			"%u. %c  %11u  %10s  %2x  %s\n",
+			i + 1,
 			pe.status >= 0x80 ? '*' : ' ',
 			pe.lba,
 			strsize,
+			pe.type,
 			mbr_part_type_str(pe.type)
 			);
 		}
@@ -176,12 +177,12 @@ void vvd_info_gpt(GPT *gpt, uint32_t flags) {
 //
 
 void vvd_info_gpt_entries(VDISK *vd, GPT *gpt, uint64_t lba, uint32_t flags) {
-	int max = gpt->pt_entries;	// maximum limiter, typically 128
 	char partname[EFI_PART_NAME_LENGTH];
 	char partsize[BINSTR_LENGTH];
 	UID_TEXT partguid, typeguid;
 	GPT_ENTRY entry; // GPT entry
 	uint32_t entrynum = 1;
+	uint32_t f_bkpgpt = flags & VVD_INTERNAL_GPT_BKP;
 
 	if ((flags & VVD_INFO_RAW) == 0)
 		puts("Part         Start        Size  Type");
@@ -208,23 +209,23 @@ START:
 		"type guid          : %s\n"
 		"lba start          : %" PRIu64 "\n"
 		"lba end            : %" PRIu64 "\n"
-		"flags              : 0x%08X\n"
-		"partition flags    : 0x%08X\n",
+		"flags              : 0x%016" PRIX64 "\n",
 		entrynum,
-		partname,
+		wr > 0 ? partname : "",
 		partguid,
 		typeguid,
 		entry.first.lba,
 		entry.last.lba,
-		entry.flags,
-		entry.partflags
+		entry.flagsraw
 		);
 	} else {
 		bintostr(partsize, SECTOR_TO_BYTE(entry.last.lba - entry.first.lba));
+		const char *gpt_type = gpt_part_type_str(&entry.type);
+
 		//TODO: GPT partition type (after name)
 		printf(
-		"%4u. %12" PRIu64 "%12s  s\n",
-		entrynum, entry.first.lba, partsize
+		"%4u. %12" PRIu64 "%12s  %s\n",
+		entrynum, entry.first.lba, partsize, gpt_type ? gpt_type : "Unknown"
 		);
 
 		if (wr > 0)
@@ -251,8 +252,9 @@ START:
 
 	if (entrynum > gpt->pt_entries)
 		return;
+	if (f_bkpgpt) --lba; else ++lba;
 
-	++lba; --max; ++entrynum;
+	++entrynum;
 	goto START;
 }
 
@@ -263,7 +265,8 @@ START:
 int vvd_info(VDISK *vd, uint32_t flags) {
 	const char *type;	// vdisk type
 	char disksize[BINSTR_LENGTH], blocksize[BINSTR_LENGTH];
-	char uid1[UID_LENGTH], uid2[UID_LENGTH], uid3[UID_LENGTH], uid4[UID_LENGTH];
+	char uid1[UID_BUFFER_LENGTH], uid2[UID_BUFFER_LENGTH],
+		uid3[UID_BUFFER_LENGTH], uid4[UID_BUFFER_LENGTH];
 
 	switch (vd->format) {
 	//
@@ -281,8 +284,8 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 		bintostr(disksize, vd->vdi->v1.capacity);
 
 		if (flags & VVD_INFO_RAW) {
-			char create_uuid[UID_LENGTH], modify_uuid[UID_LENGTH],
-				link_uuid[UID_LENGTH], parent_uuid[UID_LENGTH];
+			char create_uuid[UID_BUFFER_LENGTH], modify_uuid[UID_BUFFER_LENGTH],
+				link_uuid[UID_BUFFER_LENGTH], parent_uuid[UID_BUFFER_LENGTH];
 
 			bintostr(blocksize, vd->vdi->v1.blk_size);
 			uid_str(uid1, &vd->vdi->v1.uuidCreate, UID_UUID);
@@ -464,7 +467,7 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 			uid1
 			);
 			if (vd->vhd->hdr.type != VHD_DISK_FIXED) {
-				char paruuid[UID_LENGTH];
+				char paruuid[UID_BUFFER_LENGTH];
 				uid_str(paruuid, &vd->vhd->dyn.parent_uuid, UID_ASIS);
 				printf(
 				"dyn. header ver.   : %u.%u\n"
@@ -570,6 +573,7 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 			if (vdisk_read_sector(vd, &mbr, ebrlba)) return VVD_EOK;
 			if (((GPT*)&mbr)->sig == EFI_SIG) {
 				ebrlba -= ((GPT*)&mbr)->pt_entries; // typically 128
+				flags |= VVD_INTERNAL_GPT_BKP;
 				goto L_GPT_RDY;
 			}
 			continue;

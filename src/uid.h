@@ -6,9 +6,11 @@ enum {
 	UID_ASIS	= 0,	// Leave as-is, no swap intended
 	UID_GUID	= 1,	// Meant as GUID, swap if on big-endian
 	UID_UUID	= 2,	// Meant as UUID, swap if on little-endian
-	UID_LENGTH	= 40	// usually 36 but.. {} and \0
+	UID_BUFFER_LENGTH	= 40	// usually 36 but.. {} and \0
 };
-typedef char UID_TEXT[UID_LENGTH];
+// Text buffer
+typedef char UID_TEXT[UID_BUFFER_LENGTH];
+
 /**
  * UUID/GUID structure
  */

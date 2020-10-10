@@ -1,22 +1,22 @@
 #include "vdisk.h"
 
-// Flags for vvd_* functions which the CLI should populate
-// The lower 16 bits is for "generic" flags and the higher
-// 16 bits is for function-specific flags:
-//
-// bits 31               16                 0
-//      +--------+--------+--------+--------+
-//      | Func.  specific |  Generic flags  |
-//      +--------+--------+--------+--------+
+/*
+	Bits	Description
+	0:15	Global flags
+	16:23	Function-specific flags
+	24:31	Function internal specific flags
+*/
 enum {
 	// Show a progress bar
 	VVD_PROGRESS	= 0x10,
 	// vvd_info: Show raw information
-	VVD_INFO_RAW	= 0x10000,
+	VVD_INFO_RAW	= 0x100,
 	// vvd_map flags
 	//VVD_MAP_	= 0x1000,
 	// vvd_compact flags
 	//VVD_COMPACT_CLEAN_EMPTY	= 0x10000,
+	// Internal: The backup GPT entries were selected
+	VVD_INTERNAL_GPT_BKP	= 0x01000000,
 };
 
 /**

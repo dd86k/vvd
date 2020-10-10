@@ -73,9 +73,6 @@ typedef struct { // v1.0
 
 // GPT entry structure
 typedef struct {
-	// Unused entry        : 00000000-0000-0000-0000-000000000000
-	// EFI System Partition: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
-	// Contains legacy MBR : 024DEE41-33E7-11D3-9D69-0008C781F39F
 	UID      type;	// Partition type GUID
 	UID      part;	// Unique partition GUID
 	LBA64    first;
@@ -102,16 +99,4 @@ typedef struct {
 	uint8_t  pad[384];
 } GPT_ENTRY;
 
-/*#ifndef _GPT_ENTRIES
-#define _GPT_ENTRIES
-//TODO: Array instead?
-const UID GPT_ENTRY_EMPTY = {
-	.time_low	= 0,
-	.time_mid	= 0,
-	.time_ver	= 0,
-	.clock	= 0,
-	.node = { 0, 0, 0, 0, 0, 0 }
-};
-#endif // _GPT_ENTRIES*/
-
-struct VDISK;
+const char* gpt_part_type_str(UID *uid);

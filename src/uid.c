@@ -18,7 +18,7 @@ int uid_str(char *buf, UID *uid, int target) {
 		if (target == UID_GUID)
 			uid_swap(uid);
 	#endif
-	return snprintf(buf, UID_LENGTH,
+	return snprintf(buf, UID_BUFFER_LENGTH,
 	"%08X-%04X-%04X-%04X-%02X%02X%02X%02X%02X%02X",
 	uid->time_low, uid->time_mid, uid->time_ver, uid->clock,
 	uid->data[10], uid->data[11], uid->data[12],

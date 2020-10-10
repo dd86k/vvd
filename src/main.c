@@ -17,6 +17,7 @@
 #include "utils.h"
 #include "vvd.h"
 #include "platform.h"
+#include "hash.h"
 
 #ifdef DEBUG
 #include <assert.h>
@@ -191,20 +192,20 @@ static void license() {
 }
 
 #ifdef _WIN32
-#define MAIN int wmain(int argc, wchar_t **argv)
+//TODO: Check if UNICODE is defined
+#define MAIN wmain(int argc, wchar_t **argv)
 #else
-#define MAIN int main(int argc, char **argv)
+#define MAIN main(int argc, char **argv)
 #endif
-
-//TODO: Consider hashing strings for faster lookups when parsing CLI
-//	Either SuperFastHash [1] or xxHash [2]
-//	[1] http://www.azillionmonkeys.com/qed/hash.html
-//	[2] https://github.com/Cyan4973/xxHash
 
 /**
  * Match a patch to an exception with the VDISK_FORMAT_* enum.
  * 
  * \returns VDISK_FORMAT enum
+ * 
+ * \note Hashes may be cute, but that would require both UTF-8 and UTF-16LE
+ *       versions for all hashes (and possibly more encodings), so no thanks.
+ *       Besides, this is obviously not critical code, and I'm lazy.
  */
 static int vdextauto(const oschar *path) {
 	if (extcmp(path, osstr("vdi")))	return VDISK_FORMAT_VDI;
@@ -220,7 +221,7 @@ static int vdextauto(const oschar *path) {
 
 // Main entry point. This only performs intepreting the command-line options
 // for the core functions.
-MAIN {
+int MAIN {
 	if (argc <= 1)
 		help();
 
@@ -390,6 +391,25 @@ MAIN {
 	if (oscmp(action, osstr("cleanfs")) == 0) {
 		fputs("main: not implemented\n", stderr);
 		return EXIT_FAILURE;
+	}
+
+	//
+	// Internal ish things
+	//
+
+	if (oscmp(action, osstr("hash")) == 0) {
+		if (defopt == NULL) {
+			fputs("main: missing argument\n", stderr);
+			return EXIT_FAILURE;
+		}
+#ifdef _WIN32
+		char buffer[200];
+		wcstombs(buffer, defopt, 200);
+		printf("%08X", hash_superfashhash_str((void*)buffer));
+#else
+		printf("%08X", hash_superfashhash_str((void*)defopt));
+#endif
+		return EXIT_SUCCESS;
 	}
 
 	//
