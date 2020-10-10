@@ -3,6 +3,34 @@
 #include "hash.h"
 
 //
+// hash_str
+//
+
+/*uint32_t hash_str(const char *data) {
+	assert(0);
+	return 0;
+}
+
+//
+// hash_data
+//
+
+uint32_t hash_data(const char *data, uint32_t length) {
+	assert(0);
+	return 0;
+}
+
+//
+// hash_data_seed
+//
+
+uint32_t hash_data_seed(const char *data, uint32_t length, uint32_t seed) {
+	assert(0);
+	return 0;
+	
+}*/
+
+//
 // hash_superfashhash_str
 //
 

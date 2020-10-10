@@ -95,7 +95,7 @@ typedef struct {
 			uint16_t partflags;	// Partition-defined flags
 		};
 	};
-	uint16_t partname[36];	// 72 bytes, 32 UTF-16LE characters
+	uint16_t partname[36];	// 72 bytes, 36 UTF-16LE characters
 	uint8_t  pad[384];
 } GPT_ENTRY;
 

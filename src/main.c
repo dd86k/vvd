@@ -397,7 +397,7 @@ int MAIN {
 	// Internal ish things
 	//
 
-	if (oscmp(action, osstr("hash")) == 0) {
+	if (oscmp(action, osstr("internalhash")) == 0) {
 		if (defopt == NULL) {
 			fputs("main: missing argument\n", stderr);
 			return EXIT_FAILURE;
@@ -405,12 +405,18 @@ int MAIN {
 #ifdef _WIN32
 		char buffer[200];
 		wcstombs(buffer, defopt, 200);
-		printf("%08X", hash_superfashhash_str((void*)buffer));
+		printf("%08X\n", hash_superfashhash_str((void*)buffer));
 #else
-		printf("%08X", hash_superfashhash_str((void*)defopt));
+		printf("%08X\n", hash_superfashhash_str((void*)defopt));
 #endif
 		return EXIT_SUCCESS;
 	}
+
+	//TODO: internalguidhash (see fs/gpt.c)
+	//      Basically deconstructs a GUID string into raw data and hashes it
+
+	//TODO: internalmbrtype <hexcode>
+	//TODO: internalgpttype <GUID>
 
 	//
 	// Pages
