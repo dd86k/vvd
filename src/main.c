@@ -198,14 +198,15 @@ static void license() {
 #define MAIN main(int argc, char **argv)
 #endif
 
+// NOTICE: Hashes may be cute, but for the command-line interface (CLI), that
+//         would require both UTF-8 and UTF-16LE versions for all hashes (and
+//         possibly more encodings), so no thanks. Besides, I'm lazy, and this
+//         is obviously not critical code.
+
 /**
  * Match a patch to an exception with the VDISK_FORMAT_* enum.
  * 
- * \returns VDISK_FORMAT enum
- * 
- * \note Hashes may be cute, but that would require both UTF-8 and UTF-16LE
- *       versions for all hashes (and possibly more encodings), so no thanks.
- *       Besides, this is obviously not critical code, and I'm lazy.
+ * \returns VDISK_FORMAT enum    
  */
 static int vdextauto(const oschar *path) {
 	if (extcmp(path, osstr("vdi")))	return VDISK_FORMAT_VDI;
@@ -220,7 +221,7 @@ static int vdextauto(const oschar *path) {
 }
 
 // Main entry point. This only performs intepreting the command-line options
-// for the core functions.
+// for the core functions in vvd.c.
 int MAIN {
 	if (argc <= 1)
 		help();
@@ -394,7 +395,7 @@ int MAIN {
 	}
 
 	//
-	// Internal ish things
+	// Internal things
 	//
 
 	if (oscmp(action, osstr("internalhash")) == 0) {
@@ -412,8 +413,30 @@ int MAIN {
 		return EXIT_SUCCESS;
 	}
 
-	//TODO: internalguidhash (see fs/gpt.c)
-	//      Basically deconstructs a GUID string into raw data and hashes it
+	if (oscmp(action, osstr("internalguidhash")) == 0) {
+		if (defopt == NULL) {
+			fputs("main: missing argument\n", stderr);
+			return EXIT_FAILURE;
+		}
+		UID uid;
+		int r;
+#ifdef _WIN32
+		char buffer[200];
+		wcstombs(buffer, defopt, 200);
+		r = uid_parse(&uid, buffer, UID_GUID);
+#else
+		r = uid_parse(&uid, defopt, UID_GUID);
+#endif
+		if (r) {
+			if (r < 0)
+				perror("main");
+			else
+				printf("main: failed to parse UID, got %d items\n", r);
+			return EXIT_FAILURE;
+		}
+		printf("%08X\n", hash_superfashhash((const char*)&uid, 16));
+		return EXIT_SUCCESS;
+	}
 
 	//TODO: internalmbrtype <hexcode>
 	//TODO: internalgpttype <GUID>

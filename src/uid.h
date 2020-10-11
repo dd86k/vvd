@@ -19,7 +19,7 @@ typedef struct UID {
 		uint8_t  data[16];
 		uint16_t u16[8];
 		uint32_t u32[4];
-		uint64_t u64[2]; // Preferred to use when size width = 64
+		uint64_t u64[2]; // Preferred when __SIZE_WIDTH__ == 64
 		struct {
 			uint32_t time_low;
 			uint16_t time_mid;
@@ -32,18 +32,37 @@ typedef struct UID {
 
 /**
  * Format a UID (GUID/UUID) to a string buffer.
+ * 
+ * \param str String buffer target
+ * \param uid UID structure source
+ * \param type GUID, UUID, or ASIS
+ * \returns The result of snprintf
  */
-int uid_str(char *str, UID *uid, int target);
+int uid_str(char *str, UID *uid, int type);
+/**
+ * Parse a string GUID or UUID into a UID structure.
+ * 
+ * Uses sscanf for parsing.
+ * 
+ * \param uid UID structure target
+ * \param str String buffer source
+ * \param type GUID, UUID, or ASIS
+ * \returns 0 when successful, >0 on error, and <0 on sscanf error
+ */
+int uid_parse(UID *uid, const char *str, int type);
 /**
  * Byte swap GUID/UUID fields to convert a GUID into an UUID or vice-versa.
  * Useful when the endianess differs from a machine. GUIDs is usually
  * little-endian and UUIDs are usually big-endian.
  * 
- * \param id UID structure
+ * \param uid UID structure
  */
 void uid_swap(UID *uid);
 /**
  * Verifies if a GUID/UUID is nil (null, empty).
+ * 
+ * \param uid UID structure
+ * \returns Non-zero if nil
  */
 int uid_nil(UID *uid);
 /**
