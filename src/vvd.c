@@ -73,7 +73,6 @@ void vvd_info_mbr(MBR *mbr, uint32_t flags) {
 
 	if (flags & VVD_INFO_RAW) {
 		printf(
-		"\n"
 		"disklabel          : MBR\n"
 		"serial             : 0x%08X\n"
 		"type               : 0x%04X\n",
@@ -105,7 +104,6 @@ void vvd_info_mbr(MBR *mbr, uint32_t flags) {
 		}
 	} else {
 		printf(
-		"\n"
 		"MBR (DOS) disklabel, %s used\n"
 		"   Boot     Start        Size  Id  Type\n", strsize
 		);
@@ -276,7 +274,7 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 	//
 	// VDI
 	//
-	case VDISK_FORMAT_VDI: {
+	case VDISK_FORMAT_VDI:
 		switch (vd->vdi->v1.type) {
 		case VDI_DISK_DYN:	type = "dynamic"; break;
 		case VDI_DISK_FIXED:	type = "fixed"; break;
@@ -343,12 +341,12 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 			);
 		} else {
 			printf(
-			"VirtualBox VDI %s disk v%u.%u, %s\n",
+			"VirtualBox VDI %s disk v%u.%u, %s\n"
+			"\n",
 			type, vd->vdi->hdr.majorver, vd->vdi->hdr.minorver, disksize
 			);
 			//TODO: Interpret flags
 		}
-	}
 		break;
 	//
 	// VMDK
@@ -403,7 +401,8 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 		} else {
 			bintostr(disksize, vd->capacity);
 			printf(
-			"VMware VMDK disk v%u, %s compression, %s\n",
+			"VMware VMDK disk v%u, %s compression, %s\n"
+			"\n",
 			vd->vmdk->hdr.version, comp, disksize
 			);
 
@@ -497,7 +496,8 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 			bintostr(disksize, vd->vhd->hdr.size_original);
 
 			printf(
-			"Connectix/Microsoft VHD %s disk v%u.%u, %s/%s\n",
+			"Connectix/Microsoft VHD %s disk v%u.%u, %s/%s\n"
+			"\n",
 			type, vd->vhd->hdr.major, vd->vhd->hdr.minor, sizecur, disksize
 			);
 		}
@@ -536,7 +536,7 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 			}
 		} else {
 			bintostr(disksize, vd->capacity);
-			printf("QEMU Enhanced Disk, %s\n", disksize);
+			printf("QEMU Enhanced Disk, %s\n\n", disksize);
 		}
 		break;
 	case VDISK_FORMAT_RAW: break; // No header info
@@ -552,10 +552,14 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 	// MBR detection
 	//
 
-	MBR mbr;
-	if (vdisk_read_sector(vd, &mbr, 0)) return EXIT_SUCCESS;
-	if (mbr.sig != MBR_SIG) return EXIT_SUCCESS;
-	vvd_info_mbr(&mbr, flags);
+	union {
+		MBR mbr;
+		GPT gpt;
+	} label;
+
+	if (vdisk_read_sector(vd, &label, 0)) return EXIT_SUCCESS;
+	if (label.mbr.sig != MBR_SIG) return EXIT_SUCCESS;
+	vvd_info_mbr(&label.mbr, flags);
 
 	//
 	// Extended MBR detection (EBR)
@@ -563,27 +567,26 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 
 	uint64_t ebrlba;
 	for (int i = 0; i < 4; ++i) {
-		switch (mbr.pe[i].type) {
+		switch (label.mbr.pe[i].type) {
 		case 0xEE: // EFI GPT Protective
 		case 0xEF: // EFI System Partition
 			// Start of disk
-			if (vdisk_read_sector(vd, &mbr, 1)) return VVD_EOK;
-			if (((GPT*)&mbr)->sig == EFI_SIG) {
+			if (vdisk_read_sector(vd, &label, 1)) return VVD_EOK;
+			if (label.gpt.sig == EFI_SIG) {
 				ebrlba = 2;
 				goto L_GPT_RDY;
 			}
 			// End of disk
 			ebrlba = BYTE_TO_SECTOR(vd->capacity) - 1;
-			if (vdisk_read_sector(vd, &mbr, ebrlba)) return VVD_EOK;
-			if (((GPT*)&mbr)->sig == EFI_SIG) {
-				ebrlba -= ((GPT*)&mbr)->pt_entries; // typically 128
+			if (vdisk_read_sector(vd, &label, ebrlba)) return VVD_EOK;
+			if (label.gpt.sig == EFI_SIG) {
 				flags |= VVD_INTERNAL_GPT_BKP;
 				goto L_GPT_RDY;
 			}
 			continue;
 		L_GPT_RDY:
-			vvd_info_gpt((GPT*)&mbr, flags);
-			vvd_info_gpt_entries(vd, (GPT*)&mbr, ebrlba, flags);
+			vvd_info_gpt(&label.gpt, flags);
+			vvd_info_gpt_entries(vd, &label.gpt, ebrlba, flags);
 			continue;
 		}
 	}
