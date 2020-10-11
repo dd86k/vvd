@@ -406,9 +406,9 @@ int MAIN {
 #ifdef _WIN32
 		char buffer[200];
 		wcstombs(buffer, defopt, 200);
-		printf("%08X\n", hash_superfashhash_str((void*)buffer));
+		printf("%08X\n", hash_string((char*)buffer));
 #else
-		printf("%08X\n", hash_superfashhash_str((void*)defopt));
+		printf("%08X\n", hash_string((char*)defopt));
 #endif
 		return EXIT_SUCCESS;
 	}
@@ -434,7 +434,7 @@ int MAIN {
 				printf("main: failed to parse UID, got %d items\n", r);
 			return EXIT_FAILURE;
 		}
-		printf("%08X\n", hash_superfashhash((const char*)&uid, 16));
+		printf("%08X\n", hash_compute((const char*)&uid, 16));
 		return EXIT_SUCCESS;
 	}
 

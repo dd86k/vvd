@@ -1,102 +1,118 @@
 #include <stdint.h>
 #include <string.h>
+#include <assert.h>
 #include "hash.h"
 
-//
-// hash_str
-//
+static const uint32_t PRIME32_1 = 2654435761U;
+static const uint32_t PRIME32_2 = 2246822519U;
+static const uint32_t PRIME32_3 = 3266489917U;
+static const uint32_t PRIME32_4 = 668265263U;
+static const uint32_t PRIME32_5 = 374761393U;
 
-/*uint32_t hash_str(const char *data) {
-	assert(0);
-	return 0;
+// Internal: rotate 32-bit value (v) with offset (o)
+uint32_t hash_rot(uint32_t v, int o) {
+	return (v << o) | (v >> (32 - o));
 }
 
 //
-// hash_data
+// hash_string
 //
 
-uint32_t hash_data(const char *data, uint32_t length) {
-	assert(0);
-	return 0;
+uint32_t hash_string(const char *data) {
+	return hash_compute_s(data, strlen(data), 0);
 }
 
 //
-// hash_data_seed
+// hash_compute
 //
 
-uint32_t hash_data_seed(const char *data, uint32_t length, uint32_t seed) {
-	assert(0);
-	return 0;
-	
-}*/
-
-//
-// hash_superfashhash_str
-//
-
-uint32_t hash_superfashhash_str(const char *data) {
-	uint32_t l = (uint32_t)strlen(data);
-	return hash_superfashhash_compute(data, l, l);
+uint32_t hash_compute(const char *data, uint32_t length) {
+	return hash_compute_s(data, length, 0);
 }
 
 //
-// hash_superfashhash
+// hash_compute_s
 //
 
-uint32_t hash_superfashhash(const char *data, uint32_t len) {
-	return hash_superfashhash_compute(data, len, len);
-}
+uint32_t hash_compute_s(const char *data, uint32_t length, uint32_t seed) {
+	union {
+		uint32_t *u32;
+		uint8_t  *u8;
+		const char *c8;
+	} p;
+	uint32_t hash;
+	const char *end = data + length;	// End of data pointer
 
-//
-// hash_superfashhash_compute
-//
+	p.c8 = data;
 
-uint32_t hash_superfashhash_compute(const char *data, uint32_t len, uint32_t seed) {
-	const uint16_t *du16 = (const uint16_t*)data;	// u16 data pointer
-	uint32_t hash = seed, temp;
-	int rem;	// Remaining bits
+	//
+	// Main loop
+	//
 
-	if (len <= 0 || data == NULL) return 0;
+	if (length >= 16) {
+		const char *limit = end - 16;
 
-	rem = len & 3;
-	len >>= 2;	// len /= 4
+		uint32_t v1 = seed + PRIME32_1 + PRIME32_2;
+		uint32_t v2 = seed + PRIME32_2;
+		uint32_t v3 = seed + 0;
+		uint32_t v4 = seed - PRIME32_1;
 
-	// The main loop proccesses 4 Bytes of information every iteration
-	while (len > 0) {
-		hash += *du16;
-		temp = (du16[1] << 11) ^ hash;
-		hash = (hash << 16) ^ temp;
-		data += 2;
-		hash += hash >> 11;
-		--len;
+		// Main loop proccesses 4*4 Bytes of information per iteration
+		do {
+			v1 += p.u32[0] * PRIME32_2;
+			v1 =  hash_rot(v1, 13);
+			v1 *= PRIME32_1;
+
+			v2 += p.u32[1] * PRIME32_2;
+			v2 =  hash_rot(v2, 13);
+			v2 *= PRIME32_1;
+
+			v3 += p.u32[2] * PRIME32_2;
+			v3 =  hash_rot(v3, 13);
+			v3 *= PRIME32_1;
+
+			v4 += p.u32[3] * PRIME32_2;
+			v4 =  hash_rot(v4, 13);
+			v4 *= PRIME32_1;
+
+			p.u32 += 4;
+		} while (p.c8 <= limit);
+
+		hash =	hash_rot(v1, 1)  + hash_rot(v2, 7) +
+			hash_rot(v3, 12) + hash_rot(v4, 18);
+	} else {
+		hash = seed + PRIME32_5;
 	}
 
-	/* Handle end cases */
-	switch (rem) {
-	case 3:
-		hash += *du16;
-		hash ^= hash << 16;
-		hash ^= ((signed char)du16[1]) << 18;	// sizeof(uint16_t)
-		hash += hash >> 11;
-		break;
-	case 2:
-		hash += *du16;
-		hash ^= hash << 11;
-		hash += hash >> 17;
-		break;
-	case 1:
-		hash += *(signed char*)du16;
-		hash ^= hash << 10;
-		hash += hash >> 1;
+	hash += length;
+
+	//
+	// Finalization
+	//
+
+	// Per 4 Bytes
+	while (p.c8 <= end - 4) {
+		hash += *p.u32 * PRIME32_3;
+		hash =  hash_rot(hash, 17) * PRIME32_4;
+		++p.u32;
 	}
 
-	// Force "avalanching" of final 127 bits
-	hash ^= hash << 3;
-	hash += hash >> 5;
-	hash ^= hash << 4;
-	hash += hash >> 17;
-	hash ^= hash << 25;
-	hash += hash >> 6;
+	// Per Byte
+	while (p.c8 < end) {
+		hash += *p.u8 * PRIME32_5;
+		hash =  hash_rot(hash, 11) * PRIME32_1;
+		++p.u8;
+	}
+
+	//
+	// Avalanche
+	//
+
+	hash ^= hash >> 15;
+	hash *= PRIME32_2;
+	hash ^= hash >> 13;
+	hash *= PRIME32_3;
+	hash ^= hash >> 16;
 
 	return hash;
 }
