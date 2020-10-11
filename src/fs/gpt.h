@@ -43,25 +43,25 @@ static const uint64_t GPT_FLAG_LEGACY_BIOS_BOOTABLE	= 4;
 //
 
 /**
- * Google flag for ChromeOS
+ * Google flag for ChromeOS (bit 56)
  * 
  * Likely set when the OS booted successfully from the partition.
  */
 static const uint64_t GPT_FLAG_SUCCESSFUL_BOOT = 0x100000000000000;
 /**
- * Google flag mask for ChromeOS
+ * Google flag mask for ChromeOS (bits 55:52)
  * 
  * Likely the number of tries remaining to boot from the partition.
  */
-static const uint64_t GPT_FLAG_TRIES_REMAINING_MASK  = 0x100000000000000;
+static const uint64_t GPT_FLAG_TRIES_REMAINING_MASK  = 0xF0000000000000;
 static const uint64_t GPT_FLAG_TRIES_REMAINING_SHIFT = 52;
 /**
- * Google flag mask for ChromeOS
+ * Google flag mask for ChromeOS (bits 51:48)
  * 
  * Likely denotes a priority, 15 being the high, 1 lowest, and 0 not bootable.
  */
-static const uint64_t GPT_FLAG_PRIORITY_MASK  = 0x100000000000000;
-static const uint64_t GPT_FLAG_PRIORITY_SHIFT = 0x100000000000000;
+static const uint64_t GPT_FLAG_PRIORITY_MASK  = 0xF000000000000;
+static const uint64_t GPT_FLAG_PRIORITY_SHIFT = 48;
 
 //
 // Microsoft flags
@@ -70,7 +70,7 @@ static const uint64_t GPT_FLAG_PRIORITY_SHIFT = 0x100000000000000;
 //
 
 /**
- * Microsoft flag: GPT_BASIC_DATA_ATTRIBUTE_READ_ONLY
+ * Microsoft flag: GPT_BASIC_DATA_ATTRIBUTE_READ_ONLY (bit 60)
  * 
  * If this attribute is set, the partition is read-only.
  * 
@@ -85,7 +85,7 @@ static const uint64_t GPT_FLAG_PRIORITY_SHIFT = 0x100000000000000;
  */
 static const uint64_t GPT_FLAG_READ_ONLY = 0x1000000000000000;
 /**
- * Microsoft flag: GPT_BASIC_DATA_ATTRIBUTE_SHADOW_COPY
+ * Microsoft flag: GPT_BASIC_DATA_ATTRIBUTE_SHADOW_COPY (bit 61)
  * 
  * If this attribute is set, the partition is a shadow copy of another partition.
  * 
@@ -106,7 +106,7 @@ static const uint64_t GPT_FLAG_READ_ONLY = 0x1000000000000000;
  */
 static const uint64_t GPT_FLAG_SHADOW_COPY = 0x2000000000000000;
 /**
- * Microsoft flag: GPT_BASIC_DATA_ATTRIBUTE_HIDDEN
+ * Microsoft flag: GPT_BASIC_DATA_ATTRIBUTE_HIDDEN (bit 62)
  * 
  * If this attribute is set, the partition is not detected by the Mount Manager.
  * 
@@ -121,7 +121,7 @@ static const uint64_t GPT_FLAG_SHADOW_COPY = 0x2000000000000000;
  */
 static const uint64_t GPT_FLAG_HIDDEN = 0x4000000000000000;
 /**
- * Microsoft flag: GPT_BASIC_DATA_ATTRIBUTE_NO_DRIVE_LETTER
+ * Microsoft flag: GPT_BASIC_DATA_ATTRIBUTE_NO_DRIVE_LETTER (bit 63)
  * 
  * If this attribute is set, the partition does not receive a drive letter by
  * default when the disk is moved to another computer or when the disk is seen
