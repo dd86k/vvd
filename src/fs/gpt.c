@@ -10,7 +10,6 @@ struct gpt_i_entry_t {
 };
 
 // Source: https://en.wikipedia.org/wiki/GUID_Partition_Table#Partition_type_GUIDs
-//TODO: Wait for xxHash implementation, multiple collisions found
 const struct gpt_i_entry_t gpt_i_types[] = {
 	{ 0x8E022B3A, "00000000-0000-0000-0000-000000000000", "Empty" },
 	{ 0x0514B937, "024DEE41-33E7-11D3-9D69-0008C781F39F", "MBR partition scheme" },
