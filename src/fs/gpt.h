@@ -11,31 +11,127 @@
 #define EFI_PART_NAME_LENGTH	36
 
 //
-// EFI Parition Entry flags (GPT_ENTRY::flags)
+// GPT flags
+//
+// Sections
+// * EFI flags
+// * Google flags
+// * Microsoft flags
+//
+// Bits   Description
+// 2:0    EFI/General flags
+// 47:3   Reserved
+// 63:48  OS specifics (Google, Microsoft)
 //
 
-#define EFI_PE_PLATFORM_REQUIRED	1	// bit 0, preserve as-is
-#define EFI_PE_EFI_FIRMWARE_IGNORE	2	// bit 1, ignore content of partition
-#define EFI_PE_LEGACY_BIOS_BOOTABLE	4	// bit 2
+/**
+ * The computing platform requires this partition to function properly.
+ */
+static const uint64_t GPT_FLAG_PLATFORM_REQUIRED	= 1;
+/**
+ * The EFI firmware should ignore this partition and its data, and avoid
+ * reading from it.
+ */
+static const uint64_t GPT_FLAG_EFI_FIRMWARE_IGNORE	= 2;
+/**
+ * Indicates that a legacy BIOS may boot from this partition.
+ */
+static const uint64_t GPT_FLAG_LEGACY_BIOS_BOOTABLE	= 4;
 
 //
-// EFI Parition Entry flags (GPT_ENTRY::resflags)
+// Google flags
 //
 
+/**
+ * Google flag for ChromeOS
+ * 
+ * Likely set when the OS booted successfully from the partition.
+ */
+static const uint64_t GPT_FLAG_SUCCESSFUL_BOOT = 0x100000000000000;
+/**
+ * Google flag mask for ChromeOS
+ * 
+ * Likely the number of tries remaining to boot from the partition.
+ */
+static const uint64_t GPT_FLAG_TRIES_REMAINING_MASK  = 0x100000000000000;
+static const uint64_t GPT_FLAG_TRIES_REMAINING_SHIFT = 52;
+/**
+ * Google flag mask for ChromeOS
+ * 
+ * Likely denotes a priority, 15 being the high, 1 lowest, and 0 not bootable.
+ */
+static const uint64_t GPT_FLAG_PRIORITY_MASK  = 0x100000000000000;
+static const uint64_t GPT_FLAG_PRIORITY_SHIFT = 0x100000000000000;
+
 //
-// EFI Parition Entry flags (GPT_ENTRY::partflags)
+// Microsoft flags
+//
+// Source: https://docs.microsoft.com/en-us/windows/win32/api/winioctl/ns-winioctl-partition_information_gpt
 //
 
-// Google Chrome OS
-// priority[3:0]
-// tries remiaining[7:4]
-#define EFI_PE_SUCCESSFUL_BOOT	0x10	// bit 8
+/**
+ * Microsoft flag: GPT_BASIC_DATA_ATTRIBUTE_READ_ONLY
+ * 
+ * If this attribute is set, the partition is read-only.
+ * 
+ * Writes to the partition will fail. IOCTL_DISK_IS_WRITABLE will fail with the
+ * ERROR_WRITE_PROTECT Win32 error code, which causes the file system to mount
+ * as read only, if a file system is present.
+ * 
+ * VSS uses this attribute.
+ * 
+ * Do not set this attribute for dynamic disks. Setting it can cause I/O errors
+ * and prevent the file system from mounting properly.
+ */
+static const uint64_t GPT_FLAG_READ_ONLY = 0x1000000000000000;
+/**
+ * Microsoft flag: GPT_BASIC_DATA_ATTRIBUTE_SHADOW_COPY
+ * 
+ * If this attribute is set, the partition is a shadow copy of another partition.
+ * 
+ * VSS uses this attribute. This attribute is an indication for file system
+ * filter driver-based software (such as antivirus programs) to avoid
+ * attaching to the volume.
+ * 
+ * An application can use the attribute to differentiate a shadow copy volume
+ * from a production volume. An application that does a fast recovery, for
+ * example, will break a shadow copy LUN and clear the read-only and hidden
+ * attributes and this attribute. This attribute is set when the shadow copy is
+ * created and cleared when the shadow copy is broken.
+ * 
+ * Despite its name, this attribute can be set for basic and dynamic disks.
+ * 
+ * Windows Server 2003: This attribute is not supported before Windows Server
+ * 2003 with SP1.
+ */
+static const uint64_t GPT_FLAG_SHADOW_COPY = 0x2000000000000000;
+/**
+ * Microsoft flag: GPT_BASIC_DATA_ATTRIBUTE_HIDDEN
+ * 
+ * If this attribute is set, the partition is not detected by the Mount Manager.
+ * 
+ * As a result, the partition does not receive a drive letter, does not receive
+ * a volume GUID path, does not host mounted folders (also called volume mount
+ * points), and is not enumerated by calls to FindFirstVolume and
+ * FindNextVolume. This ensures that applications such as Disk Defragmenter do
+ * not access the partition. The Volume Shadow Copy Service (VSS) uses this
+ * attribute.
+ * 
+ * Despite its name, this attribute can be set for basic and dynamic disks.
+ */
+static const uint64_t GPT_FLAG_HIDDEN = 0x4000000000000000;
+/**
+ * Microsoft flag: GPT_BASIC_DATA_ATTRIBUTE_NO_DRIVE_LETTER
+ * 
+ * If this attribute is set, the partition does not receive a drive letter by
+ * default when the disk is moved to another computer or when the disk is seen
+ * for the first time by a computer. 
+ */
+static const uint64_t GPT_FLAG_NO_DRIVE_LETTER = 0x8000000000000000;
 
-// Microsoft
-#define EFI_PE_READ_ONLY	0x1000	// bit 12
-#define EFI_PE_SHADOW_COPY	0x2000	// bit 13
-#define EFI_PE_HIDDEN	0x4000	// bit 14
-#define EFI_PE_NO_DRIVE_LETTER	0x8000	// bit 15
+//
+// Structures
+//
 
 typedef struct LBA64 {
 	union {
@@ -77,24 +173,7 @@ typedef struct {
 	UID      part;	// Unique partition GUID
 	LBA64    first;
 	LBA64    last;
-	union {
-		uint64_t flagsraw;
-		struct {
-			// Bit 0 - Required for platform
-			// Bit 1 - If set, do not produce EFI_BLOCK_IO_PROTOCOL
-			// Bit 2 - Legacy PC-AT BIOS bootable 
-			uint32_t flags;	// GPT entry flags
-			uint16_t resflags;	// Reserved
-			// (Chrome OS) Bit 0:3 - Priority (0: non-boot, 1:lowest, 15:highest)
-			// (Chrome OS) Bit 4:7 - Tries remaining
-			// (Chrome OS) Bit 8 - Successful boot
-			// (Windows) Bit 12 - Read-only
-			// (Windows) Bit 13 - Shadow partition copy
-			// (Windows) Bit 14 - Hidden
-			// (Windows) Bit 15 - No drive letter (no automount)
-			uint16_t partflags;	// Partition-defined flags
-		};
-	};
+	uint64_t flags;
 	uint16_t partname[36];	// 72 bytes, 36 UTF-16LE characters
 	uint8_t  pad[384];
 } GPT_ENTRY;

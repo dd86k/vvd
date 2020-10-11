@@ -216,7 +216,7 @@ START:
 		typeguid,
 		entry.first.lba,
 		entry.last.lba,
-		entry.flagsraw
+		entry.flags
 		);
 	} else {
 		bintostr(partsize, SECTOR_TO_BYTE(entry.last.lba - entry.first.lba));
@@ -232,22 +232,26 @@ START:
 			printf("      Name: %-36s", partname);
 
 		// GPT flags
-		if (entry.flags & EFI_PE_PLATFORM_REQUIRED)
+		if (entry.flags & GPT_FLAG_PLATFORM_REQUIRED)
 			puts("      + Platform required");
-		if (entry.flags & EFI_PE_EFI_FIRMWARE_IGNORE)
+		if (entry.flags & GPT_FLAG_EFI_FIRMWARE_IGNORE)
 			puts("      + Firmware ignore");
-		if (entry.flags & EFI_PE_LEGACY_BIOS_BOOTABLE)
+		if (entry.flags & GPT_FLAG_LEGACY_BIOS_BOOTABLE)
 			puts("      + Legacy BIOS bootable");
 
-		// Partition flags
-		if (entry.partflags & EFI_PE_SUCCESSFUL_BOOT)
+		// Google flags
+		if (entry.flags & GPT_FLAG_SUCCESSFUL_BOOT)
 			puts("      + (Google) Successful boot");
-		if (entry.partflags & EFI_PE_READ_ONLY)
-			puts("      + (Microsoft) Read-only");
-		if (entry.partflags & EFI_PE_SHADOW_COPY)
-			puts("      + (Microsoft) Shadow copy");
-		if (entry.partflags & EFI_PE_HIDDEN)
-			puts("      + (Microsoft) Hidden");
+
+		// Microsoft flags
+		if (entry.flags & GPT_FLAG_READ_ONLY)
+			puts("      + (Microsoft) GPT_BASIC_DATA_ATTRIBUTE_READ_ONLY");
+		if (entry.flags & GPT_FLAG_SHADOW_COPY)
+			puts("      + (Microsoft) GPT_BASIC_DATA_ATTRIBUTE_SHADOW_COPY");
+		if (entry.flags & GPT_FLAG_HIDDEN)
+			puts("      + (Microsoft) GPT_BASIC_DATA_ATTRIBUTE_HIDDEN");
+		if (entry.flags & GPT_FLAG_NO_DRIVE_LETTER)
+			puts("      + (Microsoft) GPT_BASIC_DATA_ATTRIBUTE_NO_DRIVE_LETTER");
 	}
 
 	if (entrynum > gpt->pt_entries)
