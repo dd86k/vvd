@@ -600,87 +600,107 @@ L_NO_NL:
 //
 
 int vvd_map(VDISK *vd, uint32_t flags) {
-	char bsizestr[BINSTR_LENGTH]; // If used
+	union {
+		uint32_t *u32;
+		uint64_t *u64;
+	} btable; // block table
+	union {
+		uint32_t u32;
+		uint64_t u64;
+	} bcount; // block table count
+	union {
+		uint32_t u32;
+		uint64_t u64;
+	} bsize;  // block index size in bytes
 
-	puts("vvd_map: to be implemented");
-
-	/*switch (vd->format) {
+	switch (vd->format) {
 	case VDISK_FORMAT_VDI:
-		bcount = vd->vdiv1.blk_total;
-		bsize = vd->vdiv1.blocksize;
+		btable.u32 = vd->vdi->in.offsets;
+		bcount.u32 = vd->vdi->v1.blk_total;
+		bsize.u32 = vd->vdi->v1.blk_size;
 		break;
 	case VDISK_FORMAT_VHD:
-		if (vd->vhdhdr.type != VHD_DISK_DYN) {
+		if (vd->vhd->hdr.type != VHD_DISK_DYN) {
 			fputs("vvd_map: vdisk is not dynamic\n", stderr);
 			return VVD_EVDTYPE;
 		}
-		bcount = vd->u32blockcount;
-		bsize = vd->vhddyn.blocksize;
+		btable.u32 = vd->vhd->in.offsets;
+		bcount.u32 = vd->vhd->dyn.max_entries;
+		bsize.u32 = vd->vhd->dyn.blocksize;
 		break;
 	case VDISK_FORMAT_QED:
-		index64 = 1;
-		bcount = vd->u32blockcount;
-		bsize = vd->qedhdr.cluster_size;
-		break;
+		btable.u64 = vd->qed->in.L1.offsets;
+		bcount.u64 = vd->qed->in.entries;
+		bsize.u64 = vd->qed->hdr.cluster_size;
+		goto L_USES_64BIT_INDEX;
 	default:
 		fputs("vvd_map: unsupported format\n", stderr);
 		return VVD_EVDFORMAT;
 	}
 
-	bintostr(bsizestr, bsize);
+	char bsizestr[BINSTR_LENGTH];
 	size_t i = 0;
-	size_t bn;
-	if (index64) {
+	size_t bn;	// Block table limit
+
+	// 32-bit offsets
+
+	bintostr(bsizestr, bsize.u32);
+	printf(
+	"Allocation map: %u blocks of %s each\n"
+	" offset d |        0 |        1 |        2 |        3 |"
+	"        4 |        5 |        6 |        7 |\n"
+	"----------+----------+----------+----------+----------+"
+	"----------+----------+----------+----------+\n",
+	bcount.u32, bsizestr
+	);
+	bn = bcount.u32 - 8;
+	for (; i < bn; i += 8) {
 		printf(
-		"Allocation map: %u blocks to %s blocks\n"
-		" offset d |                0 |                1 |"
-			"                2 |                3 |\n"
-		"----------+------------------+------------------+"
-			"------------------+------------------+\n",
-		bcount, bsizestr
+		" %8zu | %8X | %8X | %8X | %8X | %8X | %8X | %8X | %8X |\n",
+		i,
+		btable.u32[i],     btable.u32[i + 1],
+		btable.u32[i + 2], btable.u32[i + 3],
+		btable.u32[i + 4], btable.u32[i + 5],
+		btable.u32[i + 6], btable.u32[i + 7]
 		);
-		bn = bcount - 4;
-		for (; i < bn; i += 4) {
-			printf(
-			" %8zu | %16"PRIX64" | %16"PRIX64" | %16"PRIX64" | %16"PRIX64" |\n",
-			i,
-			vd->u64block[i],     vd->u64block[i + 1],
-			vd->u64block[i + 2], vd->u64block[i + 3]
-			);
-		}
-		if (bcount - i > 0) { // Left over
-			printf(" %8zu |", i);
-			for (; i < bcount; ++i)
-				printf(" %16"PRIX64" |", vd->u64block[i]);
-			putchar('\n');
-		}
-	} else {
+	}
+	if (bcount.u32 - i > 0) { // Left over
+		printf(" %8zu |", i);
+		for (; i < bcount.u32; ++i)
+			printf(" %8X |", btable.u32[i]);
+		putchar('\n');
+	}
+
+	return EXIT_SUCCESS;
+
+	// 64-bit offsets
+
+L_USES_64BIT_INDEX:
+
+	bintostr(bsizestr, bsize.u64);
+	printf(
+	"Allocation map: %" PRIu64 " blocks to %s blocks\n"
+	" offset d |                0 |                1 |"
+	"                2 |                3 |\n"
+	"----------+------------------+------------------+"
+	"------------------+------------------+\n",
+	bcount.u64, bsizestr
+	);
+	bn = bcount.u64 - 4;
+	for (; i < bn; i += 4) {
 		printf(
-		"Allocation map: %u blocks of %s each\n"
-		" offset d |        0 |        1 |        2 |        3 |"
-			"        4 |        5 |        6 |        7 |\n"
-		"----------+----------+----------+----------+----------+"
-			"----------+----------+----------+----------+\n",
-		bcount, bsizestr
+		" %8zu | %16"PRIX64" | %16"PRIX64" | %16"PRIX64" | %16"PRIX64" |\n",
+		i,
+		btable.u64[i],     btable.u64[i + 1],
+		btable.u64[i + 2], btable.u64[i + 3]
 		);
-		bn = bcount - 8;
-		for (; i < bn; i += 8) {
-			printf(
-			" %8zu | %8X | %8X | %8X | %8X | %8X | %8X | %8X | %8X |\n",
-			i,
-			vd->u32block[i],     vd->u32block[i + 1],
-			vd->u32block[i + 2], vd->u32block[i + 3],
-			vd->u32block[i + 4], vd->u32block[i + 5],
-			vd->u32block[i + 6], vd->u32block[i + 7]
-			);
-		}
-		if (bcount - i > 0) { // Left over
-			printf(" %8zu |", i);
-			for (; i < bcount; ++i)
-				printf(" %8X |", vd->u32block[i]);
-			putchar('\n');
-		}
-	}*/
+	}
+	if (bcount.u64 - i > 0) { // Left over
+		printf(" %8zu |", i);
+		for (; i < bcount.u64; ++i)
+			printf(" %16"PRIX64" |", btable.u64[i]);
+		putchar('\n');
+	}
 
 	return EXIT_SUCCESS;
 }
