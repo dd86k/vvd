@@ -341,8 +341,7 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 			);
 		} else {
 			printf(
-			"VirtualBox VDI %s disk v%u.%u, %s\n"
-			"\n",
+			"VirtualBox VDI %s disk v%u.%u, %s\n",
 			type, vd->vdi->hdr.majorver, vd->vdi->hdr.minorver, disksize
 			);
 			//TODO: Interpret flags
@@ -401,8 +400,7 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 		} else {
 			bintostr(disksize, vd->capacity);
 			printf(
-			"VMware VMDK disk v%u, %s compression, %s\n"
-			"\n",
+			"VMware VMDK disk v%u, %s compression, %s\n",
 			vd->vmdk->hdr.version, comp, disksize
 			);
 
@@ -496,8 +494,7 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 			bintostr(disksize, vd->vhd->hdr.size_original);
 
 			printf(
-			"Connectix/Microsoft VHD %s disk v%u.%u, %s/%s\n"
-			"\n",
+			"Connectix/Microsoft VHD %s disk v%u.%u, %s/%s\n",
 			type, vd->vhd->hdr.major, vd->vhd->hdr.minor, sizecur, disksize
 			);
 		}
@@ -536,14 +533,16 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 			}
 		} else {
 			bintostr(disksize, vd->capacity);
-			printf("QEMU Enhanced Disk, %s\n\n", disksize);
+			printf("QEMU Enhanced Disk, %s\n", disksize);
 		}
 		break;
-	case VDISK_FORMAT_RAW: break; // No header info
+	case VDISK_FORMAT_RAW: goto L_NO_NL; // No header info
 	default:
 		fputs("vvd_info: Format not supported\n", stderr);
 		return VVD_EVDFORMAT;
 	}
+
+	putchar('\n');
 
 	//TODO: BSD disklabel detection
 	//TODO: SGI disklabel detection
@@ -556,6 +555,8 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 		MBR mbr;
 		GPT gpt;
 	} label;
+
+L_NO_NL:
 
 	if (vdisk_read_sector(vd, &label, 0)) return EXIT_SUCCESS;
 	if (label.mbr.sig != MBR_SIG) return EXIT_SUCCESS;
