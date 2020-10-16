@@ -6,7 +6,7 @@
 #include <string.h> // memcpy
 #include <inttypes.h>
 #include "vvd.h"
-#include "utils.h"
+#include "utils/bin.h"
 #include "fs/mbr.h"
 #include "fs/gpt.h"
 

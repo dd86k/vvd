@@ -1,6 +1,6 @@
-#include "vdisk.h"
-#include "utils.h"
-#include "platform.h"
+#include "vdisk/vdisk.h"
+#include "utils/bin.h"
+#include "utils/platform.h"
 #include <assert.h>
 
 int vdisk_vhdx_open(VDISK *vd, uint32_t flags, uint32_t internal) {

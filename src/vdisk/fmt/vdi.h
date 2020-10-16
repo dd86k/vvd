@@ -7,7 +7,7 @@
  */
 
 #include <stdint.h>
-#include "uid.h"
+#include "utils/uid.h"
 
 #define VDI_SIGNATURE	"<<< VirtualBox Disk Image >>>\n"
 #define VDI_SIGNATURE_VBOX	"<<< Oracle VM VirtualBox Disk Image >>>\n"

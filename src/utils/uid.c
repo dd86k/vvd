@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
-#include "uid.h"
-#include "utils.h"
-#include "platform.h"
+#include "utils/uid.h"
+#include "utils/bin.h"
+#include "utils/platform.h"
 
 //TODO: uid_create(UID*,int): Create UID with target in mind
 

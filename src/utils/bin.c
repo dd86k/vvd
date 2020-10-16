@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <string.h>
-#include "utils.h"
+#include "utils/bin.h"
 
 //
 // bintostr
@@ -90,18 +90,6 @@ uint64_t bswap64(uint64_t v) {
 }
 
 //
-// print_array
-//
-
-void print_array(char *p, uint8_t *a, size_t s) {
-	size_t i = 0;
-	putout(p);
-	while (--s)
-		printf(" %02X", a[i++]);
-	putchar('\n');
-}
-
-//
 // extcmp
 //
 
@@ -123,14 +111,6 @@ int extcmp(const oschar *s1, const oschar *s2) {
 	//TODO: Lowercase s1
 	return strcmp(ext, s2) == 0;
 #endif
-}
-
-//
-// putout
-//
-
-void putout(const char *s) {
-	fputs(s, stdout);
 }
 
 //

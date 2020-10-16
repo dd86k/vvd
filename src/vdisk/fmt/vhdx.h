@@ -7,7 +7,7 @@
  */
 
 #include <stdint.h>
-#include "uid.h"
+#include "utils/uid.h"
 
 static const uint64_t VHDX_MAGIC = 0x656C696678646876;	// "vhdxfile"
 static const uint32_t VHDX_HDR1_MAGIC = 0x64616568;	// "head"

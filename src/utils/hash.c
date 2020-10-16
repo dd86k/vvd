@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <assert.h>
-#include "hash.h"
+#include "utils/hash.h"
 
 static const uint32_t PRIME32_1 = 2654435761U;
 static const uint32_t PRIME32_2 = 2246822519U;

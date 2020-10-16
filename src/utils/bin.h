@@ -35,11 +35,6 @@ typedef uint16_t char16;
 #define KiB 1024
 #define KB  1000
 
-/**
- * Imitates `fputs(*, stdout)` for ease of typing.
- */
-void putout(const char *s);
-
 /// Binary character buffer length
 #define BINSTR_LENGTH	16
 
@@ -52,11 +47,6 @@ int bintostr(char *buffer, uint64_t size);
  * Unformat a binary number into a 64-bit number.
  */
 int strtobin(uint64_t *size, const oschar *input);
-
-/**
- * Print array with prefix string
- */
-void print_array(char *p, uint8_t *a, size_t s);
 
 /**
  * Byte swap a 16-bit (2-Byte) value.

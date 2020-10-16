@@ -14,10 +14,10 @@
 #include <stdlib.h>
 #include <inttypes.h>
 #include <string.h>
-#include "utils.h"
+#include "utils/bin.h"
+#include "utils/platform.h"
+#include "utils/hash.h"
 #include "vvd.h"
-#include "platform.h"
-#include "hash.h"
 
 #ifdef DEBUG
 #include <assert.h>
@@ -206,7 +206,7 @@ static void license() {
 /**
  * Match a patch to an exception with the VDISK_FORMAT_* enum.
  * 
- * \returns VDISK_FORMAT enum    
+ * \returns VDISK_FORMAT_* enumeration value
  */
 static int vdextauto(const oschar *path) {
 	if (extcmp(path, osstr("vdi")))	return VDISK_FORMAT_VDI;

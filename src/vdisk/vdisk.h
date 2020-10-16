@@ -1,15 +1,15 @@
 #pragma once
 
-#include "os.h"
-#include "utils.h"
-#include "vdisk/raw.h"
-#include "vdisk/vdi.h"
-#include "vdisk/vmdk.h"
-#include "vdisk/vhd.h"
-#include "vdisk/vhdx.h"
-#include "vdisk/qed.h"
-#include "vdisk/qcow.h"
-#include "vdisk/phdd.h"
+#include "utils/os.h"
+#include "utils/bin.h"
+#include "vdisk/fmt/raw.h"
+#include "vdisk/fmt/vdi.h"
+#include "vdisk/fmt/vmdk.h"
+#include "vdisk/fmt/vhd.h"
+#include "vdisk/fmt/vhdx.h"
+#include "vdisk/fmt/qed.h"
+#include "vdisk/fmt/qcow.h"
+#include "vdisk/fmt/phdd.h"
 
 #define VDISK_M_ERR(vd,ERR)	vdisk_i_err(vd,ERR,__LINE__,__func__)
 

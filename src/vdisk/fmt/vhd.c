@@ -1,7 +1,7 @@
-#include "vdisk.h"
-#include "utils.h"
-#include "platform.h"
-#include "utils.h"
+#include "vdisk/vdisk.h"
+#include "utils/bin.h"
+#include "utils/platform.h"
+#include "utils/bin.h"
 #ifdef TRACE
 #include <stdio.h>
 #include <inttypes.h>

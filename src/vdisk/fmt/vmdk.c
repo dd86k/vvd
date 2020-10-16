@@ -1,6 +1,6 @@
-#include "vdisk.h"
-#include "utils.h"
-#include "platform.h"
+#include "vdisk/vdisk.h"
+#include "utils/bin.h"
+#include "utils/platform.h"
 
 int vdisk_vmdk_open(VDISK *vd, uint32_t flags, uint32_t internal) {
 	if ((vd->vmdk = malloc(VMDK_META_ALLOC)) == NULL)

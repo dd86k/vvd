@@ -3,8 +3,8 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <inttypes.h>
-#include "utils.h"
-#include "vdisk.h"
+#include "utils/bin.h"
+#include "vdisk/vdisk.h"
 
 //
 // vdisk_i_err

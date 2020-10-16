@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
-#include "mbr.h"
 #include <assert.h>
+#include "fs/mbr.h"
 
 //
 // mbr_lba
