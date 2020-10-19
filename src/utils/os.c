@@ -182,6 +182,8 @@ int os_falloc(__OSFILE fd, uint64_t fsize) {
 // os_pinit
 //
 
+static const uint32_t OS_P_ALLOC = 2048;
+
 int os_pinit(struct progress_t *p, uint32_t flags, uint32_t max) {
 #if _WIN32
 	p->fd = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -198,10 +200,11 @@ int os_pinit(struct progress_t *p, uint32_t flags, uint32_t max) {
 	p->leny = ws.ws_row;
 	p->lenx = ws.ws_col;
 #endif
-	p->bfill = malloc(1024);
-	p->bspace = malloc(1024);
-	memset(p->bfill, '=', 1024);
-	memset(p->bspace, ' ', 1024);
+	if ((p->bfill = malloc(OS_P_ALLOC << 1)) == NULL) // *2
+		return 2;
+	p->bspace = p->bfill + OS_P_ALLOC;
+	memset(p->bfill, '=', OS_P_ALLOC);
+	memset(p->bspace, ' ', OS_P_ALLOC);
 	p->maximum = max;
 	p->flags = flags;
 
