@@ -276,7 +276,6 @@ int os_pfinish(struct progress_t *p) {
 		printf("%.*s", p->lenx, p->bspace);
 	}
 	free(p->bfill);
-	free(p->bspace);
 	putchar('\n');
 	return 0;
 }
