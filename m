@@ -37,7 +37,7 @@ m_make()
 m_build()
 {
 	mkdir -p bin
-	for file in src/*.c src/**/*.c; do
+	for file in src/*.c src/**/*.c src/**/**/*.c; do
 		base=${file##*/}
 		echo $CC: $base
 		$CC $CF $file $1 $2 $3 $4 -o bin/${base%%.*}.obj
