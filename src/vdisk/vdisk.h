@@ -11,7 +11,7 @@
 #include "vdisk/fmt/qcow.h"
 #include "vdisk/fmt/phdd.h"
 
-#define VDISK_M_ERR(vd,ERR)	vdisk_i_err(vd,ERR,__LINE__,__func__)
+#define VDISK_ERROR(vd,ERR)	vdisk_i_err(vd,ERR,__LINE__,__func__)
 
 //
 // Constants
@@ -132,7 +132,7 @@ typedef struct VDISK {
 	// Virtual disk capacity in bytes. For RAW files, it's the file size. For
 	// RAW devices, it's the disk size. This is populated automatically.
 	uint64_t capacity;
-	// (Posix) File descriptor (Windows) File HANDLE
+	// OS file handle
 	__OSFILE fd;
 	// Error structure
 	struct {
@@ -140,7 +140,7 @@ typedef struct VDISK {
 		int line;	// Source file line number
 		const char *func;	// Function name
 	} err;
-	// Callback structure
+	// Implementation functions
 	struct {
 		// Read from a disk sector with a LBA index
 		int (*lba_read)(struct VDISK*, void*, uint64_t);

@@ -13,33 +13,33 @@
 
 int vdisk_vdi_open(VDISK *vd, uint32_t flags, uint32_t internal) {
 	if ((vd->meta = malloc(VDI_META_ALLOC)) == NULL)
-		return vdisk_i_err(vd, VVD_ENOMEM, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_ENOMEM);
 
 	if (os_fseek(vd->fd, 0, SEEK_SET))
-		return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_EOS);
 	if (os_fread(vd->fd, &vd->vdi->hdr, sizeof(VDI_HDR)))
-		return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_EOS);
 	if (vd->vdi->hdr.magic != VDI_HEADER_MAGIC)
-		return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_EOS);
 
 	switch (vd->vdi->hdr.majorver) { // Use latest major version natively
 	case 1: // v1.1
 		if (os_fread(vd->fd, &vd->vdi->v1, sizeof(VDI_HEADERv1)))
-			return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
+			return VDISK_ERROR(vd, VVD_EOS);
 		break;
 	/*case 0:
 		if (os_fread(vd->fd, &vd->vdi->v0, sizeof(VDI_HEADERv0)))
-			return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
+			return VDISK_ERROR(vd, VVD_EOS);
 		break;*/
 	default:
-		return vdisk_i_err(vd, VVD_EVDVERSION, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_EVDVERSION);
 	}
 
 	switch (vd->vdi->v1.type) {
 	case VDI_DISK_DYN:
 	case VDI_DISK_FIXED: break;
 	default:
-		return vdisk_i_err(vd, VVD_EVDTYPE, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_EVDTYPE);
 	}
 
 	// Allocation table
@@ -48,13 +48,13 @@ int vdisk_vdi_open(VDISK *vd, uint32_t flags, uint32_t internal) {
 	if (vd->vdi->v1.blk_size == 0)
 		vd->vdi->v1.blk_size = VDI_BLOCKSIZE;
 	if (os_fseek(vd->fd, vd->vdi->v1.offBlocks, SEEK_SET))
-		return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_EOS);
 
 	int bsize = vd->vdi->v1.blk_total << 2; // * sizeof(u32)
 	if ((vd->vdi->in.offsets = malloc(bsize)) == NULL)
-		return vdisk_i_err(vd, VVD_ENOMEM, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_ENOMEM);
 	if (os_fread(vd->fd, vd->vdi->in.offsets, bsize))
-		return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_EOS);
 
 	// Internals / calculated values
 
@@ -71,15 +71,15 @@ int vdisk_vdi_open(VDISK *vd, uint32_t flags, uint32_t internal) {
 
 int vdisk_vdi_create(VDISK *vd, uint64_t capacity, uint32_t flags) {
 	if ((vd->meta = malloc(VDI_META_ALLOC)) == NULL)
-		return vdisk_i_err(vd, VVD_ENOMEM, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_ENOMEM);
 
 	if (capacity == 0)
-		return vdisk_i_err(vd, VVD_EVDMISC, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_EVDMISC);
 
 	uint32_t bcount = capacity / VDI_BLOCKSIZE;
 
 	if ((vd->vdi->in.offsets = malloc(bcount << 2)) == NULL)
-		return vdisk_i_err(vd, VVD_ENOMEM, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_ENOMEM);
 
 	vd->format = VDISK_FORMAT_VDI;
 
@@ -131,7 +131,7 @@ int vdisk_vdi_create(VDISK *vd, uint64_t capacity, uint32_t flags) {
 	case VDISK_CREATE_TYPE_FIXED:
 		vd->vdi->v1.type = VDI_DISK_FIXED;
 		if ((buffer = calloc(1, vd->vdi->v1.blk_size)) == NULL)
-			return vdisk_i_err(vd, VVD_ENOMEM, __LINE__, __func__);
+			return VDISK_ERROR(vd, VVD_ENOMEM);
 		os_fseek(vd->fd, vd->vdi->v1.offData, SEEK_SET);
 		for (size_t i = 0; i < blk_total; ++i) {
 			offsets[i] = VDI_BLOCK_FREE;
@@ -139,7 +139,7 @@ int vdisk_vdi_create(VDISK *vd, uint64_t capacity, uint32_t flags) {
 		}
 		break;
 	default:
-		return vdisk_i_err(vd, VVD_EVDTYPE, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_EVDTYPE);
 	}
 
 	return 0;
@@ -154,12 +154,12 @@ int vdisk_vdi_read_sector(VDISK *vd, void *buffer, uint64_t index) {
 	size_t bi = offset >> vd->vdi->in.shift;
 
 	if (bi >= vd->vdi->v1.blk_total) // out of bounds
-		return vdisk_i_err(vd, VVD_EVDBOUND, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_EVDBOUND);
 
 	uint32_t block = vd->vdi->in.offsets[bi];
 	switch (block) {
 	case VDI_BLOCK_ZERO: //TODO: Should this be zero'd too?
-		return vdisk_i_err(vd, VVD_EVDUNALLOC, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_EVDUNALLOC);
 	case VDI_BLOCK_FREE:
 		memset(buffer, 0, 512);
 		return 0;
@@ -174,9 +174,9 @@ int vdisk_vdi_read_sector(VDISK *vd, void *buffer, uint64_t index) {
 #endif
 
 	if (os_fseek(vd->fd, offset, SEEK_SET))
-		return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_EOS);
 	if (os_fread(vd->fd, buffer, 512))
-		return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_EOS);
 
 	return 0;
 }
@@ -186,42 +186,48 @@ int vdisk_vdi_read_sector(VDISK *vd, void *buffer, uint64_t index) {
 //
 
 int vdisk_vdi_compact(VDISK *vd, void(*cb)(uint32_t type, void *data)) {
+	if (vd->vdi->hdr.majorver != 1)
+		return VDISK_ERROR(vd, VVD_EVDVERSION);
 	if (vd->vdi->v1.type != VDI_DISK_DYN)
-		return vdisk_i_err(vd, VVD_EVDTYPE, __LINE__, __func__);
-
-	uint32_t *blks2;	// back resolving array
+		return VDISK_ERROR(vd, VVD_EVDTYPE);
+	
+	return VDISK_ERROR(vd, VVD_EVDTODO);
+	/*uint32_t *blks2;	// back resolving array
 	uint32_t bk_alloc;	// blocks allocated (alt)
 
 	// 1. Allocate block array for back resolving.
 
-	uint64_t fsize;
+	uint64_t fsize;	// file size
 	if (os_fsize(vd->fd, &fsize))
-		return vdisk_i_err(vd, VVD_EVDMISC, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_EVDMISC);
+
+	VDI_HEADERv1 vdi = vd->vdi->v1;
+	VDI_INTERNALS in = vd->vdi->in;
 
 	// This verifies that there are actually data blocks available
-	bk_alloc = (uint32_t)((fsize - vd->vdi->v1.offData - vd->vdi->v1.offBlocks) >> vd->vdi->in.shift);
-	if (bk_alloc == 0 || vd->vdi->v1.blk_alloc == 0)
+	bk_alloc = (uint32_t)((fsize - vdi.offData - vdi.offBlocks) >> in.shift);
+	if (bk_alloc == 0 || vdi.blk_alloc == 0)
 		return 0;
 
 	blks2 = malloc(bk_alloc << 2);
 	if (blks2 == NULL)
-		return vdisk_i_err(vd, VVD_ENOMEM, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_ENOMEM);
 	for (uint32_t i; i < bk_alloc; ++i)
 		blks2[i] = VDI_BLOCK_FREE;
 
 	uint32_t d = 0;
 	uint32_t blk_index = 0;
-	uint32_t *blks = vd->vdi->in.offsets;
+	uint32_t *blks = in.offsets;
 
 	// 2. Check and fix allocation errors before compacting
 
-	for (; blk_index < vd->vdi->v1.blk_total; ++blk_index) {
+	for (; blk_index < vdi.blk_total; ++blk_index) {
 		uint32_t bi = blks[blk_index]; // block index
 		if (bi >= VDI_BLOCK_FREE) {
 			continue;
 		}
 
-		if (bi < vd->vdi->v1.blk_alloc) {
+		if (bi < vdi.blk_alloc) {
 			if (blks[bi] == VDI_BLOCK_FREE) {
 				blks[bi] = blk_index;
 			} else {
@@ -240,14 +246,7 @@ int vdisk_vdi_compact(VDISK *vd, void(*cb)(uint32_t type, void *data)) {
 
 	// 3. Find redundant information and update the block pointers accordingly
 
-	uint32_t blk_count = vd->vdi->v1.blk_total;
-
-	for (blk_index = 0; blk_index < blk_count; ++blk_index) {
-		uint32_t bi = blks[blk_index]; // block index
-		if (bi >= VDI_BLOCK_FREE) {
-			continue;
-		}
-	}
+	
 
 	// 4. Fill bubbles with other data if available
 
@@ -255,5 +254,5 @@ int vdisk_vdi_compact(VDISK *vd, void(*cb)(uint32_t type, void *data)) {
 
 	// 5. Update fields in-memory and on-disk
 
-	return 0;
+	//return 0;*/
 }

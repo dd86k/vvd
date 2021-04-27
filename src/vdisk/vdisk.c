@@ -7,11 +7,11 @@
 #include "vdisk/vdisk.h"
 
 //
-// vdisk_i_err
+// VDISK_ERROR
 //
 
 int vdisk_i_err(VDISK *vd, int e, int l, const char *f) {
-	vd->err.line = l - 1;
+	vd->err.line = l;
 	vd->err.func = f;
 	return (vd->err.num = e);
 }
@@ -28,7 +28,7 @@ void vdisk_i_pre_init(VDISK *vd) {
 
 int vdisk_open(VDISK *vd, const oschar *path, uint32_t flags) {
 	if ((vd->fd = os_fopen(path)) == 0)
-		return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_EOS);
 
 	vdisk_i_pre_init(vd);
 
@@ -43,9 +43,9 @@ int vdisk_open(VDISK *vd, const oschar *path, uint32_t flags) {
 	//
 
 	if (os_fread(vd->fd, &vd->format, 4))
-		return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_EOS);
 	if (os_fseek(vd->fd, 0, SEEK_SET))
-		return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_EOS);
 
 	//
 	// Disk detection and loading
@@ -88,16 +88,16 @@ int vdisk_open(VDISK *vd, const oschar *path, uint32_t flags) {
 
 		// VHD: (Fixed) 512 bytes before EOF
 		if (os_fseek(vd->fd, -512, SEEK_END))
-			return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
+			return VDISK_ERROR(vd, VVD_EOS);
 		if (os_fread(vd->fd, &sign64, 8))
-			return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
+			return VDISK_ERROR(vd, VVD_EOS);
 		if (sign64 == VHD_MAGIC) {
 			vd->format = VDISK_FORMAT_VHD;
 			internal = 2;
 			goto L_FORMAT_CASE_VHD;
 		}
 
-		return vdisk_i_err(vd, VVD_EVDFORMAT, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_EVDFORMAT);
 	}
 
 	return 0;
@@ -116,18 +116,18 @@ int vdisk_create(VDISK *vd, const oschar *path, int format, uint64_t capacity, u
 		//TODO: Attach random number
 		path = osstr("vdisk.tmp");
 	} else if (path == NULL)
-		return vdisk_i_err(vd, VVD_ENULL, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_ENULL);
 
 	if (capacity == 0)
-		return vdisk_i_err(vd, VVD_EVDBOUND, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_EVDBOUND);
 
 	if ((vd->fd = os_fcreate(path)) == 0)
-		return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_EOS);
 
 	if (flags & VDISK_RAW) {
 		vd->format = VDISK_FORMAT_RAW;
 		if (os_falloc(vd->fd, capacity))
-			return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
+			return VDISK_ERROR(vd, VVD_EOS);
 		return VVD_EOK;
 	}
 
@@ -137,7 +137,7 @@ int vdisk_create(VDISK *vd, const oschar *path, int format, uint64_t capacity, u
 		e = vdisk_vdi_create(vd, capacity, flags);
 		break;
 	default:
-		return vdisk_i_err(vd, VVD_EVDFORMAT, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_EVDFORMAT);
 	}
 
 	return e ? e : vdisk_update(vd);
@@ -176,21 +176,21 @@ int vdisk_update(VDISK *vd) {
 	case VDISK_FORMAT_VDI:
 		//TODO: Move pre-header signature in creation function
 		if (os_fseek(vd->fd, 0, SEEK_SET))
-			return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
+			return VDISK_ERROR(vd, VVD_EOS);
 		if (os_fwrite(vd->fd, VDI_SIGNATURE, 40))
-			return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
+			return VDISK_ERROR(vd, VVD_EOS);
 		// skip signature
 		if (os_fseek(vd->fd, VDI_SIGNATURE_SIZE, SEEK_SET))
-			return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
+			return VDISK_ERROR(vd, VVD_EOS);
 		if (os_fwrite(vd->fd, &vd->vdi->hdr, sizeof(VDI_HDR)))
-			return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
+			return VDISK_ERROR(vd, VVD_EOS);
 		if (os_fwrite(vd->fd, &vd->vdi->v1, sizeof(VDI_HEADERv1)))
-			return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
+			return VDISK_ERROR(vd, VVD_EOS);
 		// blocks
 		if (os_fseek(vd->fd, vd->vdi->v1.offBlocks, SEEK_SET))
-			return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
+			return VDISK_ERROR(vd, VVD_EOS);
 		if (os_fwrite(vd->fd, vd->vdi->in.offsets, vd->vdi->v1.blk_total << 2))
-			return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
+			return VDISK_ERROR(vd, VVD_EOS);
 		break;
 	/*case VDISK_FORMAT_VMDK:
 		assert(0);
@@ -199,7 +199,7 @@ int vdisk_update(VDISK *vd) {
 		assert(0);
 		break;*/
 	default:
-		return vdisk_i_err(vd, VVD_EVDFORMAT, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_EVDFORMAT);
 	}
 
 	return 0;
@@ -217,7 +217,7 @@ int vdisk_read_sector(VDISK *vd, void *buffer, uint64_t lba) {
 	
 	//TODO: Consider an assert
 	if (vd->cb.lba_read == NULL)
-		return vdisk_i_err(vd, VVD_EVDTODO, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_EVDTODO);
 
 	return vd->cb.lba_read(vd, buffer, lba);
 }
@@ -280,7 +280,7 @@ int vdisk_op_compact(VDISK *vd, void(*cb)(uint32_t, void*)) {
 	case VDISK_FORMAT_VDI:
 		return vdisk_vdi_compact(vd, cb);
 	default:
-		return vdisk_i_err(vd, VVD_EVDFORMAT, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_EVDFORMAT);
 	}
 }
 
@@ -290,33 +290,11 @@ int vdisk_op_compact(VDISK *vd, void(*cb)(uint32_t, void*)) {
 
 const char* vdisk_error(VDISK *vd) {
 	switch (vd->err.num) {
-	case VVD_EOK:
-		return "last operation was successful";
-	case VVD_ENULL:
-		return "input pointer is null";
-	case VVD_EVDFORMAT:
-		return "unsupported vdisk format";
-	case VVD_EVDMAGIC:
-		return "invalid magic";
-	case VVD_EVDVERSION:
-		return "unsupported version";
-	case VVD_EVDTYPE:
-		return "invalid disk type for vdisk function";
-	case VVD_EVDFULL:
-		return "vdisk is full";
-	case VVD_EVDUNALLOC:
-		return "block is unallocated";
-	case VVD_EVDBOUND:
-		return "block index is out of bounds";
-	case VVD_EVDTODO:
-		return "currently unimplemented";
-	case VVD_EVDMISC:
-		return "unknown error happened";
 	case VVD_EOS:
 #if _WIN32
 		// We're using the Win32 API, not the CRT functions, which may
 		// yield different and probably unrelated messages
-		static char _errmsgbuf[512];
+		static char _errmsgbuf[1024];
 		vd->err.num = GetLastError();
 		int l = GetLocaleInfoEx( // Recommended over MAKELANGID
 			LOCALE_NAME_USER_DEFAULT,
@@ -335,8 +313,28 @@ const char* vdisk_error(VDISK *vd) {
 #else
 		return strerror(vd->err.num = errno);
 #endif
+	case VVD_ENULL:
+		return "Parameter is null";
+	case VVD_EVDFORMAT:
+		return "Unsupported vdisk format";
+	case VVD_EVDMAGIC:
+		return "Invalid magic signature";
+	case VVD_EVDVERSION:
+		return "Unsupported version";
+	case VVD_EVDTYPE:
+		return "Invalid disk type for vdisk function";
+	case VVD_EVDFULL:
+		return "VDISK is full";
+	case VVD_EVDUNALLOC:
+		return "Block is unallocated";
+	case VVD_EVDBOUND:
+		return "Block index is out of bounds";
+	case VVD_EVDTODO:
+		return "Currently unimplemented";
+	case VVD_EOK:
+		return "Apparently, the last operation was successful";
 	default:
-		assert(0); return NULL;
+		return "Unknown error happened";
 	}
 }
 

@@ -26,7 +26,7 @@ static const uint32_t VDI_BLOCK_FREE = 0xffffffff;
  */
 static const uint32_t VDI_BLOCK_ZERO = 0xfffffffe;
 
-#define VDI_IS_ALLOCATED(X) ((X) < VDI_BLOCK_ZERO)
+#define VDI_IS_ALLOCATED(x)	(x < VDI_BLOCK_FREE)
 
 enum {
 	VDI_HEADER_MAGIC	= 0xBEDA107F,

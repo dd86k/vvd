@@ -5,22 +5,22 @@
 
 int vdisk_qed_open(VDISK *vd, uint32_t flags, uint32_t internal) {
 	if ((vd->meta = malloc(QED_META_ALLOC)) == NULL)
-		return vdisk_i_err(vd, VVD_ENOMEM, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_ENOMEM);
 
 	if (os_fread(vd->fd, &vd->qed->hdr, sizeof(QED_HDR)))
-		return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_EOS);
 
 	if (vd->qed->hdr.cluster_size < QED_CLUSTER_MIN ||
 		vd->qed->hdr.cluster_size > QED_CLUSTER_MAX ||
 		pow2(vd->qed->hdr.cluster_size) == 0)
-		return vdisk_i_err(vd, VVD_EVDMISC, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_EVDMISC);
 	if (vd->qed->hdr.table_size < QED_TABLE_MIN ||
 		vd->qed->hdr.table_size > QED_TABLE_MAX ||
 		pow2(vd->qed->hdr.table_size) == 0)
-		return vdisk_i_err(vd, VVD_EVDMISC, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_EVDMISC);
 
 	if (vd->qed->hdr.features > QED_FEATS)
-		return vdisk_i_err(vd, VVD_EVDMISC, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_EVDMISC);
 
 	// assert(header.image_size <= TABLE_NOFFSETS * TABLE_NOFFSETS * header.cluster_size)
 
@@ -31,13 +31,13 @@ int vdisk_qed_open(VDISK *vd, uint32_t flags, uint32_t internal) {
 	uint32_t tablebits = fpow2(table_entries);
 
 	if ((vd->qed->in.L1.offsets = malloc(table_size)) == NULL)
-		return vdisk_i_err(vd, VVD_ENOMEM, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_ENOMEM);
 	if ((vd->qed->in.L2.offsets = malloc(table_size)) == NULL)
-		return vdisk_i_err(vd, VVD_ENOMEM, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_ENOMEM);
 	if (os_fseek(vd->fd, vd->qed->hdr.l1_offset, SEEK_SET))
-		return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_EOS);
 	if (os_fread(vd->fd, vd->qed->in.L1.offsets, table_size))
-		return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_EOS);
 
 	// assert(clusterbits + (2 * tablebits) <= 64);
 
@@ -59,9 +59,9 @@ int vdisk_qed_L2_load(VDISK *vd, uint64_t offset) {
 		return 0;
 
 	if (os_fseek(vd->fd, offset, SEEK_SET))
-		return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_EOS);
 	if (os_fread(vd->fd, vd->qed->in.L2.offsets, vd->qed->in.tablesize))
-		return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_EOS);
 
 	vd->qed->in.L2.current = offset;
 
@@ -75,16 +75,16 @@ int vdisk_qed_read_sector(VDISK *vd, void *buffer, uint64_t index) {
 	uint32_t l2 = (offset >> vd->qed->in.L2.shift) & vd->qed->in.L2.mask;
 
 	if (l1 >= vd->qed->in.entries || l2 >= vd->qed->in.entries)
-		return vdisk_i_err(vd, VVD_EVDMISC, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_EVDMISC);
 	if (vdisk_qed_L2_load(vd, vd->qed->in.L1.offsets[l1]))
 		return vd->err.num;
 
 	offset = (uint64_t)vd->qed->in.L2.offsets[l2] + (offset & vd->qed->in.mask);
 
 	if (os_fseek(vd->fd, offset, SEEK_SET))
-		return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_EOS);
 	if (os_fread(vd->fd, buffer, 512))
-		return vdisk_i_err(vd, VVD_EOS, __LINE__, __func__);
+		return VDISK_ERROR(vd, VVD_EOS);
 
 	return 0;
 }
