@@ -10,6 +10,8 @@
 #include "fs/mbr.h"
 #include "fs/gpt.h"
 
+//TODO: Consider a "log" module
+
 //
 // Global variables
 //
@@ -24,37 +26,53 @@ struct progress_t g_progress;
 uint32_t g_flags;
 
 //
-// vvd_cb_progress
+// vvd_perror
 //
 
-void vvd_cb_progress(uint32_t type, void *data) {
-	switch (type) {
-	case VVD_NOTIF_DONE:
-		if (g_flags & VVD_PROGRESS)
-		if (os_pfinish(&g_progress)) {
-			fputs("os_pfinish: Could not finish progress bar", stderr);
-			exit(1);
-		}
-		return;
-	case VVD_NOTIF_VDISK_CREATED_TYPE_NAME:
-		printf("%s\n", data);
-		return;
-	case VVD_NOTIF_VDISK_TOTAL_BLOCKS:
-	case VVD_NOTIF_VDISK_TOTAL_BLOCKS64:
-		if (g_flags & VVD_PROGRESS)
-		if (os_pinit(&g_progress, PROG_MODE_POURCENT, 0)) {
-			fputs("os_pinit: Could not init progress bar\n", stderr);
-			exit(1);
-		}
-		return;
-	case VVD_NOTIF_VDISK_CURRENT_BLOCK:
-	case VVD_NOTIF_VDISK_CURRENT_BLOCK64:
-		if (g_flags & VVD_PROGRESS)
-		if (os_pupdate(&g_progress, 0)) {
-			fputs("os_pinit: Could not update progress bar\n", stderr);
-			exit(1);
-		}
-		return;
+#if _WIN32
+	#define ERRFMT "%08X"
+#else
+	#define ERRFMT "%d"
+#endif
+
+void vvd_perror(VDISK *vd) {
+	fprintf(stderr, "%s@%u: (" ERRFMT ") %s\n",
+		vd->err.func, vd->err.line, vd->err.num, vdisk_error(vd));
+}
+
+//
+// Callback functions
+//
+
+// 
+void vvd_cb_vdisk_created(VDISK *disk) {
+	printf("Disk type %s created\n", vdisk_str(disk));
+}
+
+//
+void vvd_cb_current_blocks(uint64_t total) {
+	if (g_flags & VVD_PROGRESS)
+	if (os_pupdate(&g_progress, 0)) {
+		fputs("os_pinit: Could not update progress bar\n", stderr);
+		exit(1);
+	}
+}
+
+//
+void vvd_cb_total_blocks(uint64_t total) {
+	if (g_flags & VVD_PROGRESS)
+	if (os_pinit(&g_progress, PROG_MODE_POURCENT, 0)) {
+		fputs("os_pinit: Could not init progress bar\n", stderr);
+		exit(1);
+	}
+}
+
+//
+void vvd_cb_done() {
+	if (g_flags & VVD_PROGRESS)
+	if (os_pfinish(&g_progress)) {
+		fputs("os_pfinish: Could not finish progress bar", stderr);
+		exit(1);
 	}
 }
 
@@ -536,7 +554,7 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 			printf("QEMU Enhanced Disk, %s\n", disksize);
 		}
 		break;
-	case VDISK_FORMAT_RAW: goto L_NO_NL; // No header info
+	case VDISK_FORMAT_RAW: goto L_MBR; // No header info
 	default:
 		fputs("vvd_info: Format not supported\n", stderr);
 		return VVD_EVDFORMAT;
@@ -556,7 +574,7 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 		GPT gpt;
 	} label;
 
-L_NO_NL:
+L_MBR:
 
 	if (vdisk_read_sector(vd, &label, 0)) return EXIT_SUCCESS;
 	if (label.mbr.sig != MBR_SIG) return EXIT_SUCCESS;
@@ -712,7 +730,7 @@ L_USES_64BIT_INDEX:
 int vvd_new(const oschar *path, uint32_t format, uint64_t capacity, uint32_t flags) {
 	VDISK vd;
 	if (vdisk_create(&vd, path, format, capacity, flags)) {
-		vdisk_perror(&vd);
+		vvd_perror(&vd);
 		return vd.err.num;
 	}
 	printf("vvd_new: %s disk created successfully\n", vdisk_str(&vd));
@@ -726,8 +744,8 @@ int vvd_new(const oschar *path, uint32_t format, uint64_t capacity, uint32_t fla
 int vvd_compact(VDISK *vd, uint32_t flags) {
 	puts("vvd_compact: [warning] This function is still work in progress");
 	g_flags = flags;
-	if (vdisk_op_compact(vd, vvd_cb_progress)) {
-		vdisk_perror(vd);
+	if (vdisk_op_compact(vd)) {
+		vvd_perror(vd);
 		return vd->err.num;
 	}
 	return EXIT_SUCCESS;

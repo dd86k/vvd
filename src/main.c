@@ -9,6 +9,7 @@
 
 #define __DATETIME__ __DATE__ " " __TIME__
 #define PROJECT_VERSION	"0.0.0"
+#define COPYRIGHT "Copyright (c) 2019-2021 dd86k <dd@dax.moe>"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,6 +20,7 @@
 #include "utils/hash.h"
 #include "vvd.h"
 
+//TODO: Move "unit" tests into its own compilation unit
 #ifdef DEBUG
 #include <assert.h>
 #include "fs/gpt.h"
@@ -149,7 +151,7 @@ static void version(void) {
 #ifdef __VERSION__
 	"Compiler: " __VERSION__ "\n"
 #endif
-	"MIT License: Copyright (c) 2019-2020 dd86k <dd@dax.moe>\n"
+	"MIT License: " COPYRIGHT "\n"
 	"Project page: <https://github.com/dd86k/vvd>\n"
 	"Defines: "
 #ifdef DEBUG
@@ -174,7 +176,7 @@ static void version(void) {
 
 static void license() {
 	puts(
-	"Copyright 2019-2020 dd86k <dd@dax.moe>\n"
+	COPYRIGHT "\n"
 	"\n"
 	"Permission to use, copy, modify, and/or distribute this software for any\n"
 	"purpose with or without fee is hereby granted, provided that the above\n"
@@ -209,14 +211,14 @@ static void license() {
  * \returns VDISK_FORMAT_* enumeration value
  */
 static int vdextauto(const oschar *path) {
-	if (extcmp(path, osstr("vdi")))	return VDISK_FORMAT_VDI;
-	if (extcmp(path, osstr("vmdk")))	return VDISK_FORMAT_VMDK;
-	if (extcmp(path, osstr("vhd")))	return VDISK_FORMAT_VHD;
-	if (extcmp(path, osstr("vhdx")))	return VDISK_FORMAT_VHDX;
-	if (extcmp(path, osstr("qed")))	return VDISK_FORMAT_QED;
+	if (extcmp(path, osstr("vdi")))  return VDISK_FORMAT_VDI;
+	if (extcmp(path, osstr("vmdk"))) return VDISK_FORMAT_VMDK;
+	if (extcmp(path, osstr("vhd")))  return VDISK_FORMAT_VHD;
+	if (extcmp(path, osstr("vhdx"))) return VDISK_FORMAT_VHDX;
+	if (extcmp(path, osstr("qed")))  return VDISK_FORMAT_QED;
 	if (extcmp(path, osstr("qcow")) || extcmp(path, osstr("qcow2")))
 		return VDISK_FORMAT_QCOW;
-	if (extcmp(path, osstr("hdd")))	return VDISK_FORMAT_PHDD;
+	if (extcmp(path, osstr("hdd")))  return VDISK_FORMAT_PHDD;
 	return VDISK_FORMAT_NONE;
 }
 
@@ -282,7 +284,7 @@ int MAIN {
 		//
 		// vvd_info flags
 		//
-		if (oscmp(arg, osstr("--info-raw")) == 0) {
+		if (oscmp(arg, osstr("--info-full")) == 0) {
 			mflags |= VVD_INFO_RAW;
 			continue;
 		}
@@ -301,7 +303,7 @@ int MAIN {
 	const oschar *action = argv[1];
 
 	//
-	// Operations
+	// Main operation actions
 	//
 
 	if (oscmp(action, osstr("info")) == 0) {
@@ -310,7 +312,7 @@ int MAIN {
 			return EXIT_FAILURE;
 		}
 		if (vdisk_open(&vdin, defopt, oflags)) {
-			vdisk_perror(&vdin);
+			vvd_perror(&vdin);
 			return vdin.err.num;
 		}
 		return vvd_info(&vdin, mflags);
@@ -322,7 +324,7 @@ int MAIN {
 			return EXIT_FAILURE;
 		}
 		if (vdisk_open(&vdin, defopt, oflags)) {
-			vdisk_perror(&vdin);
+			vvd_perror(&vdin);
 			return vdin.err.num;
 		}
 		return vvd_map(&vdin, 0);
@@ -334,11 +336,11 @@ int MAIN {
 			return EXIT_FAILURE;
 		}
 		if (vdisk_open(&vdin, defopt, 0)) {
-			vdisk_perror(&vdin);
+			vvd_perror(&vdin);
 			return vdin.err.num;
 		}
 		if (vvd_compact(&vdin, 0)) {
-			vdisk_perror(&vdin);
+			vvd_perror(&vdin);
 			return vdin.err.num;
 		}
 		return EXIT_FAILURE;
@@ -419,13 +421,12 @@ int MAIN {
 			return EXIT_FAILURE;
 		}
 		UID uid;
-		int r;
 #ifdef _WIN32
 		char buffer[200];
 		wcstombs(buffer, defopt, 200);
-		r = uid_parse(&uid, buffer, UID_GUID);
+		int r = uid_parse(&uid, buffer, UID_GUID);
 #else
-		r = uid_parse(&uid, defopt, UID_GUID);
+		int r = uid_parse(&uid, defopt, UID_GUID);
 #endif
 		if (r) {
 			if (r < 0)
@@ -451,6 +452,7 @@ int MAIN {
 	}
 	if (oscmp(action, osstr("version")) == 0 || oscmp(action, osstr("--version")) == 0)
 		version();
+	//TODO: Help system in its own module
 	if (oscmp(action, osstr("help")) == 0 || oscmp(action, osstr("--help")) == 0)
 		help();
 	if (oscmp(action, osstr("license")) == 0 || oscmp(action, osstr("--license")) == 0)

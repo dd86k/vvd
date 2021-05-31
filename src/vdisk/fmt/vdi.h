@@ -120,4 +120,4 @@ int vdisk_vdi_create(struct VDISK *vd, uint64_t capacity, uint32_t flags);
 
 int vdisk_vdi_read_sector(struct VDISK *vd, void *buffer, uint64_t index);
 
-int vdisk_vdi_compact(struct VDISK *vd, void(*cb)(uint32_t type, void *data));
+int vdisk_vdi_compact(struct VDISK *vd);

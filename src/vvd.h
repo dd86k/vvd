@@ -20,6 +20,11 @@ enum {
 };
 
 /**
+ * Print VDISK error.
+ */
+void vvd_perror(VDISK *vd);
+
+/**
  * Print VDISK information to stdout.
  * 
  * This includes information about the VDISK format and type, MBR, GPT, and

@@ -259,7 +259,7 @@ int vdisk_write_block_at(VDISK *vd, void *buffer, uint64_t bindex, uint64_t dind
 /**
  * 
  */
-int vdisk_op_compact(VDISK *vd, void(*cb)(uint32_t, void*));
+int vdisk_op_compact(VDISK *vd);
 
 /**
  * 
@@ -275,9 +275,3 @@ int vdisk_op_compact(VDISK *vd, void(*cb)(uint32_t, void*));
  * error is set to VVD_EOS, the error message will come from the OS (or CRT).
  */
 const char* vdisk_error(VDISK *vd);
-
-/**
- * Print to stdout, with the name of the function, a message with the last
- * value set to vdisk_errno.
- */
-void vdisk_perror(VDISK *vd);

@@ -185,7 +185,7 @@ int vdisk_vdi_read_sector(VDISK *vd, void *buffer, uint64_t index) {
 // vdisk_vdi_compact
 //
 
-int vdisk_vdi_compact(VDISK *vd, void(*cb)(uint32_t type, void *data)) {
+int vdisk_vdi_compact(VDISK *vd) {
 	if (vd->vdi->hdr.majorver != 1)
 		return VDISK_ERROR(vd, VVD_EVDVERSION);
 	if (vd->vdi->v1.type != VDI_DISK_DYN)

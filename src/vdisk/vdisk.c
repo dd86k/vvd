@@ -7,7 +7,7 @@
 #include "vdisk/vdisk.h"
 
 //
-// VDISK_ERROR
+// Internal functions
 //
 
 int vdisk_i_err(VDISK *vd, int e, int l, const char *f) {
@@ -275,10 +275,10 @@ int vdisk_write_block_at(VDISK *vd, void *buffer, uint64_t bindex, uint64_t dind
 // vdisk_op_compact
 //
 
-int vdisk_op_compact(VDISK *vd, void(*cb)(uint32_t, void*)) {
+int vdisk_op_compact(VDISK *vd) {
 	switch (vd->format) {
 	case VDISK_FORMAT_VDI:
-		return vdisk_vdi_compact(vd, cb);
+		return vdisk_vdi_compact(vd);
 	default:
 		return VDISK_ERROR(vd, VVD_EVDFORMAT);
 	}
@@ -336,19 +336,4 @@ const char* vdisk_error(VDISK *vd) {
 	default:
 		return "Unknown error happened";
 	}
-}
-
-//
-// vdisk_perror
-//
-
-#if _WIN32
-	#define ERRFMT "%08X"
-#else
-	#define ERRFMT "%d"
-#endif
-
-void vdisk_perror(VDISK *vd) {
-	fprintf(stderr, "%s@%u: (" ERRFMT ") %s\n",
-		vd->err.func, vd->err.line, vd->err.num, vdisk_error(vd));
 }
