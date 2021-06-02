@@ -49,22 +49,8 @@ enum {	// DISKFORMAT magical hints (MSB), used for VDISK.format
 };
 #endif
 
-enum {	// VDISK flags, the open/create flags may overlap
+enum {	// VDISK flags
 	VDISK_RAW	= 0x1,	// Open or create vdisk as raw
-
-	//
-	// vdisk_open flags
-	//
-
-	VDISK_OPEN_VDI_ONLY	= 0x1000,	//TODO: Only open successfully if VDISK is VDI
-	VDISK_OPEN_VMDK_ONLY	= 0x2000,	//TODO: Only open successfully if VDISK is VMDK
-	VDISK_OPEN_VHD_ONLY	= 0x3000,	//TODO: Only open successfully if VDISK is VHD
-	VDISK_OPEN_VHDX_ONLY	= 0x4000,	//TODO: Only open successfully if VDISK is VHDX
-	VDISK_OPEN_QED_ONLY	= 0x5000,	//TODO: Only open successfully if VDISK is QED
-	VDISK_OPEN_QCOW_ONLY	= 0x6000,	//TODO: Only open successfully if VDISK is QCOW
-	VDISK_OPEN_PHDD_ONLY	= 0x7000,	//TODO: Only open successfully if VDISK is Parallels HDD
-	VDISK_OPEN_BOCHS_ONLY	= 0x8000,	//TODO: Only open successfully if VDISK is Parallels HDD
-
 	//
 	// vdisk_create flags
 	//
@@ -133,6 +119,8 @@ typedef struct VDISK {
 	// RAW devices, it's the disk size. This is populated automatically.
 	uint64_t capacity;
 	// OS file handle
+	// Windows: HANDLE
+	// Others: int
 	__OSFILE fd;
 	// Error structure
 	struct {

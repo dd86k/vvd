@@ -12,12 +12,12 @@ struct gpt_i_entry_t {
 // https://en.wikipedia.org/wiki/GUID_Partition_Table#Partition_type_GUIDs
 const struct gpt_i_entry_t gpt_i_types[] = {
 	{ 0x8E022B3A, "00000000-0000-0000-0000-000000000000", "Empty" },
-	{ 0x0514B937, "024DEE41-33E7-11D3-9D69-0008C781F39F", "MBR partition scheme" },
-	{ 0xACCE99DD, "C12A7328-F81F-11D2-BA4B-00A0C93EC93B", "EFI System partition" },
-	{ 0xC7E0162E, "21686148-6449-6E6F-744E-656564454649", "BIOS boot partition" },
+	{ 0x0514B937, "024DEE41-33E7-11D3-9D69-0008C781F39F", "MBR Partition Scheme" },
+	{ 0xACCE99DD, "C12A7328-F81F-11D2-BA4B-00A0C93EC93B", "EFI System Partition" },
+	{ 0xC7E0162E, "21686148-6449-6E6F-744E-656564454649", "BIOS Boot Partition" },
 	{ 0xC72C7A70, "D3BFE2DE-3DAF-11DF-BA40-E3A556D89593", "Intel Fast Flash" },
-	{ 0x10AC1CDD, "F4019732-066E-4E12-8273-346C5641494F", "Sony boot partition" },
-	{ 0xF752E0C7, "BFBFAFE7-A34F-448A-9A5B-6213EB736C22", "Lenovo boot partition" },
+	{ 0x10AC1CDD, "F4019732-066E-4E12-8273-346C5641494F", "Sony Boot Partition" },
+	{ 0xF752E0C7, "BFBFAFE7-A34F-448A-9A5B-6213EB736C22", "Lenovo Boot Partition" },
 	// Windows
 	{ 0x269ADB66, "E3C9E316-0B5C-4DB8-817D-F92DF00215AE", "Microsoft Reserved Partition" },
 	{ 0x5E16CC4F, "EBD0A0A2-B9E5-4433-87C0-68B6B72699C7", "Windows Basic data partition" },

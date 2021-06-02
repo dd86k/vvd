@@ -40,10 +40,17 @@ void vvd_perror(VDISK *vd) {
 		vd->err.func, vd->err.line, vd->err.num, vdisk_error(vd));
 }
 
+#if TRACE
+void vvd_trace(const char *msg, const char *func, const int line) {
+	fprintf(stderr, "** [%s:%d] %s\n", func, line, msg);
+}
+#endif	// TRACE
+
 //
 // Callback functions
 //
 
+/*
 // 
 void vvd_cb_vdisk_created(VDISK *disk) {
 	printf("Disk type %s created\n", vdisk_str(disk));
@@ -75,12 +82,13 @@ void vvd_cb_done() {
 		exit(1);
 	}
 }
+*/
 
 //
 // vvd_info_mbr
 //
 
-void vvd_info_mbr(MBR *mbr, uint32_t flags) {
+void vvd_info_mbr(MBR *mbr, struct settings_t *settings) {
 	char strsize[BINSTR_LENGTH];
 	uint64_t totalsize = SECTOR_TO_BYTE(
 		(uint64_t)mbr->pe[0].sectors + (uint64_t)mbr->pe[1].sectors +
@@ -89,14 +97,14 @@ void vvd_info_mbr(MBR *mbr, uint32_t flags) {
 
 	bintostr(strsize, totalsize);
 
-	if (flags & VVD_INFO_RAW) {
+	if (settings->info.full) {
 		printf(
 		"disklabel          : MBR\n"
 		"serial             : 0x%08X\n"
 		"type               : 0x%04X\n",
 		mbr->serial, mbr->type
 		);
-		for (unsigned int i = 0; i < 4; ++i) {
+		for (unsigned int i = 0; i < 4;) {
 			MBR_PARTITION pe = mbr->pe[i];
 			printf(
 			"\n"
@@ -107,7 +115,7 @@ void vvd_info_mbr(MBR *mbr, uint32_t flags) {
 			"length             : %u sectors\n"
 			"chs start          : %u/%u/%u\n"
 			"chs end            : %u/%u/%u\n",
-			i + 1,
+			++i,
 			pe.status,
 			pe.type,
 			pe.lba,
@@ -120,17 +128,17 @@ void vvd_info_mbr(MBR *mbr, uint32_t flags) {
 			pe.chslast.head, pe.chslast.sector & 0x3F
 			);
 		}
-	} else {
+	} else { // Summary
 		printf(
 		"MBR (DOS) disklabel, %s used\n"
 		"   Boot     Start        Size  Id  Type\n", strsize
 		);
-		for (unsigned int i = 0; i < 4; ++i) {
+		for (unsigned int i = 0; i < 4;) {
 			MBR_PARTITION pe = mbr->pe[i];
 			bintostr(strsize, SECTOR_TO_BYTE(pe.sectors));
 			printf(
 			"%u. %c  %11u  %10s  %2x  %s\n",
-			i + 1,
+			++i,
 			pe.status >= 0x80 ? '*' : ' ',
 			pe.lba,
 			strsize,
@@ -145,13 +153,13 @@ void vvd_info_mbr(MBR *mbr, uint32_t flags) {
 // vvd_info_gpt
 //
 
-void vvd_info_gpt(GPT *gpt, uint32_t flags) {
+void vvd_info_gpt(GPT *gpt, struct settings_t *settings) {
 	char gptsize[BINSTR_LENGTH];
 	UID_TEXT diskguid;
 
 	uid_str(diskguid, &gpt->guid, UID_GUID);
 
-	if (flags & VVD_INFO_RAW) {
+	if (settings->info.full) {
 		printf(
 		"\n"
 		"disklabel          : GPT\n"
@@ -192,15 +200,15 @@ void vvd_info_gpt(GPT *gpt, uint32_t flags) {
 // vvd_info_gpt_entries
 //
 
-void vvd_info_gpt_entries(VDISK *vd, GPT *gpt, uint64_t lba, uint32_t flags) {
+void vvd_info_gpt_entries(VDISK *vd, GPT *gpt, uint64_t lba, struct settings_t *settings) {
 	char partname[EFI_PART_NAME_LENGTH];
 	char partsize[BINSTR_LENGTH];
 	UID_TEXT partguid, typeguid;
 	GPT_ENTRY entry; // GPT entry
 	uint32_t entrynum = 1;
-	uint32_t f_bkpgpt = flags & VVD_INTERNAL_GPT_BKP;
+	char gptbkp = settings->internal.gpt_bkp;
 
-	if ((flags & VVD_INFO_RAW) == 0)
+	if (settings->info.full == 0)
 		puts("Part         Start        Size  Type");
 
 START:
@@ -216,7 +224,7 @@ START:
 	uid_str(partguid, &entry.part, UID_GUID);
 	int wr = wstra(partname, entry.partname, EFI_PART_NAME_LENGTH);
 
-	if (flags & VVD_INFO_RAW) {
+	if (settings->info.full) {
 		printf(
 		"\n"
 		"partition          : %u\n"
@@ -237,11 +245,13 @@ START:
 	} else {
 		bintostr(partsize, SECTOR_TO_BYTE(entry.last.lba - entry.first.lba));
 		const char *gpt_type = gpt_part_type_str(&entry.type);
+		if (gpt_type == NULL)
+			gpt_type = "Unknown";
 
 		//TODO: GPT partition type (after name)
 		printf(
 		"%4u. %12" PRIu64 "%12s  %s\n",
-		entrynum, entry.first.lba, partsize, gpt_type ? gpt_type : "Unknown"
+		entrynum, entry.first.lba, partsize, gpt_type
 		);
 
 		if (wr > 0)
@@ -272,7 +282,7 @@ START:
 
 	if (entrynum > gpt->pt_entries)
 		return;
-	if (f_bkpgpt) --lba; else ++lba;
+	if (gptbkp) --lba; else ++lba;
 
 	++entrynum;
 	goto START;
@@ -282,7 +292,7 @@ START:
 // vvd_info
 //
 
-int vvd_info(VDISK *vd, uint32_t flags) {
+int vvd_info(VDISK *vd, struct settings_t *settings) {
 	const char *type;	// vdisk type
 	char disksize[BINSTR_LENGTH], blocksize[BINSTR_LENGTH];
 	char uid1[UID_BUFFER_LENGTH], uid2[UID_BUFFER_LENGTH],
@@ -303,7 +313,7 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 
 		bintostr(disksize, vd->vdi->v1.capacity);
 
-		if (flags & VVD_INFO_RAW) {
+		if (settings->info.full) {
 			char create_uuid[UID_BUFFER_LENGTH], modify_uuid[UID_BUFFER_LENGTH],
 				link_uuid[UID_BUFFER_LENGTH], parent_uuid[UID_BUFFER_LENGTH];
 
@@ -377,7 +387,7 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 		default: comp = "?";
 		}
 
-		if (flags & VVD_INFO_RAW) {
+		if (settings->info.full) {
 			printf(
 			"disk format        : VMDK\n"
 			"version            : %u\n"
@@ -461,7 +471,7 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 		uid_str(uid1, &vd->vhd->hdr.uuid, UID_ASIS);
 		str_s(vd->vhd->hdr.creator_app, 4);
 
-		if (flags & VVD_INFO_RAW) {
+		if (settings->info.full) {
 			printf(
 			"disk format        : VHD\n"
 			"version            : %u.%u\n"
@@ -523,7 +533,7 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 		break;
 //	case VDISK_FORMAT_VHDX:
 	case VDISK_FORMAT_QED:
-		if (flags & VVD_INFO_RAW) {
+		if (settings->info.full) {
 			printf(
 			"disk format        : QED\n"
 			"cluster size       : %u\n"
@@ -554,7 +564,9 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 			printf("QEMU Enhanced Disk, %s\n", disksize);
 		}
 		break;
-	case VDISK_FORMAT_RAW: goto L_MBR; // No header info
+	case VDISK_FORMAT_RAW:
+//		VVDTRACE("VDISK_FORMAT_RAW");
+		goto L_MBR; // No header info
 	default:
 		fputs("vvd_info: Format not supported\n", stderr);
 		return VVD_EVDFORMAT;
@@ -576,15 +588,25 @@ int vvd_info(VDISK *vd, uint32_t flags) {
 
 L_MBR:
 
-	if (vdisk_read_sector(vd, &label, 0)) return EXIT_SUCCESS;
-	if (label.mbr.sig != MBR_SIG) return EXIT_SUCCESS;
-	vvd_info_mbr(&label.mbr, flags);
+	if (vdisk_read_sector(vd, &label, 0)) {
+		#if TRACE
+		VVDTRACE("vdisk_read_sector failed");
+		#endif
+		return EXIT_SUCCESS;
+	}
+	if (label.mbr.sig != MBR_SIG) {
+		#if TRACE
+		VVDTRACE("label.mbr.sig != MBR_SIG");
+		#endif
+		return EXIT_SUCCESS;
+	}
+	vvd_info_mbr(&label.mbr, settings);
 
 	//
 	// Extended MBR detection (EBR)
 	//
 
-	uint64_t ebrlba;
+	uint64_t elba;	// Extended MBR LBA
 	for (int i = 0; i < 4; ++i) {
 		switch (label.mbr.pe[i].type) {
 		case 0xEE: // EFI GPT Protective
@@ -592,24 +614,24 @@ L_MBR:
 			// Start of disk
 			if (vdisk_read_sector(vd, &label, 1)) return VVD_EOK;
 			if (label.gpt.sig == EFI_SIG) {
-				ebrlba = 2;
+				elba = 2;
 				goto L_GPT_RDY;
 			}
 			// End of disk
-			ebrlba = BYTE_TO_SECTOR(vd->capacity) - 1;
-			if (vdisk_read_sector(vd, &label, ebrlba)) return VVD_EOK;
+			elba = BYTE_TO_SECTOR(vd->capacity) - 1;
+			if (vdisk_read_sector(vd, &label, elba)) return VVD_EOK;
 			if (label.gpt.sig == EFI_SIG) {
-				flags |= VVD_INTERNAL_GPT_BKP;
+				settings->internal.gpt_bkp = 1;
 				goto L_GPT_RDY;
 			}
 			continue;
 		L_GPT_RDY:
-			vvd_info_gpt(&label.gpt, flags);
-			vvd_info_gpt_entries(vd, &label.gpt, ebrlba, flags);
+			vvd_info_gpt(&label.gpt, settings);
+			vvd_info_gpt_entries(vd, &label.gpt, elba, settings);
 			continue;
 		}
 	}
-
+	
 	return EXIT_SUCCESS;
 }
 
@@ -617,7 +639,7 @@ L_MBR:
 // vvd_map
 //
 
-int vvd_map(VDISK *vd, uint32_t flags) {
+int vvd_map(VDISK *vd, struct settings_t *settings) {
 	union {
 		uint32_t *u32;
 		uint64_t *u64;
@@ -727,8 +749,9 @@ L_USES_64BIT_INDEX:
 // vvd_new
 //
 
-int vvd_new(const oschar *path, uint32_t format, uint64_t capacity, uint32_t flags) {
+int vvd_new(const oschar *path, uint32_t format, uint64_t capacity, struct settings_t *settings) {
 	VDISK vd;
+	uint16_t flags = 0;
 	if (vdisk_create(&vd, path, format, capacity, flags)) {
 		vvd_perror(&vd);
 		return vd.err.num;

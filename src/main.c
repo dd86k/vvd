@@ -20,7 +20,8 @@
 #include "utils/hash.h"
 #include "vvd.h"
 
-//TODO: Move "unit" tests into its own compilation unit
+//TODO: Move tests into its own compilation unit
+//      e.g. tests/structs.c, tests/qed.c, etc.
 #ifdef DEBUG
 #include <assert.h>
 #include "fs/gpt.h"
@@ -31,8 +32,6 @@
 //
 
 void test() {
-	//TODO: Move this to its own (tests/init.c)
-	//	With others like tests/vdisk_qed.c
 	fputs(
 	"* Defines\n"
 #ifdef ENDIAN_LITTLE
@@ -228,69 +227,64 @@ int MAIN {
 	if (argc <= 1)
 		help();
 
-	uint32_t mflags = 0;	// main: Command-line flags
-	uint32_t oflags = 0;	// vdisk_open: file flags
-	uint32_t cflags = 0;	// vdisk_create: file flags
+	struct settings_t settings = {};
 	VDISK vdin;	// vdisk IN
 	VDISK vdout;	// vdisk OUT
-	uint64_t vsize = 0;	// virtual disk size, used in 'new' and 'resize'
 	const oschar *defopt = NULL;	// Default option for input file
 
 	// Additional arguments are processed first, since they're simpler
-	//TODO: --verbose: prints those extra lines (>v0.10.0)
-	//TODO: --verify-repair
+	//TODO: --verbose (>v0.10.0)
+	//TODO: --verify-repair (or verify operation?)
 	for (size_t argi = 2; argi < argc; ++argi) {
 		const oschar *arg = argv[argi];
-		//
+		
 		// Generic
-		//
-		if (oscmp(arg, osstr("--size")) == 0) {
+		if (osstrcmp(arg, osstr("--size")) == 0) {
 			if (argi + 1 >= argc) {
 				fputs("main: missing argument for --size\n", stderr);
 				return EXIT_FAILURE;
 			}
-			if (strtobin(&vsize, argv[++argi])) {
+			if (strtobin(&settings.vsize, argv[++argi])) {
 				fputs("main: failed to convert binary number\n", stderr);
 				return EXIT_FAILURE;
 			}
 			continue;
 		}
-		if (oscmp(arg, osstr("--size")) == 0) {
-			mflags |= VVD_PROGRESS;
+		if (osstrcmp(arg, osstr("--progress")) == 0) {
+			settings.progressbar = 1;
 			continue;
 		}
-		//
+		
 		// vdisk_open flags
-		//
-		if (oscmp(arg, osstr("--raw")) == 0) {
-			oflags |= VDISK_RAW;
+		if (osstrcmp(arg, osstr("--raw")) == 0) {
+			#if TRACE
+			VVDTRACE("--raw toggled");
+			#endif	// TRACE
+			settings.vdisk.flags |= VDISK_RAW;
 			continue;
 		}
-		//
+		
 		// vdisk_create flags
-		//
-		if (oscmp(arg, osstr("--create-raw")) == 0) {
-			cflags |= VDISK_RAW;
+		if (osstrcmp(arg, osstr("--create-raw")) == 0) {
+			settings.vdisk.flags |= VDISK_RAW;
 			continue;
 		}
-		if (oscmp(arg, osstr("--create-dynamic")) == 0) {
-			cflags |= VDISK_CREATE_TYPE_DYNAMIC;
+		if (osstrcmp(arg, osstr("--create-dynamic")) == 0) {
+			settings.vdisk.flags |= VDISK_CREATE_TYPE_DYNAMIC;
 			continue;
 		}
-		if (oscmp(arg, osstr("--create-fixed")) == 0) {
-			cflags |= VDISK_CREATE_TYPE_FIXED;
+		if (osstrcmp(arg, osstr("--create-fixed")) == 0) {
+			settings.vdisk.flags |= VDISK_CREATE_TYPE_FIXED;
 			continue;
 		}
-		//
+		
 		// vvd_info flags
-		//
-		if (oscmp(arg, osstr("--info-full")) == 0) {
-			mflags |= VVD_INFO_RAW;
+		if (osstrcmp(arg, osstr("--info-full")) == 0) {
+			settings.info.full = 1;
 			continue;
 		}
-		//
+		
 		// Default argument
-		//
 		if (defopt == NULL) {
 			defopt = arg;
 			continue;
@@ -306,31 +300,31 @@ int MAIN {
 	// Main operation actions
 	//
 
-	if (oscmp(action, osstr("info")) == 0) {
+	if (osstrcmp(action, osstr("info")) == 0) {
 		if (defopt == NULL) {
 			fputs("main: missing vdisk\n", stderr);
 			return EXIT_FAILURE;
 		}
-		if (vdisk_open(&vdin, defopt, oflags)) {
+		if (vdisk_open(&vdin, defopt, settings.vdisk.flags)) {
 			vvd_perror(&vdin);
 			return vdin.err.num;
 		}
-		return vvd_info(&vdin, mflags);
+		return vvd_info(&vdin, &settings);
 	}
 
-	if (oscmp(action, osstr("map")) == 0) {
+	if (osstrcmp(action, osstr("map")) == 0) {
 		if (defopt == NULL) {
 			fputs("main: missing vdisk\n", stderr);
 			return EXIT_FAILURE;
 		}
-		if (vdisk_open(&vdin, defopt, oflags)) {
+		if (vdisk_open(&vdin, defopt, settings.vdisk.flags)) {
 			vvd_perror(&vdin);
 			return vdin.err.num;
 		}
 		return vvd_map(&vdin, 0);
 	}
 
-	if (oscmp(action, osstr("compact")) == 0) {
+	if (osstrcmp(action, osstr("compact")) == 0) {
 		if (defopt == NULL) {
 			fputs("main: missing vdisk\n", stderr);
 			return EXIT_FAILURE;
@@ -346,17 +340,17 @@ int MAIN {
 		return EXIT_FAILURE;
 	}
 
-	if (oscmp(action, osstr("defrag")) == 0) {
+	if (osstrcmp(action, osstr("defrag")) == 0) {
 		fputs("main: not implemented\n", stderr);
 		return EXIT_FAILURE;
 	}
 
-	if (oscmp(action, osstr("new")) == 0) {
+	if (osstrcmp(action, osstr("new")) == 0) {
 		if (defopt == NULL) {
 			fputs("main: missing path specifier\n", stderr);
 			return EXIT_FAILURE;
 		}
-		if (vsize == 0) {
+		if (settings.vsize == 0) {
 			fputs("main: capacity cannot be zero\n", stderr);
 			return EXIT_FAILURE;
 		}
@@ -368,30 +362,30 @@ int MAIN {
 			return EXIT_FAILURE;
 		}
 
-		return vvd_new(defopt, format, vsize, cflags);
+		return vvd_new(defopt, format, settings.vsize, &settings);
 	}
 
-	if (oscmp(action, osstr("resize")) == 0) {
+	if (osstrcmp(action, osstr("resize")) == 0) {
 		fputs("main: not implemented\n", stderr);
 		return EXIT_FAILURE;
 	}
 
-	if (oscmp(action, osstr("verify")) == 0) {
+	if (osstrcmp(action, osstr("verify")) == 0) {
 		fputs("main: not implemented\n", stderr);
 		return EXIT_FAILURE;
 	}
 
-	if (oscmp(action, osstr("convert")) == 0) {
+	if (osstrcmp(action, osstr("convert")) == 0) {
 		fputs("main: not implemented\n", stderr);
 		return EXIT_FAILURE;
 	}
 
-	if (oscmp(action, osstr("upgrade")) == 0) {
+	if (osstrcmp(action, osstr("upgrade")) == 0) {
 		fputs("main: not implemented\n", stderr);
 		return EXIT_FAILURE;
 	}
 
-	if (oscmp(action, osstr("cleanfs")) == 0) {
+	if (osstrcmp(action, osstr("cleanfs")) == 0) {
 		fputs("main: not implemented\n", stderr);
 		return EXIT_FAILURE;
 	}
@@ -400,7 +394,7 @@ int MAIN {
 	// Internal things
 	//
 
-	if (oscmp(action, osstr("internalhash")) == 0) {
+	if (osstrcmp(action, osstr("internalhash")) == 0) {
 		if (defopt == NULL) {
 			fputs("main: missing argument\n", stderr);
 			return EXIT_FAILURE;
@@ -415,7 +409,7 @@ int MAIN {
 		return EXIT_SUCCESS;
 	}
 
-	if (oscmp(action, osstr("internalguidhash")) == 0) {
+	if (osstrcmp(action, osstr("internalguidhash")) == 0) {
 		if (defopt == NULL) {
 			fputs("main: missing argument\n", stderr);
 			return EXIT_FAILURE;
@@ -446,19 +440,19 @@ int MAIN {
 	// Pages
 	//
 
-	if (oscmp(action, osstr("ver")) == 0) {
+	if (osstrcmp(action, osstr("ver")) == 0) {
 		puts(PROJECT_VERSION);
 		return EXIT_SUCCESS;
 	}
-	if (oscmp(action, osstr("version")) == 0 || oscmp(action, osstr("--version")) == 0)
+	if (osstrcmp(action, osstr("version")) == 0 || osstrcmp(action, osstr("--version")) == 0)
 		version();
 	//TODO: Help system in its own module
-	if (oscmp(action, osstr("help")) == 0 || oscmp(action, osstr("--help")) == 0)
+	if (osstrcmp(action, osstr("help")) == 0 || osstrcmp(action, osstr("--help")) == 0)
 		help();
-	if (oscmp(action, osstr("license")) == 0 || oscmp(action, osstr("--license")) == 0)
+	if (osstrcmp(action, osstr("license")) == 0 || osstrcmp(action, osstr("--license")) == 0)
 		license();
 #ifdef DEBUG
-	if (oscmp(action, osstr("--test")) == 0)
+	if (osstrcmp(action, osstr("--test")) == 0)
 		test();
 #endif
 

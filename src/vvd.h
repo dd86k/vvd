@@ -1,23 +1,28 @@
 #include "vdisk/vdisk.h"
 
-/*
-	Bits	Description
-	0:15	Global flags
-	16:23	Function-specific flags
-	24:31	Function internal specific flags
-*/
-enum {
-	// Show a progress bar
-	VVD_PROGRESS	= 0x10,
-	// vvd_info: Show raw information
-	VVD_INFO_RAW	= 0x100,
-	// vvd_map flags
-	//VVD_MAP_	= 0x1000,
-	// vvd_compact flags
-	//VVD_COMPACT_CLEAN_EMPTY	= 0x10000,
-	// Internal: The backup GPT entries were selected
-	VVD_INTERNAL_GPT_BKP	= 0x01000000,
+// Command-line options
+struct settings_t {
+	uint64_t vsize;	// virtual disk size, used in 'new' and 'resize'
+	char progressbar;	// Show progress bar
+	char verbose;	// Level?
+	struct settings_info_t {
+		char raw;	// Show raw, unformatted data values
+		char full;	// Show all fields instead of a summary
+	} info;
+	struct settings_vdisk_t {
+		uint32_t flags;
+	} vdisk;
+	struct settings_internals_t {
+		char gpt_bkp;	// Uh uh, go fetch the backup GPT header!
+	} internal;
 };
+
+//TODO: Repurpose VVDTRACE
+//      Let --verbose do its thing when that is implemented
+#if TRACE
+#define VVDTRACE(x)	vvd_trace(x,__func__,__LINE__);
+void vvd_trace(const char *msg, const char *func, const int line);
+#endif	// TRACE
 
 /**
  * Print VDISK error.
@@ -30,17 +35,17 @@ void vvd_perror(VDISK *vd);
  * This includes information about the VDISK format and type, MBR, GPT, and
  * when available, the operating system filesystem.
  */
-int vvd_info(VDISK *vd, uint32_t flags);
+int vvd_info(VDISK *vd, struct settings_t *);
 
 /**
  * Print VDISK allocation map to stdout.
  */
-int vvd_map(VDISK *vd, uint32_t flags);
+int vvd_map(VDISK *vd, struct settings_t *);
 
 /**
  * 
  */
-int vvd_new(const oschar *vd, uint32_t format, uint64_t capacity, uint32_t flags);
+int vvd_new(const oschar *vd, uint32_t format, uint64_t capacity, struct settings_t *);
 
 /**
  * Compact a VDISK.

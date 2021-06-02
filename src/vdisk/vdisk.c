@@ -16,12 +16,6 @@ int vdisk_i_err(VDISK *vd, int e, int l, const char *f) {
 	return (vd->err.num = e);
 }
 
-// Until all implementations are done, this allows to catch
-// non-implemented functions during operation
-void vdisk_i_pre_init(VDISK *vd) {
-	memset(&vd->cb, 0, sizeof(vd->cb));
-}
-
 //
 // vdisk_open
 //
@@ -30,13 +24,16 @@ int vdisk_open(VDISK *vd, const oschar *path, uint32_t flags) {
 	if ((vd->fd = os_fopen(path)) == 0)
 		return VDISK_ERROR(vd, VVD_EOS);
 
-	vdisk_i_pre_init(vd);
+	// pre-init
+	memset(&vd->cb, 0, sizeof(vd->cb));
+	
+	//TODO: Consider detecting file type here to automatically pickup "raw" disks
 
 	if (flags & VDISK_RAW)
 		return vdisk_raw_open(vd, flags, 0);
 
 	//
-	// Format detection
+	// Disk format detection
 	//
 	// This hints the function to a format and tests both reading and
 	// seeking capabilities on the file or device.
@@ -47,13 +44,11 @@ int vdisk_open(VDISK *vd, const oschar *path, uint32_t flags) {
 	if (os_fseek(vd->fd, 0, SEEK_SET))
 		return VDISK_ERROR(vd, VVD_EOS);
 
-	//
-	// Disk detection and loading
-	//
-
 	uint32_t internal = 0; // Internal flags
-	uint32_t sign32;
-	uint64_t sign64;
+	union {
+		uint32_t u32;
+		uint64_t u64;
+	} sig;
 
 	switch (vd->format) {
 	case VDISK_FORMAT_VDI:
@@ -64,7 +59,7 @@ int vdisk_open(VDISK *vd, const oschar *path, uint32_t flags) {
 		if (vdisk_vmdk_open(vd, flags, internal))
 			return vd->err.num;
 		break;
-	case VDISK_FORMAT_VHD: L_FORMAT_CASE_VHD:
+	case VDISK_FORMAT_VHD: L_VDISK_FORMAT_VHD:
 		if (vdisk_vhd_open(vd, flags, internal))
 			return vd->err.num;
 		break;
@@ -85,16 +80,15 @@ int vdisk_open(VDISK *vd, const oschar *path, uint32_t flags) {
 			return vd->err.num;
 		break;
 	default: // Attempt at different offsets
-
 		// VHD: (Fixed) 512 bytes before EOF
 		if (os_fseek(vd->fd, -512, SEEK_END))
 			return VDISK_ERROR(vd, VVD_EOS);
-		if (os_fread(vd->fd, &sign64, 8))
+		if (os_fread(vd->fd, &sig.u64, sizeof(uint64_t)))
 			return VDISK_ERROR(vd, VVD_EOS);
-		if (sign64 == VHD_MAGIC) {
+		if (sig.u64 == VHD_MAGIC) {
 			vd->format = VDISK_FORMAT_VHD;
 			internal = 2;
-			goto L_FORMAT_CASE_VHD;
+			goto L_VDISK_FORMAT_VHD;
 		}
 
 		return VDISK_ERROR(vd, VVD_EVDFORMAT);
@@ -106,9 +100,6 @@ int vdisk_open(VDISK *vd, const oschar *path, uint32_t flags) {
 //
 // vdisk_create
 //
-
-//TODO: VDISK *vd, void *meta, uint64_t capacity, uint32_t flags
-//	The meta pointer serves for cloning/copying
 
 int vdisk_create(VDISK *vd, const oschar *path, int format, uint64_t capacity, uint16_t flags) {
 	

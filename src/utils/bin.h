@@ -6,13 +6,13 @@
 #define oschar wchar_t
 #define osstr(quote) L##quote
 #define OSCHARFMT "%ls"
-#define oscmp wcscmp
+#define osstrcmp wcscmp
 #else // POSIX
 // Represent a 'native' OS character
 #define oschar char
 #define osstr(quote) quote
 #define OSCHARFMT "%s"
-#define oscmp strcmp
+#define osstrcmp strcmp
 #endif
 
 #ifndef DEF_CHAR16

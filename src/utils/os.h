@@ -4,7 +4,7 @@
 #ifdef _WIN32
 #include <Windows.h>
 typedef HANDLE __OSFILE;
-#else // Posix
+#else	// Posix
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -14,8 +14,8 @@ typedef HANDLE __OSFILE;
 #ifndef __OSFILE_H
 #define __OSFILE_H
 typedef int __OSFILE;
-#endif // __OSFILE_H
-#endif
+#endif	// __OSFILE_H
+#endif	// _WIN32
 
 //
 // File functions

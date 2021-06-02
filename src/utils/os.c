@@ -130,29 +130,42 @@ int os_fsize(__OSFILE fd, uint64_t *size) {
 #if _WIN32
 	LARGE_INTEGER li;
 	// NOTE: Doc says 0 (FALSE) on failure which apparently doesn't.
-	// NOTE: Not supported in Windows Store Apps (use GetFileInformationByHandleEx)
+	// NOTE: Not supported in Windows Store Apps (use GetFileInformationByHandleEx).
+	// NOTE: Don't even try passing a uint64_t pointer in there!
 	if (GetFileSizeEx(fd, &li))
 		return -1;
 	*size = li.QuadPart;
 	return 0;
 #else
-	// fstat(2) sets st_size to 0 on block devices
 	struct stat s;
 	if (fstat(fd, &s) == -1)
 		return 1;
+	// NOTE: fstat(2) sets st_size to 0 on block devices
 	switch (s.st_mode & __S_IFMT) {
 	case __S_IFREG:
 	case __S_IFLNK:
 		*size = s.st_size;
 		return 0;
 	case __S_IFBLK:
-		//TODO: Non-linux variant
-		ioctl(fd, BLKGETSIZE64, size);
-		return 0;
+		//TODO: BSD variants
+		return ioctl(fd, BLKGETSIZE64, size);
 	default: return -1;
 	}
 #endif
 }
+
+//
+//TODO: os_ftype
+//
+
+/*int os_ftype(__OSFILE fd) {
+#if _WIN32
+	GetFileType(fd);
+#else
+
+#endif
+	return 0;
+}*/
 
 //
 // os_falloc
@@ -181,6 +194,8 @@ int os_falloc(__OSFILE fd, uint64_t fsize) {
 //
 // os_pinit
 //
+
+//TODO: Progress bar stuff should be its own module
 
 static const uint32_t OS_P_ALLOC = 2048;
 

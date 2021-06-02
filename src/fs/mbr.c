@@ -10,7 +10,7 @@
 uint32_t mbr_lba(CHS *chs) {
 	// LBA = (C * HPC + H) * SPT + (S − 1)
 	// HPC	Max heads per cylinders, typically 16 (28-bit LBA)
-	// SPT	Max sectors per strack, typically 63 (28-bit LBA)
+	// SPT	Max sectors per track, typically 63 (28-bit LBA)
 	uint8_t sector = chs->sector & 0x3F;
 	uint16_t cylinder = chs->cylinder | ((chs->sector & 0xC0) << 2);
 	return (cylinder * 16 * chs->head) * 63 + (sector - 1);
@@ -50,6 +50,7 @@ const char *mbr_part_type_str(uint8_t type) {
 	// - https://www.win.tue.nl/~aeb/partitions/partition_types-1.html
 	// - https://en.wikipedia.org/wiki/Partition_type
 	// - fdisk(1) (util-linux)
+	// NOTE: There are only 100 of these, a table isn't worth it yet
 	switch (type) {
 	case 0x00: return "Empty";
 	case 0x01: return "FAT12";

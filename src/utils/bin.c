@@ -32,8 +32,7 @@ int bintostr(char *buf, uint64_t n) { // Lazy code 2.0, sorry
 //
 
 int strtobin(uint64_t *size, const oschar *input) {
-	float f;
-	char c;
+	float f; char c;
 #ifdef _WIN32
 	if (swscanf(input, L"%f%c", &f, &c) != 2) {
 		return 1;
@@ -44,21 +43,15 @@ int strtobin(uint64_t *size, const oschar *input) {
 	}
 #endif
 	if (f <= 0) return 2;
-	uint64_t u;
+	uint64_t u = f;
 	switch (c) {
-	case 'T': case 't':
-		u = f * 1099511627776; break;
-	case 'G': case 'g':
-		u = f * 1073741824; break;
-	case 'M': case 'm':
-		u = f * 1048576; break;
-	case 'K': case 'k':
-		u = f * 1024; break;
-	case 'B': case 'b':
-		u = f; break;
+	case 'T': case 't': *size = u * TiB; break;
+	case 'G': case 'g': *size = u * GiB; break;
+	case 'M': case 'm': *size = u * MiB; break;
+	case 'K': case 'k': *size = u * KiB; break;
+	case 'B': case 'b': *size = u; break;
 	default: return 3;
 	}
-	*size = u;
 	return 0;
 }
 
