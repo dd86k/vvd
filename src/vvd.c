@@ -640,6 +640,7 @@ L_MBR:
 //
 
 int vvd_map(VDISK *vd, struct settings_t *settings) {
+	//TODO: Iterator interface
 	union {
 		uint32_t *u32;
 		uint64_t *u64;

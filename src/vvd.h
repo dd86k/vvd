@@ -2,9 +2,9 @@
 
 // Command-line options
 struct settings_t {
-	uint64_t vsize;	// virtual disk size, used in 'new' and 'resize'
+	uint64_t vsize;	// Virtual disk size, used in 'new' and 'resize'
 	char progressbar;	// Show progress bar
-	char verbose;	// Level?
+	char verbose;	// Verbose level
 	struct settings_info_t {
 		char raw;	// Show raw, unformatted data values
 		char full;	// Show all fields instead of a summary
@@ -16,13 +16,6 @@ struct settings_t {
 		char gpt_bkp;	// Uh uh, go fetch the backup GPT header!
 	} internal;
 };
-
-//TODO: Repurpose VVDTRACE
-//      Let --verbose do its thing when that is implemented
-#if TRACE
-#define VVDTRACE(x)	vvd_trace(x,__func__,__LINE__);
-void vvd_trace(const char *msg, const char *func, const int line);
-#endif	// TRACE
 
 /**
  * Print VDISK error.

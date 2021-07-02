@@ -117,6 +117,7 @@ void test() {
 //
 
 static void help() {
+	//TODO: help system
 	puts(
 	"Manage virtual disks\n"
 	"  Usage: vvd OPERATION [FILE] [OPTIONS]\n"
@@ -161,7 +162,7 @@ static void version(void) {
 #endif
 	"\n\n"
 	"FORMAT	OPERATIONS\n"
-	"VDI	info, map, new, compact\n"
+	"VDI	info, map, new\n"
 	"VMDK	info\n"
 	"VHD	info, map\n"
 	"VHDX	\n"
@@ -199,17 +200,17 @@ static void license() {
 #define MAIN main(int argc, char **argv)
 #endif
 
-// NOTICE: Hashes may be cute, but for the command-line interface (CLI), that
-//         would require both UTF-8 and UTF-16LE versions for all hashes (and
-//         possibly more encodings), so no thanks. Besides, I'm lazy, and this
-//         is obviously not critical code.
+// NOTE: Hashes may be cute, but for the command-line interface (CLI), that
+//       would require both UTF-8 and UTF-16LE versions for all hashes (and
+//       possibly more encodings), so no thanks. Besides, I'm lazy, and this
+//       is obviously not critical code.
 
 /**
  * Match a patch to an exception with the VDISK_FORMAT_* enum.
  * 
  * \returns VDISK_FORMAT_* enumeration value
  */
-static int vdextauto(const oschar *path) {
+static int vdext(const oschar *path) {
 	if (extcmp(path, osstr("vdi")))  return VDISK_FORMAT_VDI;
 	if (extcmp(path, osstr("vmdk"))) return VDISK_FORMAT_VMDK;
 	if (extcmp(path, osstr("vhd")))  return VDISK_FORMAT_VHD;
@@ -233,55 +234,71 @@ int MAIN {
 	const oschar *defopt = NULL;	// Default option for input file
 
 	// Additional arguments are processed first, since they're simpler
-	//TODO: --verbose (>v0.10.0)
-	//TODO: --verify-repair (or verify operation?)
+	//TODO: --verbose
+	//TODO: --verify-repair (or verify/check operation?)
 	for (size_t argi = 2; argi < argc; ++argi) {
 		const oschar *arg = argv[argi];
 		
-		// Generic
-		if (osstrcmp(arg, osstr("--size")) == 0) {
-			if (argi + 1 >= argc) {
-				fputs("main: missing argument for --size\n", stderr);
-				return EXIT_FAILURE;
+		// Option
+		if (arg[0] == '-') {
+			// Long option
+			if (arg[1] == '-') {
+				const oschar *larg = arg + 2;
+				
+				// Generic
+				if (osstrcmp(larg, osstr("size")) == 0) {
+					if (argi + 1 >= argc) {
+						fputs("main: missing argument for --size\n", stderr);
+						return EXIT_FAILURE;
+					}
+					if (strtobin(&settings.vsize, argv[++argi])) {
+						fputs("main: failed to convert binary number\n", stderr);
+						return EXIT_FAILURE;
+					}
+					continue;
+				}
+				if (osstrcmp(larg, osstr("progress")) == 0) {
+					settings.progressbar = 1;
+					continue;
+				}
+				if (osstrcmp(larg, osstr("verbose")) == 0) {
+					settings.verbose = 1;
+					continue;
+				}
+				if (osstrcmp(larg, osstr("vverbose")) == 0) {
+					settings.verbose = 2;
+					continue;
+				}
+				
+				// vdisk_open flags
+				if (osstrcmp(larg, osstr("raw")) == 0) {
+					settings.vdisk.flags |= VDISK_RAW;
+					continue;
+				}
+				
+				// vdisk_create flags
+				if (osstrcmp(larg, osstr("create-raw")) == 0) {
+					settings.vdisk.flags |= VDISK_RAW;
+					continue;
+				}
+				if (osstrcmp(larg, osstr("create-dynamic")) == 0) {
+					settings.vdisk.flags |= VDISK_CREATE_TYPE_DYNAMIC;
+					continue;
+				}
+				if (osstrcmp(larg, osstr("create-fixed")) == 0) {
+					settings.vdisk.flags |= VDISK_CREATE_TYPE_FIXED;
+					continue;
+				}
+				
+				// vvd_info flags
+				if (osstrcmp(larg, osstr("info-full")) == 0) {
+					settings.info.full = 1;
+					continue;
+				}
 			}
-			if (strtobin(&settings.vsize, argv[++argi])) {
-				fputs("main: failed to convert binary number\n", stderr);
-				return EXIT_FAILURE;
-			}
-			continue;
-		}
-		if (osstrcmp(arg, osstr("--progress")) == 0) {
-			settings.progressbar = 1;
-			continue;
-		}
-		
-		// vdisk_open flags
-		if (osstrcmp(arg, osstr("--raw")) == 0) {
-			#if TRACE
-			VVDTRACE("--raw toggled");
-			#endif	// TRACE
-			settings.vdisk.flags |= VDISK_RAW;
-			continue;
-		}
-		
-		// vdisk_create flags
-		if (osstrcmp(arg, osstr("--create-raw")) == 0) {
-			settings.vdisk.flags |= VDISK_RAW;
-			continue;
-		}
-		if (osstrcmp(arg, osstr("--create-dynamic")) == 0) {
-			settings.vdisk.flags |= VDISK_CREATE_TYPE_DYNAMIC;
-			continue;
-		}
-		if (osstrcmp(arg, osstr("--create-fixed")) == 0) {
-			settings.vdisk.flags |= VDISK_CREATE_TYPE_FIXED;
-			continue;
-		}
-		
-		// vvd_info flags
-		if (osstrcmp(arg, osstr("--info-full")) == 0) {
-			settings.info.full = 1;
-			continue;
+			
+			// Short option
+			// None at the moment
 		}
 		
 		// Default argument
@@ -293,13 +310,13 @@ int MAIN {
 		fprintf(stderr, "main: '" OSCHARFMT "' unknown option\n", arg);
 		return EXIT_FAILURE;
 	}
-
+	
 	const oschar *action = argv[1];
-
+	
 	//
 	// Main operation actions
 	//
-
+	
 	if (osstrcmp(action, osstr("info")) == 0) {
 		if (defopt == NULL) {
 			fputs("main: missing vdisk\n", stderr);
@@ -311,7 +328,7 @@ int MAIN {
 		}
 		return vvd_info(&vdin, &settings);
 	}
-
+	
 	if (osstrcmp(action, osstr("map")) == 0) {
 		if (defopt == NULL) {
 			fputs("main: missing vdisk\n", stderr);
@@ -323,7 +340,7 @@ int MAIN {
 		}
 		return vvd_map(&vdin, 0);
 	}
-
+	
 	if (osstrcmp(action, osstr("compact")) == 0) {
 		if (defopt == NULL) {
 			fputs("main: missing vdisk\n", stderr);
@@ -339,12 +356,12 @@ int MAIN {
 		}
 		return EXIT_FAILURE;
 	}
-
+	
 	if (osstrcmp(action, osstr("defrag")) == 0) {
 		fputs("main: not implemented\n", stderr);
 		return EXIT_FAILURE;
 	}
-
+	
 	if (osstrcmp(action, osstr("new")) == 0) {
 		if (defopt == NULL) {
 			fputs("main: missing path specifier\n", stderr);
@@ -356,7 +373,7 @@ int MAIN {
 		}
 
 		// Get vdisk type out of extension name
-		int format = vdextauto(defopt);
+		int format = vdext(defopt);
 		if (format == VDISK_FORMAT_NONE) {
 			fputs("main: unknown extension\n", stderr);
 			return EXIT_FAILURE;
@@ -364,36 +381,35 @@ int MAIN {
 
 		return vvd_new(defopt, format, settings.vsize, &settings);
 	}
-
+	
+	//TODO: Renew command
+	//      e.g.,
+	//      - VDI: Set new GUIDs
+	
 	if (osstrcmp(action, osstr("resize")) == 0) {
 		fputs("main: not implemented\n", stderr);
 		return EXIT_FAILURE;
 	}
-
+	
 	if (osstrcmp(action, osstr("verify")) == 0) {
 		fputs("main: not implemented\n", stderr);
 		return EXIT_FAILURE;
 	}
-
+	
 	if (osstrcmp(action, osstr("convert")) == 0) {
 		fputs("main: not implemented\n", stderr);
 		return EXIT_FAILURE;
 	}
-
+	
 	if (osstrcmp(action, osstr("upgrade")) == 0) {
 		fputs("main: not implemented\n", stderr);
 		return EXIT_FAILURE;
 	}
-
-	if (osstrcmp(action, osstr("cleanfs")) == 0) {
-		fputs("main: not implemented\n", stderr);
-		return EXIT_FAILURE;
-	}
-
+	
 	//
 	// Internal things
 	//
-
+	
 	if (osstrcmp(action, osstr("internalhash")) == 0) {
 		if (defopt == NULL) {
 			fputs("main: missing argument\n", stderr);
@@ -408,7 +424,7 @@ int MAIN {
 #endif
 		return EXIT_SUCCESS;
 	}
-
+	
 	if (osstrcmp(action, osstr("internalguidhash")) == 0) {
 		if (defopt == NULL) {
 			fputs("main: missing argument\n", stderr);
@@ -432,14 +448,14 @@ int MAIN {
 		printf("%08X\n", hash_compute((const char*)&uid, 16));
 		return EXIT_SUCCESS;
 	}
-
+	
 	//TODO: internalmbrtype <hexcode>
 	//TODO: internalgpttype <GUID>
-
+	
 	//
 	// Pages
 	//
-
+	
 	if (osstrcmp(action, osstr("ver")) == 0) {
 		puts(PROJECT_VERSION);
 		return EXIT_SUCCESS;
@@ -451,11 +467,12 @@ int MAIN {
 		help();
 	if (osstrcmp(action, osstr("license")) == 0 || osstrcmp(action, osstr("--license")) == 0)
 		license();
+
 #ifdef DEBUG
 	if (osstrcmp(action, osstr("--test")) == 0)
 		test();
 #endif
-
+	
 	fprintf(stderr, "main: '" OSCHARFMT "' unknown operation, see 'vvd help'\n", action);
 	return EXIT_FAILURE;
 }

@@ -81,24 +81,8 @@ enum {	// VDISK error codes
 };
 
 enum {
-	// Operation has completed successfully.
-	// Parameter: NULL
-	VVD_NOTIF_DONE,
-	// VDISK was created with type
-	// Parameter: const char*
-	VVD_NOTIF_VDISK_CREATED_TYPE_NAME,
-	// Total amount of blocks before processing
-	// Parameter: uint32_t
-	VVD_NOTIF_VDISK_TOTAL_BLOCKS,
-	// Total amount of blocks before processing (64-bit indexes)
-	// Parameter: uint64_t
-	VVD_NOTIF_VDISK_TOTAL_BLOCKS64,
-	// 
-	// Parameter: uint32_t
-	VVD_NOTIF_VDISK_CURRENT_BLOCK,
-	// 
-	// Parameter: uint64_t
-	VVD_NOTIF_VDISK_CURRENT_BLOCK64,
+	VVD_CAP_HAS_TABLE	= 1,
+	VVD_CAP_64BIT_INDEXES	= 2,
 };
 
 //
@@ -196,6 +180,9 @@ int vdisk_open(VDISK *vd, const oschar *path, uint32_t flags);
  * \returns Exit status
  */
 int vdisk_create(VDISK *vd, const oschar *path, int format, uint64_t capacity, uint16_t flags);
+
+//TODO: vdisk_caps or vdisk_info
+//      VDISK capabilities
 
 /**
  * Returns a string representation of the loaded virtual disk. If a format was
